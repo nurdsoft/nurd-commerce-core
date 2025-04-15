@@ -1,0 +1,297 @@
+[
+  {
+    "error_code": "ADDRESS_NOT_FOUND",
+    "status_code": 404,
+    "message": "Address not found."
+  },
+  {
+    "error_code": "CART_ERROR_UPDATING_CART_ITEM",
+    "status_code": 500,
+    "message": "Error updating cart item."
+  },
+  {
+    "error_code": "CART_ITEM_NOT_FOUND",
+    "status_code": 500,
+    "message": "Cart item not found."
+  },
+  {
+    "error_code": "CART_ERROR_GETTING_CART",
+    "status_code": 500,
+    "message": "Error getting cart."
+  },
+  {
+    "error_code": "CART_NOT_FOUND",
+    "status_code": 500,
+    "message": "Cart not found."
+  },
+  {
+    "error_code": "CART_IS_EMPTY",
+    "status_code": 400,
+    "message": "Cart is empty."
+  },
+  {
+    "error_code": "CART_ERROR_GETTING_CART_ITEMS",
+    "status_code": 500,
+    "message": "Error getting cart items."
+  },
+  {
+    "error_code": "CART_ERROR_REMOVING_CART_ITEM",
+    "status_code": 500,
+    "message": "Error removing cart item."
+  },
+  {
+    "error_code": "CART_ERROR_CLEARING_CART",
+    "status_code": 500,
+    "message": "Error clearing cart."
+  },
+  {
+    "error_code": "CART_ERROR_UPDATING_TAX_RATE",
+    "status_code": 500,
+    "message": "Error updating tax rate."
+  },
+  {
+    "error_code": "CART_ERROR_UPDATING_SHIPPING_RATE",
+    "status_code": 500,
+    "message": "Error updating shipping rate."
+  },
+  {
+    "error_code": "CART_NO_SHIPPING_RATES_FOUND",
+    "status_code": 500,
+    "message": "No shipping rates found."
+  },
+  {
+    "error_code": "CART_SHIPPING_RATE_NOT_FOUND",
+    "status_code": 404,
+    "message": "Shipping rate not found."
+  },
+  {
+    "error_code": "CART_ERROR_GETTING_SHIPPING_RATE",
+    "status_code": 500,
+    "message": "Error getting shipping rate."
+  },
+  {
+    "error_code": "CUSTOMER_NOT_FOUND",
+    "status_code": 404,
+    "message": "Customer not found."
+  },
+  {
+    "error_code": "ORDER_NOT_FOUND",
+    "status_code": 404,
+    "message": "Order not found."
+  },
+  {
+    "error_code": "ORDER_ERROR_GETTING_ITEMS",
+    "status_code": 500,
+    "message": "Error getting order items."
+  },
+  {
+    "error_code": "ORDER_ERROR_CREATING",
+    "status_code": 500,
+    "message": "Error creating order."
+  },
+  {
+    "error_code": "ORDER_ERROR_LISTING",
+    "status_code": 500,
+    "message": "Error listing orders."
+  },
+  {
+    "error_code": "ORDER_ID_REQUIRED",
+    "status_code": 400,
+    "message": "Order ID is required."
+  },
+  {
+    "error_code": "ORDER_ERROR_GETTING",
+    "status_code": 500,
+    "message": "Error getting order."
+  },
+  {
+    "error_code": "ORDER_ERROR_CANCELLING",
+    "status_code": 500,
+    "message": "Error cancelling order."
+  },
+  {
+    "error_code": "ORDER_CANNOT_BE_CANCELLED",
+    "status_code": 500,
+    "message": "Order cannot be cancelled."
+  },
+  {
+    "error_code": "ORDER_IS_ALREADY_CANCELLED",
+    "status_code": 304,
+    "message": "Order is already cancelled."
+  },
+  {
+    "error_code": "ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID",
+    "status_code": 404,
+    "message": "Order not found by payment intent ID."
+  },
+  {
+    "error_code": "ORDER_IS_NOT_PENDING",
+    "status_code": 400,
+    "message": "Order is not pending."
+  },
+  {
+    "error_code": "PRODUCT_NOT_FOUND",
+    "status_code": 404,
+    "message": "Product not found."
+  },
+  {
+    "error_code": "PRODUCT_VARIANT_NOT_FOUND",
+    "status_code": 404,
+    "message": "Product variant not found."
+  },
+  {
+    "error_code": "STRIPE_SIGNATURE_VERIFICATION_FAILED",
+    "status_code": 400,
+    "message": "Stripe webhook signature verification failed"
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_DELIVERY_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid delivery address postal code."
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_ORIGIN_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid origin address postal code."
+  },
+  {
+    "error_code": "SHIPENGINE_MISSING_CARRIERS",
+    "status_code": 400,
+    "message": "Missing carrier while getting shipping estimates."
+  },
+  {
+    "error_code": "SHIPENGINE_ERROR_GETTING_SHIPPING_RATES",
+    "status_code": 500,
+    "message": "Failed to get shipping estimates."
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid postal code."
+  },
+  {
+    "error_code": "STRIPE_INVALID_CUSTOMER_LOCATION",
+    "status_code": 400,
+    "message": "Customer tax location is invalid."
+  },
+  {
+    "error_code": "STRIPE_INVALID_SHIPPING_ADDRESS",
+    "status_code": 400,
+    "message": "Shipping address is invalid."
+  },
+  {
+    "error_code": "STRIPE_INVALID_TAX_LOCATION",
+    "status_code": 400,
+    "message": "Tax location is invalid."
+  },
+  {
+    "error_code": "STRIPE_TAX_IS_INACTIVE",
+    "status_code": 400,
+    "message": "Tax is inactive."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CALCULATE_TAX",
+    "status_code": 500,
+    "message": "Unable to calculate tax."
+  },
+  {
+    "error_code": "STRIPE_ERROR",
+    "status_code": 400,
+    "message": "Stripe error."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CREATE_USER",
+    "status_code": 400,
+    "message": "Unable to create user."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_FETCH_PAYMENT_METHODS",
+    "status_code": 500,
+    "message": "Unable to fetch payment methods."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CREATE_SETUP_INTENT",
+    "status_code": 500,
+    "message": "Unable to create setup intent."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_AUTHENTICATION_FAILURE",
+    "status_code": 400,
+    "message": "Payment intent authentication failure."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_INVALID_PARAMETER",
+    "status_code": 400,
+    "message": "Payment intent invalid parameter."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_INCOMPATIBLE_PAYMENT_METHOD",
+    "status_code": 400,
+    "message": "Payment intent incompatible payment method."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_ERROR",
+    "status_code": 500,
+    "message": "Unable to create payment intent."
+  },
+  {
+    "error_code": "STRIPE_FAILED_TO_FETCH_EPHEMERAL_KEY",
+    "status_code": 500,
+    "message": "Failed to fetch ephemeral key."
+  },
+  {
+    "error_code": "WISHLIST_ITEM_NOT_FOUND",
+    "status_code": 404,
+    "message": "Item not found in the wishlist."
+  },
+  {
+    "error_code": "DATABASE_ERROR",
+    "status_code": 500,
+    "message": "A database error occurred."
+  },
+  {
+    "error_code": "RECORD_NOT_FOUND",
+    "status_code": 500,
+    "message": "Record not found."
+  },
+  {
+    "error_code": "DUPLICATED_KEY",
+    "status_code": 400,
+    "message": "This record already exists."
+  },
+  {
+    "error_code": "FOREIGN_KEY_VIOLATION",
+    "status_code": 400,
+    "message": "The referenced record does not exist or has been removed."
+  },
+  {
+    "error_code": "ERROR_FETCHING_RESULTS",
+    "status_code": 500,
+    "message": "Error fetching results."
+  },
+  {
+    "error_code": "CUSTOMER_ID_REQUIRED",
+    "status_code": 400,
+    "message": "Customer ID is required."
+  },
+  {
+    "error_code": "PRODUCT_NOT_FOUND",
+    "status_code": 404,
+    "message": "Product not found."
+  },
+  {
+    "error_code": "PRODUCT_VARIANT_NOT_FOUND",
+    "status_code": 404,
+    "message": "Product variant not found."
+  },
+  {
+    "error_code": "VALIDATION_ERROR",
+    "status_code": 400,
+    "message": "Validation error."
+  },
+  {
+    "error_code": "INTERNAL_ERROR",
+    "status_code": 500,
+    "message": "An internal error occurred."
+  }
+]

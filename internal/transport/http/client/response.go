@@ -1,0 +1,12 @@
+// Package client sending requests to network services
+package client
+
+type response struct {
+	Error responseError `json:"error,omitempty"`
+	Data  interface{}   `json:"data,omitempty"`
+}
+
+type responseError struct {
+	Code    int    `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+}

@@ -1,0 +1,1791 @@
+basePath: /
+consumes:
+    - application/json
+definitions:
+    AddToWishlistRequestBody:
+        properties:
+            products:
+                items:
+                    $ref: '#/definitions/Product'
+                type: array
+                x-go-name: Products
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    AddressRequestBody:
+        properties:
+            address:
+                type: string
+                x-go-name: Address
+            apartment:
+                type: string
+                x-go-name: Apartment
+            city:
+                type: string
+                x-go-name: City
+            country_code:
+                type: string
+                x-go-name: CountryCode
+            full_name:
+                type: string
+                x-go-name: FullName
+            is_default:
+                type: boolean
+                x-go-name: IsDefault
+            phone_number:
+                type: string
+                x-go-name: PhoneNumber
+            postal_code:
+                type: string
+                x-go-name: PostalCode
+            state_code:
+                type: string
+                x-go-name: StateCode
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/address/entities
+    CartItemDetail:
+        properties:
+            added_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            attributes:
+                $ref: '#/definitions/JSON'
+            currency:
+                type: string
+                x-go-name: Currency
+            description:
+                type: string
+                x-go-name: Description
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    CartShippingRate:
+        properties:
+            amount:
+                type: string
+                x-go-name: Amount
+            carrier_code:
+                type: string
+                x-go-name: CarrierCode
+            carrier_name:
+                type: string
+                x-go-name: CarrierName
+            currency:
+                type: string
+                x-go-name: Currency
+            estimated_delivery_date:
+                format: date-time
+                type: string
+                x-go-name: EstimatedDeliveryDate
+            id:
+                format: uuid
+                type: string
+                x-go-name: Id
+            service_code:
+                type: string
+                x-go-name: ServiceCode
+            service_type:
+                type: string
+                x-go-name: ServiceType
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    CreateCustomerRequestBody:
+        properties:
+            email:
+                type: string
+                x-go-name: Email
+            first_name:
+                type: string
+                x-go-name: FirstName
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            last_name:
+                type: string
+                x-go-name: LastName
+            phone_number:
+                type: string
+                x-go-name: PhoneNumber
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/customer/entities
+    CreateOrderRequestBody:
+        properties:
+            address_id:
+                format: uuid
+                type: string
+                x-go-name: AddressID
+            shipping_rate_id:
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
+            stripe_payment_method_id:
+                type: string
+                x-go-name: StripePaymentMethodID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    CreateOrderResponse:
+        properties:
+            order_reference:
+                description: Order reference
+                example: VZQ9IMMMYQ
+                type: string
+                x-go-name: OrderReference
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    CreateProductRequestBody:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            description:
+                type: string
+                x-go-name: Description
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
+    CreateProductVariantRequestBody:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            currency:
+                type: string
+                x-go-name: Currency
+            description:
+                type: string
+                x-go-name: Description
+            height:
+                type: string
+                x-go-name: Height
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            length:
+                type: string
+                x-go-name: Length
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            sku:
+                type: string
+                x-go-name: SKU
+            stripe_tax_code:
+                type: string
+                x-go-name: StripeTaxCode
+            weight:
+                type: string
+                x-go-name: Weight
+            width:
+                type: string
+                x-go-name: Width
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
+    DefaultError:
+        description: Default Error Object
+        properties:
+            error_code:
+                type: string
+                x-go-name: ErrorCode
+            message:
+                type: string
+                x-go-name: Message
+            status_code:
+                format: int64
+                type: integer
+                x-go-name: StatusCode
+        type: object
+        x-go-name: Error
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/transport/http
+    DefaultResponse:
+        description: Default HTTP Response Object
+        properties:
+            data:
+                x-go-name: Data
+            error:
+                $ref: '#/definitions/DefaultError'
+        type: object
+        x-go-name: Response
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/transport/http
+    GetAddressResponse:
+        properties:
+            address:
+                type: string
+                x-go-name: Address
+            apartment:
+                type: string
+                x-go-name: Apartment
+            city:
+                type: string
+                x-go-name: City
+            country_code:
+                type: string
+                x-go-name: CountryCode
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            full_name:
+                type: string
+                x-go-name: FullName
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            is_default:
+                type: boolean
+                x-go-name: IsDefault
+            phone_number:
+                type: string
+                x-go-name: PhoneNumber
+            postal_code:
+                type: string
+                x-go-name: PostalCode
+            state_code:
+                type: string
+                x-go-name: StateCode
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-name: Address
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/address/entities
+    GetAllAddressResponse:
+        properties:
+            addresses:
+                items:
+                    $ref: '#/definitions/GetAddressResponse'
+                type: array
+                x-go-name: Addresses
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/address/entities
+    GetCartItemsResponse:
+        properties:
+            items:
+                items:
+                    $ref: '#/definitions/CartItemDetail'
+                type: array
+                x-go-name: Items
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetCustomerResponse:
+        properties:
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            email:
+                type: string
+                x-go-name: Email
+            first_name:
+                type: string
+                x-go-name: FirstName
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            last_name:
+                type: string
+                x-go-name: LastName
+            phone_number:
+                type: string
+                x-go-name: PhoneNumber
+            salesforce_id:
+                type: string
+                x-go-name: SalesforceID
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-name: Customer
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/customer/entities
+    GetOrderResponse:
+        properties:
+            order:
+                $ref: '#/definitions/Order'
+            order_items:
+                items:
+                    $ref: '#/definitions/OrderItem'
+                type: array
+                x-go-name: OrderItems
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    GetPaymentMethodResponse:
+        properties:
+            payment_methods:
+                items:
+                    $ref: '#/definitions/PaymentMethod'
+                type: array
+                x-go-name: PaymentMethods
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetProductResponse:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            description:
+                type: string
+                x-go-name: Description
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-name: Product
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
+    GetProductVariantResponse:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            currency:
+                type: string
+                x-go-name: Currency
+            description:
+                type: string
+                x-go-name: Description
+            height:
+                type: string
+                x-go-name: Height
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            length:
+                type: string
+                x-go-name: Length
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            sku:
+                type: string
+                x-go-name: SKU
+            stripe_tax_code:
+                type: string
+                x-go-name: StripeTaxCode
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+            weight:
+                type: string
+                x-go-name: Weight
+            width:
+                type: string
+                x-go-name: Width
+        type: object
+        x-go-name: ProductVariant
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
+    GetSetupIntentResponse:
+        properties:
+            setup_intent:
+                $ref: '#/definitions/SetupIntent'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetShippingRateRequestBody:
+        properties:
+            address_id:
+                description: Shipping Address UUID
+                format: uuid
+                type: string
+                x-go-name: AddressID
+            warehouse_address:
+                $ref: '#/definitions/WarehouseAddress'
+        required:
+            - address_id
+            - warehouse_address
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetShippingRateResponse:
+        properties:
+            rates:
+                items:
+                    $ref: '#/definitions/CartShippingRate'
+                type: array
+                x-go-name: Rates
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetTaxRateRequestBody:
+        properties:
+            address_id:
+                description: Shipping Address ID
+                example: 123e4567-e89b-12d3-a456-426614174000
+                format: uuid
+                type: string
+                x-go-name: AddressID
+            shipping_rate_id:
+                description: Shipping Rate ID selected by the customer
+                example: 123e4567-e89b-12d3-a456-426614174000
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
+            warehouse_address:
+                $ref: '#/definitions/WarehouseAddress'
+        required:
+            - address_id
+            - shipping_rate_id
+            - warehouse_address
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetTaxRateResponse:
+        properties:
+            currency:
+                description: Currency of the total amount
+                type: string
+                x-go-name: Currency
+            shipping_rate:
+                description: Shipping Rate
+                type: string
+                x-go-name: ShippingRate
+            subtotal:
+                description: Subtotal amount. Subtotal = Price
+                type: string
+                x-go-name: Subtotal
+            tax:
+                description: Tax rate
+                type: string
+                x-go-name: Tax
+            total:
+                description: Total amount. Total = Price + Tax + Shipping Rate
+                type: string
+                x-go-name: Total
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetWishlistResponse:
+        properties:
+            items:
+                items:
+                    $ref: '#/definitions/WishlistItem'
+                type: array
+                x-go-name: Items
+            next_cursor:
+                type: string
+                x-go-name: NextCursor
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    HealthCheckResponse:
+        description: Response represents the health check response
+        properties:
+            message:
+                description: Message is the health status message
+                example: ok
+                type: string
+                x-go-name: Message
+        type: object
+        x-go-name: Response
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/health/service
+    JSON:
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/json
+    ListOrdersResponse:
+        properties:
+            next_cursor:
+                type: string
+                x-go-name: NextCursor
+            orders:
+                items:
+                    $ref: '#/definitions/Order'
+                type: array
+                x-go-name: Orders
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    Order:
+        properties:
+            cart_id:
+                format: uuid
+                type: string
+                x-go-name: CartID
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            currency:
+                type: string
+                x-go-name: Currency
+            customer_id:
+                format: uuid
+                type: string
+                x-go-name: CustomerID
+            delivery_address:
+                type: string
+                x-go-name: DeliveryAddress
+            delivery_apartment:
+                type: string
+                x-go-name: DeliveryApartment
+            delivery_city:
+                type: string
+                x-go-name: DeliveryCity
+            delivery_country_code:
+                type: string
+                x-go-name: DeliveryCountryCode
+            delivery_full_name:
+                type: string
+                x-go-name: DeliveryFullName
+            delivery_phone_number:
+                type: string
+                x-go-name: DeliveryPhoneNumber
+            delivery_postal_code:
+                type: string
+                x-go-name: DeliveryPostalCode
+            delivery_state_code:
+                type: string
+                x-go-name: DeliveryStateCode
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            order_reference:
+                type: string
+                x-go-name: OrderReference
+            shipping_carrier_code:
+                type: string
+                x-go-name: ShippingCarrierCode
+            shipping_carrier_name:
+                type: string
+                x-go-name: ShippingCarrierName
+            shipping_estimated_delivery_date:
+                format: date-time
+                type: string
+                x-go-name: ShippingEstimatedDeliveryDate
+            shipping_rate:
+                type: string
+                x-go-name: ShippingRate
+            shipping_service_code:
+                type: string
+                x-go-name: ShippingServiceCode
+            shipping_service_type:
+                type: string
+                x-go-name: ShippingServiceType
+            status:
+                $ref: '#/definitions/OrderStatus'
+            subtotal:
+                type: string
+                x-go-name: Subtotal
+            tax_amount:
+                type: string
+                x-go-name: TaxAmount
+            tax_breakdown:
+                $ref: '#/definitions/JSON'
+            total:
+                type: string
+                x-go-name: Total
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItem:
+        description: OrderItem represents an item in an order
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            description:
+                type: string
+                x-go-name: Description
+            height:
+                type: string
+                x-go-name: Height
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            length:
+                type: string
+                x-go-name: Length
+            name:
+                type: string
+                x-go-name: Name
+            order_id:
+                format: uuid
+                type: string
+                x-go-name: OrderID
+            price:
+                type: string
+                x-go-name: Price
+            product_variant_id:
+                format: uuid
+                type: string
+                x-go-name: ProductVariantID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+            weight:
+                type: string
+                x-go-name: Weight
+            width:
+                type: string
+                x-go-name: Width
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderStatus:
+        type: string
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    PaymentMethod:
+        properties:
+            brand:
+                type: string
+                x-go-name: Brand
+            country:
+                type: string
+                x-go-name: Country
+            created:
+                format: int64
+                type: integer
+                x-go-name: Created
+            display_brand:
+                type: string
+                x-go-name: DisplayBrand
+            expiry_month:
+                format: int64
+                type: integer
+                x-go-name: ExpiryMonth
+            expiry_year:
+                format: int64
+                type: integer
+                x-go-name: ExpiryYear
+            id:
+                type: string
+                x-go-name: Id
+            last4:
+                type: string
+                x-go-name: Last4
+            wallet:
+                type: string
+                x-go-name: Wallet
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    Product:
+        properties:
+            data:
+                $ref: '#/definitions/ProductData'
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    ProductData:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            description:
+                type: string
+                x-go-name: Description
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    ProductVariantData:
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            currency:
+                type: string
+                x-go-name: Currency
+            description:
+                type: string
+                x-go-name: Description
+            height:
+                type: string
+                x-go-name: Height
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            length:
+                type: string
+                x-go-name: Length
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            stripe_tax_code:
+                type: string
+                x-go-name: StripeTaxCode
+            weight:
+                type: string
+                x-go-name: Weight
+            width:
+                type: string
+                x-go-name: Width
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    SetupIntent:
+        properties:
+            customer:
+                description: Customer ID associated with the SetupIntent
+                type: string
+                x-go-name: CustomerId
+            ephemeral_key:
+                description: Short-lived key associated with a specific Stripe Customer, will be used by StripeSDK
+                type: string
+                x-go-name: EphemeralKey
+            setup_intent:
+                description: Client secret of the SetupIntent.
+                type: string
+                x-go-name: SetupIntent
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    UpdateCartItemRequestBody:
+        properties:
+            data:
+                $ref: '#/definitions/ProductVariantData'
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    UpdateCustomerRequestBody:
+        properties:
+            first_name:
+                type: string
+                x-go-name: FirstName
+            last_name:
+                type: string
+                x-go-name: LastName
+            phone_number:
+                type: string
+                x-go-name: PhoneNumber
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/customer/entities
+    UpdateOrderRequestBody:
+        properties:
+            fulfillment_freight_charge:
+                type: string
+                x-go-name: FulfillmentFreightCharge
+            fulfillment_message:
+                type: string
+                x-go-name: FulfillmentMessage
+            fulfillment_order_total:
+                type: string
+                x-go-name: FulfillmentOrderTotal
+            fulfillment_shipment_date:
+                format: date-time
+                type: string
+                x-go-name: FulfillmentShipmentDate
+            fulfillment_vendor_amount_due:
+                type: string
+                x-go-name: FulfillmentVendorAmountDue
+            status:
+                type: string
+                x-go-name: Status
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    UpdateProductRequestBody:
+        properties:
+            salesforce_id:
+                type: string
+                x-go-name: SalesforceID
+            salesforce_pricebook_entry_id:
+                type: string
+                x-go-name: SalesforcePricebookEntryId
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
+    WarehouseAddress:
+        properties:
+            city:
+                type: string
+                x-go-name: City
+            country_code:
+                type: string
+                x-go-name: CountryCode
+            postal_code:
+                type: string
+                x-go-name: PostalCode
+            state_code:
+                type: string
+                x-go-name: StateCode
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    WishlistItem:
+        properties:
+            created_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+info:
+    description: Documentation of Commerce Core API.
+    title: Commerce Core API
+    version: 1.0.0
+paths:
+    /address:
+        get:
+            description: '### Get all addresses of the customer'
+            operationId: GetAddresses
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Addresses retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetAddressResponse'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Addresses
+            tags:
+                - addresses
+        post:
+            description: '### Add a new address for the customer'
+            operationId: AddAddressRequest
+            parameters:
+                - description: Address to be added
+                  in: body
+                  name: address
+                  schema:
+                    $ref: '#/definitions/AddressRequestBody'
+                  x-go-name: Address
+            produces:
+                - application/json
+            responses:
+                "201":
+                    description: Address added successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Add Address
+            tags:
+                - addresses
+    /address/{address_id}:
+        delete:
+            description: '### Delete an existing address of the customer'
+            operationId: DeleteAddressRequest
+            parameters:
+                - description: Address UUID to be deleted
+                  format: uuid
+                  in: path
+                  name: address_id
+                  required: true
+                  type: string
+                  x-go-name: AddressID
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Address deleted successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Delete Address
+            tags:
+                - addresses
+        get:
+            description: '### Get a specific address of the customer'
+            operationId: GetAddressRequest
+            parameters:
+                - description: Address UUID to be fetched
+                  format: uuid
+                  in: path
+                  name: address_id
+                  required: true
+                  type: string
+                  x-go-name: AddressID
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Address retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetAddressResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Address
+            tags:
+                - addresses
+        put:
+            description: '### Update an existing address of the customer'
+            operationId: UpdateAddressRequest
+            parameters:
+                - description: Address UUID to be updated
+                  format: uuid
+                  in: path
+                  name: address_id
+                  required: true
+                  type: string
+                  x-go-name: AddressID
+                - description: Address to be updated
+                  in: body
+                  name: address
+                  schema:
+                    $ref: '#/definitions/AddressRequestBody'
+                  x-go-name: Address
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Address updated successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Address
+            tags:
+                - addresses
+    /cart/items:
+        delete:
+            description: '### Clear the list of items in the cart'
+            operationId: ClearCartItems
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Cart items cleared successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Clear Cart Items
+            tags:
+                - carts
+        get:
+            description: '### Get the list of items in the cart'
+            operationId: GetCartItems
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Cart items retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetCartItemsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Cart Items
+            tags:
+                - carts
+        post:
+            description: '### Add an item to the cart'
+            operationId: UpdateCartItemRequest
+            parameters:
+                - description: Item to be added to cart
+                  in: body
+                  name: Item
+                  required: true
+                  schema:
+                    $ref: '#/definitions/UpdateCartItemRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    $ref: '#/responses/CartItem'
+                    description: Item added to cart successfully
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Add Cart Item
+            tags:
+                - carts
+    /cart/items/{item_id}:
+        delete:
+            description: '### Remove an item from the cart'
+            operationId: RemoveCartItem
+            parameters:
+                - description: ID of the item to be removed
+                  in: path
+                  name: item_id
+                  required: true
+                  type: string
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Item removed successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Remove Cart Item
+            tags:
+                - carts
+    /cart/shipping-rates:
+        post:
+            description: '### Get the shipping rates for the cart'
+            operationId: GetShippingRateRequest
+            parameters:
+                - description: Request body
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/GetShippingRateRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Shipping rate retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetShippingRateResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Shipping Rates
+            tags:
+                - carts
+    /cart/tax-rate:
+        post:
+            operationId: GetTaxRateRequest
+            parameters:
+                - description: Body of the request
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/GetTaxRateRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Tax rate retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetTaxRateResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Tax Rate for active cart
+            tags:
+                - carts
+    /customer:
+        get:
+            operationId: GetCustomer
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: GetCustomerResponse
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get customer details
+            tags:
+                - customers
+        post:
+            operationId: CreateCustomerRequest
+            parameters:
+                - description: Customer data to be created
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/CreateCustomerRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer created successfully
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Customer
+            tags:
+                - customers
+        put:
+            operationId: UpdateCustomerRequest
+            parameters:
+                - description: Customer data to be updated
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/UpdateCustomerRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer updated successfully
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Customer
+            tags:
+                - customers
+    /health:
+        get:
+            description: Check if the service is healthy
+            operationId: HealthCheck
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: HealthCheckResponse
+                    schema:
+                        $ref: '#/definitions/HealthCheckResponse'
+            tags:
+                - health
+    /orders:
+        get:
+            description: '### List all of customer''s orders'
+            operationId: ListOrdersRequest
+            parameters:
+                - description: Limit of orders to return
+                  example: 10
+                  format: int64
+                  in: query
+                  name: limit
+                  required: true
+                  type: integer
+                  x-go-name: Limit
+                - description: Cursor to paginate orders
+                  in: query
+                  name: cursor
+                  type: string
+                  x-go-name: Cursor
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Orders listed successfully
+                    schema:
+                        $ref: '#/definitions/ListOrdersResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: List Orders
+            tags:
+                - orders
+        post:
+            description: '### Create an order based on active cart items'
+            operationId: CreateOrderRequest
+            parameters:
+                - description: Body of the request
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/CreateOrderRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Order created successfully
+                    schema:
+                        $ref: '#/definitions/CreateOrderResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Order
+            tags:
+                - orders
+    /orders/{order_id}:
+        delete:
+            description: '### Cancel an order'
+            operationId: CancelOrderRequest
+            parameters:
+                - description: Order ID
+                  format: uuid
+                  in: path
+                  name: order_id
+                  required: true
+                  type: string
+                  x-go-name: OrderID
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Order canceled successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "304":
+                    description: Order is already cancelled
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "404":
+                    description: Order not found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Cancel Order
+            tags:
+                - orders
+        get:
+            operationId: GetOrderRequest
+            parameters:
+                - description: Order ID
+                  format: uuid
+                  in: path
+                  name: order_id
+                  required: true
+                  type: string
+                  x-go-name: OrderID
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Order listed successfully
+                    schema:
+                        $ref: '#/definitions/GetOrderResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Order with items
+            tags:
+                - orders
+    /orders/{order_reference}:
+        put:
+            description: '### Update an order'
+            operationId: UpdateOrderRequest
+            parameters:
+                - description: Order reference
+                  in: path
+                  name: order_reference
+                  required: true
+                  type: string
+                  x-go-name: OrderReference
+                - description: Body of the request
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/UpdateOrderRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: updated successfully
+                    schema:
+                        $ref: '#/definitions/Order'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Order
+            tags:
+                - orders
+    /product:
+        post:
+            operationId: CreateProductRequest
+            parameters:
+                - description: Product data to be created
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/CreateProductRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Product created successfully
+                    schema:
+                        $ref: '#/definitions/GetProductResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Product
+            tags:
+                - products
+    /product/{product_id}:
+        get:
+            operationId: GetProduct
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: GetProductResponse
+                    schema:
+                        $ref: '#/definitions/GetProductResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get product details
+            tags:
+                - products
+    /product/{product_id}/variant:
+        post:
+            operationId: CreateProductVariantRequest
+            parameters:
+                - description: Product ID to be created the variant for
+                  format: uuid
+                  in: path
+                  name: product_id
+                  required: true
+                  type: string
+                  x-go-name: ProductID
+                - description: Product variant data to be created
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/CreateProductVariantRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: GetProductVariantResponse
+                    schema:
+                        $ref: '#/definitions/GetProductVariantResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Product Variant
+            tags:
+                - products
+    /product/variant/{sku}:
+        get:
+            operationId: GetProductVariant
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: GetProductVariantResponse
+                    schema:
+                        $ref: '#/definitions/GetProductVariantResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get product variant by SKU
+            tags:
+                - products
+    /stripe/payment-methods:
+        get:
+            description: '### Get all payment methods of the customer'
+            operationId: GetPaymentMethods
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment methods retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentMethodResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Methods
+            tags:
+                - stripe
+    /stripe/setup-intent:
+        get:
+            description: '### Get the setup intent for the customer'
+            operationId: GetSetupIntent
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: GetSetupIntentResponse
+                    schema:
+                        $ref: '#/definitions/GetSetupIntentResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Setup Intent
+            tags:
+                - stripe
+    /stripe/webhook:
+        post:
+            description: |-
+                Stripe Webhook
+                ### Handle events from Stripe
+            operationId: StripeWebhookRequest
+            parameters:
+                - description: Payload
+                  in: body
+                  name: payload
+                  required: true
+                  schema:
+                    items:
+                        format: uint8
+                        type: integer
+                    type: array
+                  x-go-name: Payload
+                - description: Signature
+                  in: body
+                  name: signature
+                  required: true
+                  schema:
+                    type: string
+                  x-go-name: Signature
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Event handled successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            tags:
+                - stripe
+    /wishlist:
+        get:
+            description: '### Get the products in customer''s wishlist'
+            operationId: GetWishlistRequest
+            parameters:
+                - description: Limit of items to return
+                  example: 10
+                  format: int64
+                  in: query
+                  name: limit
+                  required: true
+                  type: integer
+                  x-go-name: Limit
+                - description: Cursor to paginate orders
+                  in: query
+                  name: cursor
+                  type: string
+                  x-go-name: Cursor
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Wishlist fetched successfully
+                    schema:
+                        $ref: '#/definitions/GetWishlistResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Wishlist
+            tags:
+                - wishlist
+        put:
+            description: '### Add products to the customer''s wishlist'
+            operationId: AddToWishlistRequest
+            parameters:
+                - description: Products to be added to wishlist
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/AddToWishlistRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Product added to wishlist successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Add Products to Wishlist
+            tags:
+                - wishlist
+    /wishlist/{product_id}:
+        delete:
+            description: '### Remove a product from the customer''s wishlist'
+            operationId: RemoveFromWishlistRequest
+            parameters:
+                - format: uuid
+                  in: query
+                  name: product_id
+                  type: string
+                  x-go-name: ProductID
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Product removed from wishlist successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Remove Product from Wishlist
+            tags:
+                - wishlist
+    /wishlist/more:
+        get:
+            description: '### Get more products from a customer''s wishlist that aren''t already in the cart'
+            operationId: GetMoreFromWishlistRequest
+            parameters:
+                - description: Limit of orders to return
+                  example: 10
+                  format: int64
+                  in: query
+                  name: limit
+                  type: integer
+                  x-go-name: Limit
+                - description: Cursor to paginate orders
+                  in: query
+                  name: cursor
+                  type: string
+                  x-go-name: Cursor
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Wishlist fetched successfully
+                    schema:
+                        $ref: '#/definitions/GetWishlistResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get More from Wishlist
+            tags:
+                - wishlist
+produces:
+    - application/json
+schemes:
+    - http
+    - https
+security:
+    - ApiKeyAuth:
+        - '[]'
+securityDefinitions:
+    ApiKeyAuth:
+        in: header
+        name: x-customer-id
+        type: apiKey
+swagger: "2.0"

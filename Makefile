@@ -1,6 +1,8 @@
 NAME = nurd-commerce
 
 SWAGGER_YAML = docs/swagger/swagger.yml
+COVERAGE_FILE = coverage.out
+COVERAGE_HTML = coverage.html
 
 MIGRATION_FILE = $(shell date +"migrations/%Y%m%d%H%M%S-$(name).sql")
 DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
@@ -71,11 +73,11 @@ run-worker: $(NAME)
 	./$(NAME) worker
 
 test:
-	go test -race ./... -coverpkg=./... -coverprofile=coverage.out
+	go test -race ./... -coverpkg=./... -coverprofile=$(COVERAGE_FILE)
 
 coverage:
-	go run scripts/coverage_filter.go coverage.out
-	go tool cover -html coverage.out -o coverage.html
+	go run scripts/coverage_filter.go $(COVERAGE_FILE)
+	go tool cover -html $(COVERAGE_FILE) -o $(COVERAGE_HTML)
 
 get-coverage: ## Get overall project test coverage
 	go run scripts/get_overall_coverage.go

@@ -64,7 +64,7 @@ After adding the correct values, use `make env` to export the environment variab
 - Build the application using the below command
 
   ```bash
-  make build-dev
+  make nurd-commerce
   ```
 
 ### Running application

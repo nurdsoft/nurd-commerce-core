@@ -11,7 +11,7 @@ var (
 	cfgFile string
 
 	rootCmd = &cobra.Command{
-		Use:   "commerce-core",
+		Use:   "nurd-commerce",
 		Short: "Start commerce API",
 	}
 )

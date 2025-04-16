@@ -1,10 +1,27 @@
+NAME = nurd-commerce
+
+SWAGGER_YAML = docs/swagger/swagger.yml
+
 MIGRATION_FILE = $(shell date +"migrations/%Y%m%d%H%M%S-$(name).sql")
 DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
-RAM = 64
-STORAGE = 300
-AWS_REGISTRY ?= nurdsoft
-AWS_REPOSITORY ?= api
-IMAGE_TAG ?= v0.1.0
+
+.PHONY: help \
+	lint lint-fix \
+	fmt env run-dev run-worker \
+	setup setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint \
+	test coverage get-coverage mocks \
+	migrate new-migration new-data-migration \
+	start-env start-app start-monitoring start-all \
+	stop-env stop-app \
+	build-docker build-container \
+	connect-db create-volume security-check
+
+clean:
+	rm -rf $(NAME)
+	rm -rf $(SWAGGER_YAML)
+
+## Install all the build and lint dependencies
+setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint
 
 setup-lint: ## Install the linter
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -13,7 +30,6 @@ setup-goimports: ## Install the goimports
 	go install -mod=mod golang.org/x/tools/cmd/goimports@latest
 
 setup-covmerge: ## Install the covmerge tool
-	go get github.com/wadey/gocovmerge
 	go install -mod=mod github.com/wadey/gocovmerge
 
 setup-migrate: ## Install the migrate tool
@@ -28,46 +44,33 @@ setup-security: ## Install govulncheck to check for vulnerabilities
 setup-docs:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@latest
 
-setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-lint setup-docs ## Install all the build and lint dependencies
-
-dep: ## Get all dependencies
-	go env -w GOPROXY=direct
-	go env -w GOSUMDB=off
-	go mod download
-	go mod tidy
 
 fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
-lint: dep ## Run linter for the code
+lint:
 	golangci-lint run
 
-cleanup-lint: dep ## Run all the linters and clean up
+lint-fix:
 	golangci-lint run --fix
 
-auth-ecr: ## AWS ECR Authentication 
-	aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${AWS_REGISTRY}
-
-build-dev: dep ## Build a beta version
+$(NAME): docs
 	go generate ./...
 	go run scripts/error_extractor.go
-	go build -race -o commerce-core .
-
-build-docker: ## Build docker env
-	docker-compose build
+	go build -race -o $(NAME) .
 
 env:
 	@echo "Exporting environment variables"
 	$(shell export $$(grep --color=never -v '^#' .env | xargs))
 	@echo "Done"
 
-run-dev: build-dev ## Run the application locally
-	@export $(shell grep --color=never -v '^#' .env | xargs) && ./commerce-core api
+run-dev: $(NAME)
+	@export $(shell grep --color=never -v '^#' .env | xargs) && ./$(NAME) api
 
-run-worker: build-dev ## Run the worker locally
-	./commerce-core worker
+run-worker: $(NAME)
+	./$(NAME) worker
 
-test: ## Run tests
+test:
 	go test -race ./... -coverpkg=./... -coverprofile=coverage.out
 
 coverage:
@@ -81,7 +84,7 @@ mocks: ## run custom script to update mocks
 	go run scripts/mock_updater.go
 
 migrate: env ## Apply outstanding migrations
-	./commerce-core migrate --direction=$(direction)
+	./$(NAME) migrate --direction=$(direction)
 
 new-migration: ## New migration (make name=add-some-table new-migration)
 	touch $(MIGRATION_FILE)
@@ -110,19 +113,8 @@ start-all: ## Start the environment services and the application in docker conta
 stop-env: ## Stop the local env
 	docker-compose down
 
-build-image: ## Build Docker Image
-	docker build -t $(AWS_REGISTRY)/$(AWS_REPOSITORY):$(IMAGE_TAG) .
-
-push-image: ## Push Image to Registry
-	docker push $(AWS_REGISTRY)/$(AWS_REPOSITORY):$(IMAGE_TAG)
-
-cleanup-build: ## Cleanup executable
-	rm -f commerce-core
-
-cleanup: cleanup-build ## Cleanup all files
-
-help: ## Display available commands
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+build-docker: ## Build docker env
+	docker-compose build
 
 connect-db: ## Connect to redesign local db
 	psql postgresql://db:123@localhost:5452/commerce-core
@@ -131,18 +123,20 @@ create-volume:
 	docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=$(STORAGE)m,uid=1000 api-storage
 
 build-container:
-	docker build -t commerce-core:local .
+	docker build -t $(NAME):local .
 
 run-container:
-	docker run -v api-storage:/go --network=nurdsoft-comerce_core -p 8080:8080 -e AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" -e AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" commerce-core:local
-
-bnd-container:
-	docker run -v api-storage:/go --memory $(RAM)m --network=nurdsoft-comerce_core -p 8080:8080 -e AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" -e AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" commerce-core:local
+	docker run -v api-storage:/go --network=nurdsoft-comerce_core -p 8080:8080 -e AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" -e AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" $(NAME):local
 
 security-check:
 	govulncheck ./...
 
-generate-docs:
+docs: docs/swagger/swagger.yml
+
+docs/swagger/swagger.yml:
 	swagger generate spec -o ./docs/swagger/swagger.yml --scan-models
+
+help: ## Display available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .DEFAULT_GOAL := help

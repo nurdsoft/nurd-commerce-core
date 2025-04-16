@@ -21,6 +21,7 @@ DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
 clean:
 	rm -rf $(NAME)
 	rm -rf $(SWAGGER_YAML)
+	rm -rf $(COVERAGE_FILE)
 
 ## Install all the build and lint dependencies
 setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint

@@ -31,11 +31,7 @@ services:
     environment:
       GOMEMLIMIT: "90MiB"
       GOGC: 100
-      COMMERCE_DB_POSTGRES_HOST: "db"
-      COMMERCE_DB_POSTGRES_PORT: "5432"
-      COMMERCE_DB_POSTGRES_DATABASE: "commerce-core"
-      COMMERCE_DB_POSTGRES_USER: "db"
-      COMMERCE_DB_POSTGRES_PASSWORD: 123
+    env_file: ".env"
 
   otel-collector:
     image: jaegertracing/all-in-one:latest

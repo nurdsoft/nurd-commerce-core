@@ -21,20 +21,27 @@ DB:
     User: db
     Password: 123
     SSLMode: "disable"
-Shipengine:
-  Host: ""
-  Token: ""
-  CarrierIds: ""
-Stripe:
-  Key: ""
-  SigningSecret: ""
-Salesforce:
-  ApiHost: xxxx
-  ApiVersion: xxxx
-  ClientID: xxxx
-  ClientSecret: xxxx
-  Username: xxxx
-  Password: xxxx
+Shipping:
+  Shipengine:
+    Host: ""
+    Token: ""
+    CarrierIds: ""
+Payment:
+  Stripe:
+    Key: ""
+    SigningSecret: ""
+Taxes:
+  Stripe:
+    Key: ""
+    SigningSecret: ""
+Inventory:
+  Salesforce:
+    ApiHost: xxxx
+    ApiVersion: xxxx
+    ClientID: xxxx
+    ClientSecret: xxxx
+    Username: xxxx
+    Password: xxxx
 Webhook:
   OrderURL:
   Token: "xx"

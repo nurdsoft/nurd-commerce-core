@@ -1,17 +1,19 @@
 package config
 
 import (
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
 	"strings"
 
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/config"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine/config"
-	stripe "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/config"
 	webhook "github.com/nurdsoft/nurd-commerce-core/internal/webhook/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	"github.com/nurdsoft/nurd-commerce-core/shared/db"
 	"github.com/nurdsoft/nurd-commerce-core/shared/log"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes"
+
 	"github.com/pkg/errors"
 	"go.uber.org/fx"
 )
@@ -25,9 +27,10 @@ type Config struct {
 	Logger                    log.Config
 	DB                        db.Config
 	AccessControlAllowOrigins svcTransport.AccessControlAllowOrigins
-	Shipengine                shipengine.Config
-	Stripe                    stripe.Config
-	Salesforce                salesforce.Config
+	Payment                   payment.Config
+	Inventory                 inventory.Config
+	Shipping                  shipping.Config
+	Taxes                     taxes.Config
 	Webhook                   webhook.Config
 }
 
@@ -38,9 +41,10 @@ func (c *Config) Validate() error {
 	validatables := []cfg.Validatable{
 		&c.DB,
 		&c.Common,
-		&c.Shipengine,
-		&c.Stripe,
-		&c.Salesforce,
+		&c.Payment,
+		&c.Inventory,
+		&c.Shipping,
+		&c.Taxes,
 		&c.Webhook,
 	}
 

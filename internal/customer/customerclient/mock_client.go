@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	gomock "github.com/golang/mock/gomock"
+	entities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 )
 
 // MockClient is a mock of Client interface.
@@ -63,4 +63,18 @@ func (m *MockClient) GetCustomerByID(ctx context.Context, id string) (*entities.
 func (mr *MockClientMockRecorder) GetCustomerByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerByID", reflect.TypeOf((*MockClient)(nil).GetCustomerByID), ctx, id)
+}
+
+// UpdateCustomerStripeID mocks base method.
+func (m *MockClient) UpdateCustomerStripeID(ctx context.Context, id, stripeID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCustomerStripeID", ctx, id, stripeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCustomerStripeID indicates an expected call of UpdateCustomerStripeID.
+func (mr *MockClientMockRecorder) UpdateCustomerStripeID(ctx, id, stripeID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerStripeID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerStripeID), ctx, id, stripeID)
 }

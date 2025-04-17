@@ -20,9 +20,6 @@ import (
 	stripeModule "github.com/nurdsoft/nurd-commerce-core/internal/stripe"
 	swagger "github.com/nurdsoft/nurd-commerce-core/internal/swagger"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport"
-	"github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce"
-	"github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine"
-	"github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe"
 	"github.com/nurdsoft/nurd-commerce-core/internal/webhook"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
@@ -32,6 +29,10 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/log"
 	"github.com/nurdsoft/nurd-commerce-core/shared/module"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce"
+	stripePayment "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine"
+	stripeTaxes "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
@@ -50,7 +51,8 @@ var apiCommand = &cobra.Command{
 			transport.ModuleAPI,
 			health.Module,
 			shipengine.Module,
-			stripe.Module,
+			stripePayment.Module,
+			stripeTaxes.Module,
 			log.Module,
 			customer.ModuleHttpAPI,
 			customerclient.ModuleClient,

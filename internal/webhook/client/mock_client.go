@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entities "github.com/nurdsoft/nurd-commerce-core/internal/webhook/entities"
 	gomock "github.com/golang/mock/gomock"
+	entities "github.com/nurdsoft/nurd-commerce-core/internal/webhook/entities"
 )
 
 // MockClient is a mock of Client interface.

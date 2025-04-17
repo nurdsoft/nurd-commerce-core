@@ -5,10 +5,10 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
 
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/client"
 	webhookClient "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/transport/http"

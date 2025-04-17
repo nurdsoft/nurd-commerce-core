@@ -145,101 +145,6 @@
     "message": "Stripe webhook signature verification failed"
   },
   {
-    "error_code": "SHIPENGINE_INVALID_DELIVERY_POSTAL_CODE",
-    "status_code": 400,
-    "message": "Invalid delivery address postal code."
-  },
-  {
-    "error_code": "SHIPENGINE_INVALID_ORIGIN_POSTAL_CODE",
-    "status_code": 400,
-    "message": "Invalid origin address postal code."
-  },
-  {
-    "error_code": "SHIPENGINE_MISSING_CARRIERS",
-    "status_code": 400,
-    "message": "Missing carrier while getting shipping estimates."
-  },
-  {
-    "error_code": "SHIPENGINE_ERROR_GETTING_SHIPPING_RATES",
-    "status_code": 500,
-    "message": "Failed to get shipping estimates."
-  },
-  {
-    "error_code": "SHIPENGINE_INVALID_POSTAL_CODE",
-    "status_code": 400,
-    "message": "Invalid postal code."
-  },
-  {
-    "error_code": "STRIPE_INVALID_CUSTOMER_LOCATION",
-    "status_code": 400,
-    "message": "Customer tax location is invalid."
-  },
-  {
-    "error_code": "STRIPE_INVALID_SHIPPING_ADDRESS",
-    "status_code": 400,
-    "message": "Shipping address is invalid."
-  },
-  {
-    "error_code": "STRIPE_INVALID_TAX_LOCATION",
-    "status_code": 400,
-    "message": "Tax location is invalid."
-  },
-  {
-    "error_code": "STRIPE_TAX_IS_INACTIVE",
-    "status_code": 400,
-    "message": "Tax is inactive."
-  },
-  {
-    "error_code": "STRIPE_UNABLE_TO_CALCULATE_TAX",
-    "status_code": 500,
-    "message": "Unable to calculate tax."
-  },
-  {
-    "error_code": "STRIPE_ERROR",
-    "status_code": 400,
-    "message": "Stripe error."
-  },
-  {
-    "error_code": "STRIPE_UNABLE_TO_CREATE_USER",
-    "status_code": 400,
-    "message": "Unable to create user."
-  },
-  {
-    "error_code": "STRIPE_UNABLE_TO_FETCH_PAYMENT_METHODS",
-    "status_code": 500,
-    "message": "Unable to fetch payment methods."
-  },
-  {
-    "error_code": "STRIPE_UNABLE_TO_CREATE_SETUP_INTENT",
-    "status_code": 500,
-    "message": "Unable to create setup intent."
-  },
-  {
-    "error_code": "STRIPE_PAYMENT_INTENT_AUTHENTICATION_FAILURE",
-    "status_code": 400,
-    "message": "Payment intent authentication failure."
-  },
-  {
-    "error_code": "STRIPE_PAYMENT_INTENT_INVALID_PARAMETER",
-    "status_code": 400,
-    "message": "Payment intent invalid parameter."
-  },
-  {
-    "error_code": "STRIPE_PAYMENT_INTENT_INCOMPATIBLE_PAYMENT_METHOD",
-    "status_code": 400,
-    "message": "Payment intent incompatible payment method."
-  },
-  {
-    "error_code": "STRIPE_PAYMENT_INTENT_ERROR",
-    "status_code": 500,
-    "message": "Unable to create payment intent."
-  },
-  {
-    "error_code": "STRIPE_FAILED_TO_FETCH_EPHEMERAL_KEY",
-    "status_code": 500,
-    "message": "Failed to fetch ephemeral key."
-  },
-  {
     "error_code": "WISHLIST_ITEM_NOT_FOUND",
     "status_code": 404,
     "message": "Item not found in the wishlist."
@@ -293,5 +198,100 @@
     "error_code": "INTERNAL_ERROR",
     "status_code": 500,
     "message": "An internal error occurred."
+  },
+  {
+    "error_code": "STRIPE_ERROR",
+    "status_code": 400,
+    "message": "Stripe error."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CREATE_USER",
+    "status_code": 400,
+    "message": "Unable to create user."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_FETCH_PAYMENT_METHODS",
+    "status_code": 500,
+    "message": "Unable to fetch payment methods."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CREATE_SETUP_INTENT",
+    "status_code": 500,
+    "message": "Unable to create setup intent."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_AUTHENTICATION_FAILURE",
+    "status_code": 400,
+    "message": "Payment intent authentication failure."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_INVALID_PARAMETER",
+    "status_code": 400,
+    "message": "Payment intent invalid parameter."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_INCOMPATIBLE_PAYMENT_METHOD",
+    "status_code": 400,
+    "message": "Payment intent incompatible payment method."
+  },
+  {
+    "error_code": "STRIPE_PAYMENT_INTENT_ERROR",
+    "status_code": 500,
+    "message": "Unable to create payment intent."
+  },
+  {
+    "error_code": "STRIPE_FAILED_TO_FETCH_EPHEMERAL_KEY",
+    "status_code": 500,
+    "message": "Failed to fetch ephemeral key."
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_DELIVERY_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid delivery address postal code."
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_ORIGIN_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid origin address postal code."
+  },
+  {
+    "error_code": "SHIPENGINE_MISSING_CARRIERS",
+    "status_code": 400,
+    "message": "Missing carrier while getting shipping estimates."
+  },
+  {
+    "error_code": "SHIPENGINE_ERROR_GETTING_SHIPPING_RATES",
+    "status_code": 500,
+    "message": "Failed to get shipping estimates."
+  },
+  {
+    "error_code": "SHIPENGINE_INVALID_POSTAL_CODE",
+    "status_code": 400,
+    "message": "Invalid postal code."
+  },
+  {
+    "error_code": "STRIPE_INVALID_CUSTOMER_LOCATION",
+    "status_code": 400,
+    "message": "Customer tax location is invalid."
+  },
+  {
+    "error_code": "STRIPE_INVALID_SHIPPING_ADDRESS",
+    "status_code": 400,
+    "message": "Shipping address is invalid."
+  },
+  {
+    "error_code": "STRIPE_INVALID_TAX_LOCATION",
+    "status_code": 400,
+    "message": "Tax location is invalid."
+  },
+  {
+    "error_code": "STRIPE_TAX_IS_INACTIVE",
+    "status_code": 400,
+    "message": "Tax is inactive."
+  },
+  {
+    "error_code": "STRIPE_UNABLE_TO_CALCULATE_TAX",
+    "status_code": 500,
+    "message": "Unable to calculate tax."
   }
 ]

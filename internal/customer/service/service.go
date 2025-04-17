@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/repository"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	"github.com/google/uuid"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	"go.uber.org/zap"
 	"time"
 )

@@ -3,9 +3,9 @@ package cartclient
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/service"
-	"github.com/google/uuid"
 )
 
 type Client interface {

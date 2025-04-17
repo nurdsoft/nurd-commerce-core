@@ -9,8 +9,8 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/service"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -18,8 +18,8 @@ import (
 	cart "github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
-	stripe "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/client"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
+	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 )
 
 // ModuleParams for user.

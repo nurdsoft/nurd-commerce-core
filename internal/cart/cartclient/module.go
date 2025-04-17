@@ -14,10 +14,10 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/repository"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine/client"
-	stripe "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/client"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
 )
 
 // ModuleParams for cartclient.

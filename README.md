@@ -39,7 +39,7 @@ You can override the configuration values by setting them as environment values.
 Copy these values in a `.env` file.
 
 ```bash
-cp .env.example .env
+cp .env.sample .env
 ```
 
 > [!TIP]

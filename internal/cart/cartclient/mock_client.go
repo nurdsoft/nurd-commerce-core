@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
+	entities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 )
 
 // MockClient is a mock of Client interface.

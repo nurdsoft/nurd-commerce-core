@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entities "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
+	entities "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 )
 
 // MockRepository is a mock of Repository interface.

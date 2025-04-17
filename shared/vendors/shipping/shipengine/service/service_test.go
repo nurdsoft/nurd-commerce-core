@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
 	"github.com/shopspring/decimal"
@@ -110,8 +111,10 @@ func TestGetRatesEstimate(t *testing.T) {
 
 			svc := &service{
 				httpClient: mockClient,
-				config: config.Config{
-					CarrierIds: "carrier-1,carrier-2",
+				config: shipping.Config{
+					Shipengine: config.Config{
+						CarrierIds: "carrier-1,carrier-2",
+					},
 				},
 				logger: logger,
 			}

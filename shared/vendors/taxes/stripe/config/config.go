@@ -8,8 +8,7 @@ import (
 
 // Config is a common service config
 type Config struct {
-	Key           string
-	SigningSecret string
+	Key string
 }
 
 // Validate config

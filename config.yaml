@@ -33,7 +33,6 @@ Payment:
 Taxes:
   Stripe:
     Key: ""
-    SigningSecret: ""
 Inventory:
   Salesforce:
     ApiHost: xxxx

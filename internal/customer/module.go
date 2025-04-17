@@ -5,8 +5,8 @@ import (
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/transport/http"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

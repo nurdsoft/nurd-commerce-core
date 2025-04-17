@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/entities"
+	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
@@ -19,15 +19,15 @@ import (
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/orders/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/client"
-	stripeEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/entities"
 	webhook "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
 	webhookEntities "github.com/nurdsoft/nurd-commerce-core/internal/webhook/entities"
 	wishlistentities "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )

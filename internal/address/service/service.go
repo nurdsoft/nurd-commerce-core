@@ -2,17 +2,18 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/repository"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/entities"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine/client"
-	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	"github.com/google/uuid"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
+
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"time"
@@ -84,17 +85,17 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 	}
 
 	address, err := s.repo.CreateAddress(ctx, &entities.Address{
-		ID:           uuid.New(),
-		CustomerID:   customer,
-		FullName:     req.Address.FullName,
-		Address:      req.Address.Address,
-		Apartment:    req.Address.Apartment,
-		City:         req.Address.City,
-		StateCode:    req.Address.StateCode,
-		CountryCode:  req.Address.CountryCode,
-		PostalCode:   req.Address.PostalCode,
-		PhoneNumber:  req.Address.PhoneNumber,
-		IsDefault:    req.Address.IsDefault,
+		ID:          uuid.New(),
+		CustomerID:  customer,
+		FullName:    req.Address.FullName,
+		Address:     req.Address.Address,
+		Apartment:   req.Address.Apartment,
+		City:        req.Address.City,
+		StateCode:   req.Address.StateCode,
+		CountryCode: req.Address.CountryCode,
+		PostalCode:  req.Address.PostalCode,
+		PhoneNumber: req.Address.PhoneNumber,
+		IsDefault:   req.Address.IsDefault,
 	})
 	if err != nil {
 		return nil, err
@@ -226,17 +227,17 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 
 	// update address in the database
 	updatedAddress, err := s.repo.UpdateAddress(ctx, &entities.Address{
-		ID:           req.AddressID,
-		CustomerID:   customer,
-		FullName:     req.Address.FullName,
-		Address:      req.Address.Address,
-		Apartment:    req.Address.Apartment,
-		City:         req.Address.City,
-		StateCode:    req.Address.StateCode,
-		PostalCode:   req.Address.PostalCode,
-		CountryCode:  req.Address.CountryCode,
-		PhoneNumber:  req.Address.PhoneNumber,
-		IsDefault:    req.Address.IsDefault,
+		ID:          req.AddressID,
+		CustomerID:  customer,
+		FullName:    req.Address.FullName,
+		Address:     req.Address.Address,
+		Apartment:   req.Address.Apartment,
+		City:        req.Address.City,
+		StateCode:   req.Address.StateCode,
+		PostalCode:  req.Address.PostalCode,
+		CountryCode: req.Address.CountryCode,
+		PhoneNumber: req.Address.PhoneNumber,
+		IsDefault:   req.Address.IsDefault,
 	})
 	if err != nil {
 		return nil, err
@@ -339,7 +340,6 @@ func (s *service) DeleteAddress(ctx context.Context, req *entities.DeleteAddress
 			}
 		}()
 	}
-
 
 	return nil
 }

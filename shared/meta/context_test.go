@@ -75,7 +75,7 @@ func TestXUserId(t *testing.T) {
 	assert.Equal(t, "", XCustomerID(context.Background()))
 }
 
-func TestWithXUserID(t *testing.T) {
+func TestWithXCustomerID(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithXCustomerID(ctx, "test-x-customer-id")
 

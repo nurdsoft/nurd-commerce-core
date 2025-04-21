@@ -20,11 +20,10 @@ DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
 
 clean:
 	rm -rf $(NAME)
-	rm -rf $(SWAGGER_YAML)
 	rm -rf $(COVERAGE_FILE)
 
 ## Install all the build and lint dependencies
-setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint
+setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff
 
 setup-lint: ## Install the linter
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -47,12 +46,17 @@ setup-security: ## Install govulncheck to check for vulnerabilities
 setup-docs:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@latest
 
+setup-sqlfluff:
+	docker pull sqlfluff/sqlfluff:latest
 
 fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
 lint:
 	golangci-lint run
+
+lint-sql:
+	docker run -it --rm -v $$PWD:/sql sqlfluff/sqlfluff:latest lint migrations/ --dialect postgres
 
 lint-fix:
 	golangci-lint run --fix
@@ -69,9 +73,6 @@ env:
 
 run-dev: $(NAME)
 	@export $(shell grep --color=never -v '^#' .env | xargs) && ./$(NAME) api
-
-run-worker: $(NAME)
-	./$(NAME) worker
 
 test:
 	go test -race ./... -coverpkg=./... -coverprofile=$(COVERAGE_FILE)

@@ -43,3 +43,4 @@ main
 tmp
 coverage.html
 coverage.out
+**.svg

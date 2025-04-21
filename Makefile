@@ -10,7 +10,7 @@ DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
 .PHONY: help \
 	lint lint-fix \
 	fmt env run-dev run-worker \
-	setup setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint \
+	setup setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff setup-mermaid \
 	test coverage get-coverage mocks \
 	migrate new-migration new-data-migration \
 	start-env start-app start-monitoring start-all \
@@ -23,7 +23,7 @@ clean:
 	rm -rf $(COVERAGE_FILE)
 
 ## Install all the build and lint dependencies
-setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff
+setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff setup-mermaid
 
 setup-lint: ## Install the linter
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -46,8 +46,11 @@ setup-security: ## Install govulncheck to check for vulnerabilities
 setup-docs:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@latest
 
-setup-sqlfluff:
+setup-sqlfluff: ## Install sqlfluff to lint SQL files
 	docker pull sqlfluff/sqlfluff:latest
+
+setup-mermaid: ## Install mermaid-cli via docker to generate ER diagrams
+	docker pull minlag/mermaid-cli:latest
 
 fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
@@ -136,6 +139,9 @@ security-check:
 	govulncheck ./...
 
 docs: docs/swagger/swagger.yml
+
+er:
+	docker run --rm -u `id -u`:`id -g` -v $$PWD/docs/er:/data minlag/mermaid-cli -i er.mmd
 
 docs/swagger/swagger.yml:
 	swagger generate spec -o ./docs/swagger/swagger.yml --scan-models

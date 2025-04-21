@@ -47,6 +47,8 @@ setup-security: ## Install govulncheck to check for vulnerabilities
 setup-docs:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@latest
 
+setup-mermaid:
+	docker pull minlag/mermaid-cli:latest
 
 fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
@@ -135,6 +137,9 @@ security-check:
 	govulncheck ./...
 
 docs: docs/swagger/swagger.yml
+
+er:
+	docker run --rm -u `id -u`:`id -g` -v $$PWD/docs/er:/data minlag/mermaid-cli -i er.mmd
 
 docs/swagger/swagger.yml:
 	swagger generate spec -o ./docs/swagger/swagger.yml --scan-models

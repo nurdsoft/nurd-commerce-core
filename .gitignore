@@ -42,3 +42,4 @@ main
 **/*.tfplan
 tmp
 coverage.html
+**.svg

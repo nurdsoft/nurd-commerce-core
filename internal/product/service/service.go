@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +72,7 @@ func (s *service) CreateProduct(ctx context.Context, req *entities.CreateProduct
 	return createdProduct, nil
 }
 
-// swagger:route GET /product/{product_id} products GetProduct
+// swagger:route GET /product/{product_id} products GetProductRequest
 //
 // # Get product details
 //
@@ -152,9 +152,10 @@ func (s *service) CreateProductVariant(ctx context.Context, req *entities.Create
 	}
 }
 
-// swagger:route GET /product/variant/{sku} products GetProductVariant
+// swagger:route GET /product/variant/{sku} products GetProductVariantRequest
 //
-// # Get product variant by SKU
+// # Get Product Variant
+// ### Get product variant details by SKU
 //
 // Produces:
 //   - application/json

@@ -1,8 +1,8 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 )
 
 // swagger:parameters wishlist AddToWishlistRequest
@@ -31,6 +31,9 @@ type ProductData struct {
 
 // swagger:parameters wishlist RemoveFromWishlistRequest
 type RemoveFromWishlistRequest struct {
+	// Product ID to be removed
+	//
+	// in:path
 	ProductID uuid.UUID `json:"product_id"`
 }
 
@@ -39,7 +42,6 @@ type GetWishlistRequest struct {
 	// Limit of items to return
 	//
 	// required: true
-	// example: 10
 	// in:query
 	Limit int `json:"limit"`
 	// Cursor to paginate orders
@@ -57,7 +59,6 @@ type BulkRemoveFromWishlistRequest struct {
 type GetMoreFromWishlistRequest struct {
 	// Limit of orders to return
 	//
-	// example: 10
 	// in:query
 	Limit int `json:"limit"`
 	// Cursor to paginate orders

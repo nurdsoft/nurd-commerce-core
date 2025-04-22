@@ -25,7 +25,6 @@ type ListOrdersRequest struct {
 	// Limit of orders to return
 	//
 	// required: true
-	// example: 10
 	// in:query
 	Limit int `json:"limit"`
 	// Cursor to paginate orders

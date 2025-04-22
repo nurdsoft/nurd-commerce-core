@@ -42,6 +42,30 @@ definitions:
                 x-go-name: StateCode
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/address/entities
+    CartItem:
+        properties:
+            added_at:
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            product_variant_id:
+                format: uuid
+                type: string
+                x-go-name: ProductVariantID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            updated_at:
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     CartItemDetail:
         properties:
             added_at:
@@ -1106,8 +1130,9 @@ paths:
                 - application/json
             responses:
                 "200":
-                    $ref: '#/responses/CartItem'
                     description: Item added to cart successfully
+                    schema:
+                        $ref: '#/definitions/CartItem'
                 "400":
                     description: Bad Request
                     schema:
@@ -1302,7 +1327,6 @@ paths:
             operationId: ListOrdersRequest
             parameters:
                 - description: Limit of orders to return
-                  example: 10
                   format: int64
                   in: query
                   name: limit
@@ -1489,7 +1513,15 @@ paths:
                 - products
     /product/{product_id}:
         get:
-            operationId: GetProduct
+            operationId: GetProductRequest
+            parameters:
+                - description: Product ID to be fetched
+                  format: uuid
+                  in: path
+                  name: product_id
+                  required: true
+                  type: string
+                  x-go-name: ProductID
             produces:
                 - application/json
             responses:
@@ -1545,7 +1577,15 @@ paths:
                 - products
     /product/variant/{sku}:
         get:
-            operationId: GetProductVariant
+            description: '### Get product variant details by SKU'
+            operationId: GetProductVariantRequest
+            parameters:
+                - description: Product variant SKU to be fetched
+                  in: path
+                  name: sku
+                  required: true
+                  type: string
+                  x-go-name: SKU
             produces:
                 - application/json
             responses:
@@ -1561,7 +1601,7 @@ paths:
                     description: Internal Server Error
                     schema:
                         $ref: '#/definitions/DefaultError'
-            summary: Get product variant by SKU
+            summary: Get Product Variant
             tags:
                 - products
     /stripe/payment-methods:
@@ -1655,7 +1695,6 @@ paths:
             operationId: GetWishlistRequest
             parameters:
                 - description: Limit of items to return
-                  example: 10
                   format: int64
                   in: query
                   name: limit
@@ -1717,9 +1756,11 @@ paths:
             description: '### Remove a product from the customer''s wishlist'
             operationId: RemoveFromWishlistRequest
             parameters:
-                - format: uuid
-                  in: query
+                - description: Product ID to be removed
+                  format: uuid
+                  in: path
                   name: product_id
+                  required: true
                   type: string
                   x-go-name: ProductID
             produces:
@@ -1746,7 +1787,6 @@ paths:
             operationId: GetMoreFromWishlistRequest
             parameters:
                 - description: Limit of orders to return
-                  example: 10
                   format: int64
                   in: query
                   name: limit

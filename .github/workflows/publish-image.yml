@@ -30,7 +30,7 @@ jobs:
       - name: Set up Docker image name
         id: prep
         run: |
-          IMAGE_NAME=ghcr.io/nurd-commerce:latest
+          IMAGE_NAME=ghcr.io/nurdsoft/nurd-commerce:latest
           echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image

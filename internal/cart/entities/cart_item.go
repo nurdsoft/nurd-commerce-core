@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// swagger:model CartItem
 type CartItem struct {
 	ID               uuid.UUID `json:"id" gorm:"column:id"`
 	CartID           uuid.UUID `json:"-" gorm:"column:cart_id"`

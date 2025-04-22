@@ -1,18 +1,21 @@
-FROM golang:1.23.2 AS builder
+FROM golang:1.24-alpine AS builder
 
 # Copy the code from the host and compile it
 WORKDIR /go/src/github.com/nurdsoft/nurd-commerce-core
 COPY . ./
-RUN go test -race ./...
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix nocgo -o /app .
+
+# This allows for caching of dependencies
+RUN go mod download
+RUN go build -o nurd-commerce .
 
 FROM alpine:latest AS prod
 RUN apk --no-cache add ca-certificates tzdata
 
-COPY --from=builder /app ./
-COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/config.yaml ./config.yaml
-COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/migrations ./migrations
+COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/entrypoint.sh /
+COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/nurd-commerce /
+COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/config.yaml /config.yaml
+COPY --from=builder /go/src/github.com/nurdsoft/nurd-commerce-core/migrations /migrations
 
 EXPOSE 8080
 
-CMD ./app migrate; ./app api;
+CMD [ "/entrypoint.sh" ]

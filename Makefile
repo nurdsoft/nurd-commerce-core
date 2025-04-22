@@ -120,7 +120,7 @@ start-all: ## Start the environment services and the application in docker conta
 stop-env: ## Stop the local env
 	docker-compose down
 
-build-docker: ## Build docker env
+docker-compose: ## Build docker env
 	docker-compose build
 
 connect-db: ## Connect to redesign local db
@@ -129,11 +129,11 @@ connect-db: ## Connect to redesign local db
 create-volume:
 	docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=$(STORAGE)m,uid=1000 api-storage
 
-build-container:
-	docker build -t $(NAME):local .
+docker:
+	docker build -t $(NAME) .
 
 run-container:
-	docker run -v api-storage:/go --network=nurdsoft-comerce_core -p 8080:8080 -e AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" -e AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" $(NAME):local
+	docker run -v api-storage:/go --network=nurdsoft-comerce_core -p 8080:8080 -e AWS_ACCESS_KEY_ID="$$AWS_ACCESS_KEY_ID" -e AWS_SECRET_ACCESS_KEY="$$AWS_SECRET_ACCESS_KEY" -e AWS_SESSION_TOKEN="$$AWS_SESSION_TOKEN" $(NAME)
 
 security-check:
 	govulncheck ./...

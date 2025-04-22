@@ -64,7 +64,7 @@ func New(
 //
 // Responses:
 //
-//	201: DefaultResponse Address added successfully
+//	201: GetAddressResponse Address added successfully
 //	404: DefaultError Not Found
 //	500: DefaultError Internal Server Error
 func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressRequest) (*entities.Address, error) {
@@ -205,7 +205,7 @@ func (s *service) GetAddresses(ctx context.Context) (*entities.GetAllAddressResp
 //
 // Responses:
 //
-//	200: DefaultResponse Address updated successfully
+//	200: GetAddressResponse Address updated successfully
 //	404: DefaultError Not Found
 //	500: DefaultError Internal Server Error
 func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddressRequest) (*entities.Address, error) {

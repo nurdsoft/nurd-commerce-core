@@ -967,7 +967,7 @@ paths:
                 "201":
                     description: Address added successfully
                     schema:
-                        $ref: '#/definitions/DefaultResponse'
+                        $ref: '#/definitions/GetAddressResponse'
                 "404":
                     description: Not Found
                     schema:
@@ -1061,7 +1061,7 @@ paths:
                 "200":
                     description: Address updated successfully
                     schema:
-                        $ref: '#/definitions/DefaultResponse'
+                        $ref: '#/definitions/GetAddressResponse'
                 "404":
                     description: Not Found
                     schema:

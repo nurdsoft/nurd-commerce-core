@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
@@ -14,9 +16,10 @@ import (
 	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
 	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
 
+	"time"
+
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	"time"
 )
 
 type Service interface {
@@ -100,41 +103,40 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 	if err != nil {
 		return nil, err
 	} else {
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+		// go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-			customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
-			// TODO Handle salesforce customer creation if it doesn't exist
-			if err != nil || customer.SalesforceID == nil {
-				s.log.Error("Error fetching customer details")
-				return
-			}
+		customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
+		// TODO Handle salesforce customer creation if it doesn't exist
+		if err != nil || customer.SalesforceID == nil {
+			// s.log.Error("Error fetching customer details")
+			return nil, errors.New("error fetching customer details")
+		}
 
-			addressStreet := req.Address.Address
-			if req.Address.Apartment != nil {
-				addressStreet += ", " + *req.Address.Apartment
-			}
+		addressStreet := req.Address.Address
+		if req.Address.Apartment != nil {
+			addressStreet += ", " + *req.Address.Apartment
+		}
 
-			city := ""
-			if req.Address.City != nil {
-				city = *req.Address.City
-			}
+		city := ""
+		if req.Address.City != nil {
+			city = *req.Address.City
+		}
 
-			err = s.createSalesforceUserAddress(bgCtx, customerID, address.ID.String(), &salesforceEntities.CreateSFAddressRequest{
-				AccountC:               *customer.SalesforceID,
-				ShippingStreetC:        addressStreet,
-				ShippingCityC:          city,
-				ShippingStateProvinceC: req.Address.StateCode,
-				ShippingCountryC:       req.Address.CountryCode,
-				ShippingZipPostalCodeC: req.Address.PostalCode,
-			})
-			if err != nil {
-				s.log.Error("Error creating salesforce address")
-				return
-			}
-
-		}()
+		err = s.createSalesforceUserAddress(bgCtx, customerID, address.ID.String(), &salesforceEntities.CreateSFAddressRequest{
+			AccountC:               *customer.SalesforceID,
+			ShippingStreetC:        addressStreet,
+			ShippingCityC:          city,
+			ShippingStateProvinceC: req.Address.StateCode,
+			ShippingCountryC:       req.Address.CountryCode,
+			ShippingZipPostalCodeC: req.Address.PostalCode,
+		})
+		if err != nil {
+			// s.log.Error("Error creating salesforce address")
+			return nil, errors.New("error creating salesforce address")
+		}
+		// }()
 	}
 
 	return address, nil

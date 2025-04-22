@@ -2,22 +2,28 @@ package service
 
 import (
 	"context"
-	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
-	"github.com/nurdsoft/nurd-commerce-core/internal/address/repository"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/client"
-	sfEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/salesforce/entities"
-	shipengineClient "github.com/nurdsoft/nurd-commerce-core/internal/vendors/shipengine/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/client"
-	stripeEntities "github.com/nurdsoft/nurd-commerce-core/internal/vendors/stripe/entities"
-	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
-	"github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
+	"github.com/nurdsoft/nurd-commerce-core/internal/address/repository"
+	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
+	customerEntities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
+	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
+	"github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	sfEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	shipengineClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+)
+
+var (
+	testCity        = "New York"
+	testApartment   = "Apt 1"
+	testPhoneNumber = "1234567890"
 )
 
 func Test_service_AddAddress(t *testing.T) {
@@ -40,6 +46,7 @@ func Test_service_AddAddress(t *testing.T) {
 			log:              zap.NewExample().Sugar(),
 			shipengineClient: mockShipengineClient,
 			salesforceClient: mockSfClient,
+			customerClient:   customerclient.NewMockClient(ctrl),
 		}
 		return svc, ctx, mockRepo, mockShipengineClient, mockSfClient
 	}
@@ -50,12 +57,12 @@ func Test_service_AddAddress(t *testing.T) {
 			Address: &entities.AddressRequestBody{
 				FullName:    "John Doe",
 				Address:     "123 Main St",
-				City:        nullable.StringPtr("New York"),
+				City:        &testCity,
 				StateCode:   "NY",
 				PostalCode:  "10001",
-				Apartment:   nullable.StringPtr("Apt 1"),
+				Apartment:   &testApartment,
 				CountryCode: "US",
-				PhoneNumber: nullable.StringPtr("1234567890"),
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 
@@ -71,9 +78,17 @@ func Test_service_AddAddress(t *testing.T) {
 			PhoneNumber: req.Address.PhoneNumber,
 		}
 
-		mockRepo.EXPECT().CreateAddress(ctx, gomock.Any()).Return(expectedAddress, nil).Times(1)
-		mockShipengineClient.EXPECT().GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		mockRepo.EXPECT().FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{}, nil).AnyTimes()
+		mockRepo.EXPECT().
+			CreateAddress(ctx, gomock.Any()).Return(expectedAddress, nil).Times(1)
+		mockShipengineClient.EXPECT().
+			GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
+
+		// Should this be here since this test function is testing AddAddress?
+		// mockRepo.EXPECT().
+		// 	FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{}, nil).AnyTimes()
+		svc.customerClient.(*customerclient.MockClient).EXPECT().
+			GetCustomerByID(gomock.Any(), meta.XCustomerID(ctx)).Return(&customerEntities.Customer{}, nil).AnyTimes()
+
 		mockSfClient.EXPECT().CreateUserAddress(gomock.Any(), gomock.Any()).Return(&sfEntities.CreateSFAddressResponse{}, nil).AnyTimes()
 		_, err := svc.AddAddress(ctx, req)
 
@@ -84,14 +99,14 @@ func Test_service_AddAddress(t *testing.T) {
 		svc, ctx, _, mockShipengineClient, _ := setup()
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
-				FullName:     "John Doe",
-				Address:      "123 Main St",
-				City:         "New York",
-				State:        "NY",
-				ZipCode:      "TEST",
-				Apartment:    "Apt 1",
-				Country:      "US",
-				MobileNumber: "1234567890",
+				FullName:    "John Doe",
+				Address:     "123 Main St",
+				City:        &testCity,
+				StateCode:   "NY",
+				PostalCode:  "TEST",
+				Apartment:   &testApartment,
+				CountryCode: "US",
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 
@@ -104,16 +119,17 @@ func Test_service_AddAddress(t *testing.T) {
 
 	t.Run("no user ID", func(t *testing.T) {
 		svc, _, _, _, _ := setup()
+
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
-				FullName:     "John Doe",
-				Address:      "123 Main St",
-				City:         "New York",
-				State:        "NY",
-				ZipCode:      "10001",
-				Apartment:    "Apt 1",
-				Country:      "US",
-				MobileNumber: "1234567890",
+				FullName:    "John Doe",
+				Address:     "123 Main St",
+				City:        &testCity,
+				StateCode:   "NY",
+				PostalCode:  "10001",
+				Apartment:   &testApartment,
+				CountryCode: "US",
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 		ctx := meta.WithXCustomerID(context.Background(), "")
@@ -140,7 +156,7 @@ func Test_service_GetAddresses(t *testing.T) {
 	t.Run("Valid request", func(t *testing.T) {
 		svc, ctx, mockRepo := setup()
 
-		mockRepo.EXPECT().GetAddresses(ctx, meta.XCustomerID(ctx)).Return([]entities.UserAddress{}, nil).Times(1)
+		mockRepo.EXPECT().GetAddresses(ctx, meta.XCustomerID(ctx)).Return([]entities.Address{}, nil).Times(1)
 		_, err := svc.GetAddresses(ctx)
 
 		assert.NoError(t, err)
@@ -173,10 +189,10 @@ func Test_service_GetAddress(t *testing.T) {
 		svc, ctx, mockRepo := setup()
 		addressID := uuid.New()
 		req := &entities.GetAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 		}
 
-		mockRepo.EXPECT().GetAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(&entities.UserAddress{}, nil).Times(1)
+		mockRepo.EXPECT().GetAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(&entities.Address{}, nil).Times(1)
 		_, err := svc.GetAddress(ctx, req)
 
 		assert.NoError(t, err)
@@ -186,7 +202,7 @@ func Test_service_GetAddress(t *testing.T) {
 		svc, _, _ := setup()
 		addressID := uuid.New()
 		req := &entities.GetAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 		}
 
 		ctx := meta.WithXCustomerID(context.Background(), "")
@@ -199,8 +215,6 @@ func Test_service_UpdateAddress(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	sfID := "demo-sf-user-id"
-
 	setup := func() (
 		*service, context.Context,
 		*repository.MockRepository,
@@ -210,13 +224,16 @@ func Test_service_UpdateAddress(t *testing.T) {
 		mockRepo := repository.NewMockRepository(ctrl)
 		mockShipengineClient := shipengineClient.NewMockClient(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
+
 		userUUID := uuid.New()
+
 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
 		svc := &service{
 			repo:             mockRepo,
 			log:              zap.NewExample().Sugar(),
 			shipengineClient: mockShipengineClient,
 			salesforceClient: mockSfClient,
+			customerClient:   customerclient.NewMockClient(ctrl),
 		}
 		return svc, ctx, mockRepo, mockShipengineClient, mockSfClient
 	}
@@ -225,37 +242,45 @@ func Test_service_UpdateAddress(t *testing.T) {
 		svc, ctx, mockRepo, mockShipengineClient, mockSfClient := setup()
 		addressID := uuid.New()
 		req := &entities.UpdateAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 			Address: &entities.AddressRequestBody{
-				FullName:     "John Doe",
-				Address:      "123 Main St",
-				City:         "New York",
-				State:        "NY",
-				ZipCode:      "10001",
-				Apartment:    "Apt 1",
-				Country:      "US",
-				MobileNumber: "1234567890",
+				FullName:    "John Doe",
+				Address:     "123 Main St",
+				City:        &testCity,
+				StateCode:   "NY",
+				PostalCode:  "10001",
+				Apartment:   &testApartment,
+				CountryCode: "US",
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 
-		expectedAddress := &entities.UserAddress{
-			AddressUUID:  addressID,
-			UserUUID:     uuid.MustParse(meta.XCustomerID(ctx)),
-			FullName:     req.Address.FullName,
-			Address:      req.Address.Address,
-			City:         req.Address.City,
-			State:        req.Address.State,
-			ZipCode:      req.Address.ZipCode,
-			Apartment:    req.Address.Apartment,
-			Country:      req.Address.Country,
-			MobileNumber: req.Address.MobileNumber,
+		expectedAddress := &entities.Address{
+			ID:          addressID,
+			CustomerID:  uuid.MustParse(meta.XCustomerID(ctx)),
+			FullName:    req.Address.FullName,
+			Address:     req.Address.Address,
+			City:        req.Address.City,
+			StateCode:   req.Address.StateCode,
+			PostalCode:  req.Address.PostalCode,
+			Apartment:   req.Address.Apartment,
+			CountryCode: req.Address.CountryCode,
+			PhoneNumber: req.Address.PhoneNumber,
 		}
 
-		mockRepo.EXPECT().UpdateAddress(ctx, expectedAddress).Return(&entities.UserAddress{}, nil).Times(1)
+		mockRepo.EXPECT().UpdateAddress(ctx, expectedAddress).Return(&entities.Address{}, nil).Times(1)
 		mockShipengineClient.EXPECT().GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		mockRepo.EXPECT().FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{
-			SFUserID: &sfID,
+
+		// sfID := "demo-sf-user-id"
+		// mockRepo.EXPECT().FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{
+		// 	SFUserID: &sfID,
+		// }, nil).AnyTimes()
+		customerID, _ := uuid.FromBytes([]byte(meta.XCustomerID(ctx)))
+		svc.customerClient.(*customerclient.MockClient).EXPECT().
+			GetCustomerByID(gomock.Any(), meta.XCustomerID(ctx)).Return(&customerEntities.Customer{
+			ID: customerID,
 		}, nil).AnyTimes()
+
 		mockSfClient.EXPECT().UpdateUserAddress(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockSfClient.EXPECT().CreateUserAddress(gomock.Any(), gomock.Any()).Return(&sfEntities.CreateSFAddressResponse{}, nil).AnyTimes()
 		mockRepo.EXPECT().UpdateAddressField(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -269,16 +294,16 @@ func Test_service_UpdateAddress(t *testing.T) {
 		svc, _, _, _, _ := setup()
 		addressID := uuid.New()
 		req := &entities.UpdateAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 			Address: &entities.AddressRequestBody{
-				FullName:     "John Doe",
-				Address:      "123 Main St",
-				City:         "New York",
-				State:        "NY",
-				ZipCode:      "10001",
-				Apartment:    "Apt 1",
-				Country:      "US",
-				MobileNumber: "1234567890",
+				FullName:    "John Doe",
+				Address:     "123 Main St",
+				City:        &testCity,
+				StateCode:   "NY",
+				PostalCode:  "10001",
+				Apartment:   &testApartment,
+				CountryCode: "US",
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 		ctx := meta.WithXCustomerID(context.Background(), "")
@@ -290,14 +315,14 @@ func Test_service_UpdateAddress(t *testing.T) {
 		svc, ctx, _, mockShipengineClient, _ := setup()
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
-				FullName:     "John Doe",
-				Address:      "123 Main St",
-				City:         "New York",
-				State:        "NY",
-				ZipCode:      "TEST",
-				Apartment:    "Apt 1",
-				Country:      "US",
-				MobileNumber: "1234567890",
+				FullName:    "John Doe",
+				Address:     "123 Main St",
+				City:        &testCity,
+				StateCode:   "NY",
+				PostalCode:  "TEST",
+				Apartment:   &testApartment,
+				CountryCode: "US",
+				PhoneNumber: &testPhoneNumber,
 			},
 		}
 
@@ -335,13 +360,13 @@ func Test_service_DeleteAddress(t *testing.T) {
 		svc, ctx, mockRepo, mockSfClient := setup()
 		addressID := uuid.New()
 		req := &entities.DeleteAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 		}
-		mockRepo.EXPECT().GetAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(&entities.UserAddress{
-			SfID: "demo-sf-address-id",
+		mockRepo.EXPECT().GetAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(&entities.Address{
+			ID: addressID,
 		}, nil).Times(1)
 		mockRepo.EXPECT().DeleteAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(nil).Times(1)
-		mockSfClient.EXPECT().DeleteUserAddress(gomock.Any(), "demo-sf-address-id").Return(nil).AnyTimes()
+		mockSfClient.EXPECT().DeleteUserAddress(gomock.Any(), addressID).Return(nil).AnyTimes()
 		err := svc.DeleteAddress(ctx, req)
 
 		assert.NoError(t, err)
@@ -351,7 +376,7 @@ func Test_service_DeleteAddress(t *testing.T) {
 		svc, _, _, _ := setup()
 		addressID := uuid.New()
 		req := &entities.DeleteAddressRequest{
-			AddressUUID: addressID,
+			AddressID: addressID,
 		}
 		ctx := meta.WithXCustomerID(context.Background(), "")
 		err := svc.DeleteAddress(ctx, req)
@@ -359,80 +384,81 @@ func Test_service_DeleteAddress(t *testing.T) {
 	})
 }
 
-func Test_service_getUserStripeId(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// Note: I believe this test should be in the stripe client package
+// func Test_service_getUserStripeId(t *testing.T) {
+// 	ctrl := gomock.NewController(t)
+// 	defer ctrl.Finish()
 
-	setup := func() (*service, context.Context, *repository.MockRepository, *stripeClient.MockClient) {
-		mockRepo := repository.NewMockRepository(ctrl)
-		mockStripeClient := stripeClient.NewMockClient(ctrl)
-		userUUID := uuid.New()
-		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
-		svc := &service{
-			repo:         mockRepo,
-			stripeClient: mockStripeClient,
-			log:          zap.NewExample().Sugar(),
-		}
-		return svc, ctx, mockRepo, mockStripeClient
-	}
+// 	setup := func() (*service, context.Context, *repository.MockRepository, *stripeClient.MockClient) {
+// 		mockRepo := repository.NewMockRepository(ctrl)
+// 		mockStripeClient := stripeClient.NewMockClient(ctrl)
+// 		userUUID := uuid.New()
+// 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
+// 		svc := &service{
+// 			repo:         mockRepo,
+// 			stripeClient: mockStripeClient,
+// 			log:          zap.NewExample().Sugar(),
+// 		}
+// 		return svc, ctx, mockRepo, mockStripeClient
+// 	}
 
-	t.Run("user not found in repository", func(t *testing.T) {
-		svc, ctx, mockRepo, _ := setup()
-		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(nil, &appErrors.APIError{Message: "user not found"})
+// 	t.Run("user not found in repository", func(t *testing.T) {
+// 		svc, ctx, mockRepo, _ := setup()
+// 		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(nil, &appErrors.APIError{Message: "user not found"})
 
-		_, _, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "user not found")
-	})
+// 		_, _, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
+// 		assert.Error(t, err)
+// 		assert.Contains(t, err.Error(), "user not found")
+// 	})
 
-	t.Run("creates new Stripe customer", func(t *testing.T) {
-		svc, ctx, mockRepo, mockStripeClient := setup()
+// 	t.Run("creates new Stripe customer", func(t *testing.T) {
+// 		svc, ctx, mockRepo, mockStripeClient := setup()
 
-		user := &entities.User{
-			UserUUID:  uuid.New(),
-			FirstName: "John",
-			Email:     "john.doe@example.com",
-		}
-		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
-		mockStripeClient.EXPECT().CreateCustomer(ctx, gomock.Any()).Return(&stripeEntities.CreateCustomerResponse{Id: "cust_123"}, nil)
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(nil)
+// 		user := &entities.User{
+// 			UserUUID:  uuid.New(),
+// 			FirstName: "John",
+// 			Email:     "john.doe@example.com",
+// 		}
+// 		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
+// 		mockStripeClient.EXPECT().CreateCustomer(ctx, gomock.Any()).Return(&stripeEntities.CreateCustomerResponse{Id: "cust_123"}, nil)
+// 		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(nil)
 
-		stripeId, created, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
-		assert.NoError(t, err)
-		assert.True(t, created)
-		assert.Equal(t, "cust_123", *stripeId)
-	})
+// 		stripeId, created, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
+// 		assert.NoError(t, err)
+// 		assert.True(t, created)
+// 		assert.Equal(t, "cust_123", *stripeId)
+// 	})
 
-	t.Run("fails to update repository after creating Stripe customer", func(t *testing.T) {
-		svc, ctx, mockRepo, mockStripeClient := setup()
+// 	t.Run("fails to update repository after creating Stripe customer", func(t *testing.T) {
+// 		svc, ctx, mockRepo, mockStripeClient := setup()
 
-		user := &entities.User{
-			UserUUID:  uuid.New(),
-			FirstName: "John",
-			Email:     "john.doe@example.com",
-		}
-		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
-		mockStripeClient.EXPECT().CreateCustomer(ctx, gomock.Any()).Return(&stripeEntities.CreateCustomerResponse{Id: "cust_123"}, nil)
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(&appErrors.APIError{Message: "update failed"})
+// 		user := &entities.User{
+// 			UserUUID:  uuid.New(),
+// 			FirstName: "John",
+// 			Email:     "john.doe@example.com",
+// 		}
+// 		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
+// 		mockStripeClient.EXPECT().CreateCustomer(ctx, gomock.Any()).Return(&stripeEntities.CreateCustomerResponse{Id: "cust_123"}, nil)
+// 		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(&appErrors.APIError{Message: "update failed"})
 
-		_, _, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "update failed")
-	})
+// 		_, _, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
+// 		assert.Error(t, err)
+// 		assert.Contains(t, err.Error(), "update failed")
+// 	})
 
-	t.Run("user already has Stripe ID", func(t *testing.T) {
-		svc, ctx, mockRepo, _ := setup()
+// 	t.Run("user already has Stripe ID", func(t *testing.T) {
+// 		svc, ctx, mockRepo, _ := setup()
 
-		stripeId := "cust_123"
-		user := &entities.User{
-			UserUUID: uuid.New(),
-			StripeId: &stripeId,
-		}
-		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
+// 		stripeId := "cust_123"
+// 		user := &entities.User{
+// 			UserUUID: uuid.New(),
+// 			StripeId: &stripeId,
+// 		}
+// 		mockRepo.EXPECT().FindByUUID(ctx, meta.XCustomerID(ctx)).Return(user, nil)
 
-		resultStripeId, created, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
-		assert.NoError(t, err)
-		assert.False(t, created)
-		assert.Equal(t, "cust_123", *resultStripeId)
-	})
-}
+// 		resultStripeId, created, err := svc.getUserStripeId(ctx, meta.XCustomerID(ctx))
+// 		assert.NoError(t, err)
+// 		assert.False(t, created)
+// 		assert.Equal(t, "cust_123", *resultStripeId)
+// 	})
+// }

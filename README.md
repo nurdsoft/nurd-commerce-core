@@ -6,6 +6,10 @@
 
 - Install [golang](https://go.dev/doc/install)
 - Install [docker](https://docs.docker.com/engine/install/)
+- VSCode Extensions:
+  - [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
+  - [Docker](https://marketplace.visualstudio.com/items?itemName=dorzey.vscode-sqlfluff)
+  - [sqlfluff](https://marketplace.visualstudio.com/items?itemName=dorzey.vscode-sqlfluff)
 
 ### Project setup
 
@@ -127,12 +131,13 @@ We use [sql-migrate](https://github.com/rubenv/sql-migrate) for database migrati
   make migrate direction=down
   ```
 
+## Generating Mocks for Unit Testing
 
-## Generating Mocs for Unit Testing
-
-We use `mockgen`` to generate mocks for unit testing. To generate mocks, run the below command
+We use `mockgen` to generate mocks for unit testing. To generate mocks, run the below command
 
 ```bash
 mockgen -source=internal/... -destination=internal/mocks/mock.go -package=package_name
 ```
 
+> [!TIP]
+> Keep the mocks updated by running `make mocks`.

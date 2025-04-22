@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=commerce-core
+      - POSTGRES_USER=db
+      - POSTGRES_PASSWORD=123
+    ports:
+      - '5452:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - backend
+    command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]
+
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: nurd-commerce
+    mem_limit: 128m
+    cpu_count: 1
+    ports:
+      - 9004:9002
+      - 8080:8080
+    depends_on:
+      - db
+    networks:
+      - backend
+    environment:
+      GOMEMLIMIT: "90MiB"
+      GOGC: 100
+    env_file: ".env"
+
+  otel-collector:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - backend
+      - public_network
+    ports:
+      - "4318:4318"
+      - "16686:16686"
+
+volumes:
+  db:
+    driver: local
+
+networks:
+  backend:
+  public_network:
+    driver: bridge

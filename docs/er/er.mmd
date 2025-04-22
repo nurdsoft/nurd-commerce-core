@@ -1,0 +1,179 @@
+%% Left     Right   Meaning
+%%   |o       o|    Zero or one
+%%   ||       ||    Exactly one
+%%   }o       o{    Zero or more (no upper limit)
+%%   }|       |{    One or more (no upper limit)
+%% PK means Primary Key
+%% FK means Foreign Key
+%% UK means Unique Key
+erDiagram
+    customers {
+        uuid id PK
+        varchar email UK "max length: 255"
+        varchar first_name "max length: 255"
+        varchar last_name "max length: 255"
+        varchar phone_number "max length: 50"
+        text salesforce_id UK
+        text stripe_id UK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    addresses {
+        uuid id PK
+        uuid customer_id FK "references customers(id)"
+        varchar full_name "max length: 255"
+        varchar address "max length: 255"
+        varchar apartment "max length: 255"
+        varchar city "max length: 255"
+        varchar phone_number "max length: 50"
+        varchar state_code "max length: 255"
+        varchar country_code "max length: 255"
+        varchar postal_code "max length: 255"
+        bool is_default
+        text salesforce_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    products {
+        uuid id PK
+        varchar name "max length: 255"
+        text description
+        text image_url
+        jsonb attributes
+        text salesforce_id
+        text salesforce_pricebook_entry_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_variants {
+        uuid id PK
+        uuid product_id FK "references products(id)"
+        varchar sku UK "max length: 255"
+        text image_url
+        text description
+        varchar name "max length: 255"
+        numeric price
+        varchar currency "max length: 3"
+        numeric length
+        numeric width
+        numeric height
+        numeric weight
+        jsonb attributes
+        text stripe_tax_code
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    wishlist_items {
+        uuid id PK
+        uuid customer_id FK "references customers(id)"
+        uuid product_id FK "references products(id)"
+        timestamp created_at
+    }
+
+    carts {
+        uuid id PK
+        uuid customer_id FK "references customers(id)"
+        enum status "enum: active, purchased, cleared"
+        varchar tax_currency "max length: 3"
+        numeric tax_amount
+        jsonb tax_breakdown
+        uuid shipping_rate_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    cart_items {
+        uuid id PK
+        uuid cart_id FK "references carts(id)"
+        uuid product_variant_id FK "references product_variants(id)"
+        int quantity
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    cart_shipping_rates {
+        uuid id PK
+        uuid cart_id FK "references carts(id)"
+        uuid address_id FK "references addresses(id)"
+        numeric amount
+        varchar currency "max length: 3"
+        text carrier_name
+        text carrier_code
+        timestamp estimated_delivery_date
+        text service_type
+        text service_code
+        timestamp created_at
+    }
+
+    orders {
+        uuid id PK
+        uuid customer_id FK "references customers(id)"
+        uuid cart_id FK "references carts(id)"
+        varchar order_reference UK "max length: 255"
+        numeric tax_amount
+        numeric subtotal
+        numeric total
+        varchar currency "max length: 3"
+        jsonb tax_breakdown
+        numeric shipping_rate
+        text shipping_carrier_name
+        text shipping_carrier_code
+        timestamp shipping_estimated_delivery_date
+        text shipping_service_type
+        text shipping_service_code
+        varchar delivery_full_name "max length: 255"
+        varchar delivery_address "max length: 255"
+        varchar delivery_apartment "max length: 255"
+        varchar delivery_city "max length: 255"
+        varchar delivery_state_code "max length: 255"
+        varchar delivery_country_code "max length: 255"
+        varchar delivery_postal_code "max length: 255"
+        varchar delivery_phone_number "max length: 50"
+        enum status "enum: pending, payment_success, payment_failed, shipped, fulfillment_failed, delivered, cancelled, return_requested, returned, refunded"
+        text fulfillment_message
+        timestamp fulfillment_shipment_date
+        numeric fulfillment_freight_charge
+        numeric fulfillment_order_total
+        text salesforce_id
+        text stripe_payment_intent_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    order_items {
+        uuid id PK
+        uuid order_id FK "references orders(id)"
+        uuid product_variant_id FK "references product_variants(id)"
+        text description
+        varchar sku UK "max length: 255"
+        text image_url
+        varchar name "max length: 255"
+        numeric length
+        numeric width
+        numeric height
+        numeric weight
+        int quantity
+        numeric price
+        text salesforce_id
+        jsonb attributes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    customers ||--o{ addresses : "has"
+    customers ||--o{ wishlist_items : "has"
+    customers ||--o{ carts : "has"
+    customers ||--o{ orders : "has"
+    products ||--o{ product_variants : "has"
+    products ||--o{ wishlist_items : "in"
+    carts ||--o{ cart_items : "has"
+    carts ||--o{ cart_shipping_rates : "has"
+    carts ||--|| orders : "creates"
+    orders ||--o{ order_items : "has"
+    product_variants ||--o{ cart_items : "in"
+    product_variants ||--o{ order_items : "in"
+    addresses ||--o{ cart_shipping_rates : "for"

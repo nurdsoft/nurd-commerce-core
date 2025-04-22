@@ -1,0 +1,46 @@
+Common:
+  Name: commerce-core-v1
+  Env: local
+  Version: 1.0
+  UserAgent: "commerce-core/1.0"
+  Component: "API"
+Logger:
+  FileLogEnabled: false
+AccessControlAllowOrigins:
+  - "*"
+Transport:
+  HTTP:
+    Port: 8080
+  WebSocket:
+    PingPongIntervalInSeconds: 15
+DB:
+  Postgres:
+    Host: localhost
+    Port: 5452
+    Database: commerce-core
+    User: db
+    Password: 123
+    SSLMode: "disable"
+Shipping:
+  Shipengine:
+    Host: ""
+    Token: ""
+    CarrierIds: ""
+Payment:
+  Stripe:
+    Key: ""
+    SigningSecret: ""
+Taxes:
+  Stripe:
+    Key: ""
+Inventory:
+  Salesforce:
+    ApiHost: xxxx
+    ApiVersion: xxxx
+    ClientID: xxxx
+    ClientSecret: xxxx
+    Username: xxxx
+    Password: xxxx
+Webhook:
+  OrderURL:
+  Token: "xx"

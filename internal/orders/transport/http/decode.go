@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/orders/errors"
 	httpError "github.com/nurdsoft/nurd-commerce-core/shared/errors/http"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
 

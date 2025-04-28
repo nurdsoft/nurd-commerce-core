@@ -35,7 +35,7 @@ import (
 type Service interface {
 	CreateOrder(ctx context.Context, req *entities.CreateOrderRequest) (*entities.CreateOrderResponse, error)
 	ListOrders(ctx context.Context, req *entities.ListOrdersRequest) (*entities.ListOrdersResponse, error)
-	GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderResponse, error)
+	GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderData, error)
 	CancelOrder(ctx context.Context, req *entities.CancelOrderRequest) error
 	ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error
 	ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error
@@ -136,6 +136,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		orderItem := &entities.OrderItem{
 			ID:               uuid.New(),
 			OrderID:          orderId,
+			ProductID:        item.ProductID,
 			ProductVariantID: item.ProductVariantID,
 			SKU:              item.SKU,
 			Description:      item.Description,
@@ -212,6 +213,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
 			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+				CustomerID:     customerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
 				Status:         entities.Pending.String(),
@@ -409,10 +411,10 @@ func (s *service) ListOrders(ctx context.Context, req *entities.ListOrdersReques
 //
 // Responses:
 //
-//	200: GetOrderResponse Order listed successfully
+//	200: GetOrderResponse Order fetched successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderResponse, error) {
+func (s *service) GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderData, error) {
 	customerID, err := uuid.Parse(sharedMeta.XCustomerID(ctx))
 	if err != nil {
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
@@ -437,7 +439,7 @@ func (s *service) GetOrder(ctx context.Context, req *entities.GetOrderRequest) (
 		return nil, moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
 	}
 
-	return &entities.GetOrderResponse{
+	return &entities.GetOrderData{
 		Order:      order,
 		OrderItems: orderItems,
 	}, nil
@@ -558,6 +560,7 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentIntentId s
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
 			Status:         entities.PaymentSuccess.String(),
@@ -636,6 +639,7 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentIntentId stri
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
 			Status:         entities.PaymentFailed.String(),
@@ -685,8 +689,10 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 	}
 
 	// update order status
-	data := map[string]interface{}{
-		"status": req.Body.Status,
+	data := map[string]interface{}{}
+
+	if req.Body.Status != nil {
+		data["status"] = req.Body.Status
 	}
 
 	if req.Body.FulfillmentShipmentDate != nil {
@@ -712,19 +718,23 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		return err
 	}
 
-	go func() {
-		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		defer cancel()
+	// Notify only when the status has changed
+	if req.Body.Status != nil && order.Status.String() != *req.Body.Status {
+		go func() {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
 
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
-			OrderID:        order.ID.String(),
-			OrderReference: order.OrderReference,
-			Status:         order.Status.String(),
-		})
-		if err != nil {
-			s.log.Errorf("Error notifying order status change: %v", err)
-		}
-	}()
+			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+				CustomerID:     order.CustomerID.String(),
+				OrderID:        order.ID.String(),
+				OrderReference: order.OrderReference,
+				Status:         order.Status.String(),
+			})
+			if err != nil {
+				s.log.Errorf("Error notifying order status change: %v", err)
+			}
+		}()
+	}
 
 	return nil
 }

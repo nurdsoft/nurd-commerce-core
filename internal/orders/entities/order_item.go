@@ -12,6 +12,7 @@ import (
 type OrderItem struct {
 	ID               uuid.UUID        `json:"id" gorm:"column:id;default:gen_random_uuid()"`
 	OrderID          uuid.UUID        `json:"order_id" gorm:"column:order_id"`
+	ProductID        uuid.UUID        `json:"product_id" gorm:"column:product_id"`
 	ProductVariantID uuid.UUID        `json:"product_variant_id" gorm:"column:product_variant_id"`
 	SKU              string           `json:"sku" gorm:"column:sku"`
 	Description      *string          `json:"description" gorm:"column:description"`

@@ -65,7 +65,7 @@ type UpdateOrderRequest struct {
 }
 
 type UpdateOrderRequestBody struct {
-	Status                     string           `json:"status"`
+	Status                     *string          `json:"status"`
 	FulfillmentMessage         *string          `json:"fulfillment_message,omitempty"`
 	FulfillmentShipmentDate    *time.Time       `json:"fulfillment_shipment_date,omitempty"`
 	FulfillmentFreightCharge   *decimal.Decimal `json:"fulfillment_freight_charge,omitempty"`

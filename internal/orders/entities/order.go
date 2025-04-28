@@ -3,8 +3,8 @@ package entities
 import (
 	"time"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -36,7 +36,7 @@ type Order struct {
 	Subtotal                      decimal.Decimal  `json:"subtotal" gorm:"column:subtotal"`
 	Total                         decimal.Decimal  `json:"total" gorm:"column:total"`
 	Currency                      string           `json:"currency" gorm:"column:currency"`
-	TaxBreakdown                  json.JSON        `json:"tax_breakdown" gorm:"column:tax_breakdown"`
+	TaxBreakdown                  json.JSON        `json:"-" gorm:"column:tax_breakdown"`
 	ShippingRate                  decimal.Decimal  `json:"shipping_rate" gorm:"column:shipping_rate"`
 	ShippingCarrierName           string           `json:"shipping_carrier_name" gorm:"column:shipping_carrier_name"`
 	ShippingCarrierCode           string           `json:"shipping_carrier_code" gorm:"column:shipping_carrier_code"`

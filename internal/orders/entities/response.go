@@ -14,8 +14,15 @@ type ListOrdersResponse struct {
 	NextCursor string   `json:"next_cursor"`
 }
 
-// swagger:model GetOrderResponse
-type GetOrderResponse struct {
+type GetOrderData struct {
 	Order      *Order       `json:"order"`
 	OrderItems []*OrderItem `json:"order_items"`
+}
+
+// swagger:response GetOrderResponse
+type GetOrderResponse struct {
+	// in: body
+	Body struct {
+		Data GetOrderData `json:"data"`
+	}
 }

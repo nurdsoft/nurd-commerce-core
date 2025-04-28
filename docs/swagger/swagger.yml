@@ -362,7 +362,7 @@ definitions:
         type: object
         x-go-name: Customer
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/customer/entities
-    GetOrderResponse:
+    GetOrderData:
         properties:
             order:
                 $ref: '#/definitions/Order'
@@ -655,7 +655,8 @@ definitions:
                 type: string
                 x-go-name: TaxAmount
             tax_breakdown:
-                $ref: '#/definitions/JSON'
+                type: object
+                x-go-name: TaxBreakdown
             total:
                 type: string
                 x-go-name: Total
@@ -700,6 +701,10 @@ definitions:
             price:
                 type: string
                 x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
             product_variant_id:
                 format: uuid
                 type: string
@@ -1435,9 +1440,8 @@ paths:
                 - application/json
             responses:
                 "200":
-                    description: Order listed successfully
-                    schema:
-                        $ref: '#/definitions/GetOrderResponse'
+                    $ref: '#/responses/GetOrderResponse'
+                    description: Order fetched successfully
                 "400":
                     description: Bad Request
                     schema:
@@ -1817,6 +1821,14 @@ paths:
                 - wishlist
 produces:
     - application/json
+responses:
+    GetOrderResponse:
+        description: ""
+        schema:
+            properties:
+                data:
+                    $ref: '#/definitions/GetOrderData'
+            type: object
 schemes:
     - http
     - https

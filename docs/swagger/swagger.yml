@@ -654,9 +654,6 @@ definitions:
             tax_amount:
                 type: string
                 x-go-name: TaxAmount
-            tax_breakdown:
-                type: object
-                x-go-name: TaxBreakdown
             total:
                 type: string
                 x-go-name: Total
@@ -874,6 +871,9 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/customer/entities
     UpdateOrderRequestBody:
         properties:
+            fulfillment_amount_due:
+                type: string
+                x-go-name: FulfillmentAmountDue
             fulfillment_freight_charge:
                 type: string
                 x-go-name: FulfillmentFreightCharge
@@ -887,9 +887,6 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
-            fulfillment_vendor_amount_due:
-                type: string
-                x-go-name: FulfillmentVendorAmountDue
             status:
                 type: string
                 x-go-name: Status

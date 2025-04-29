@@ -711,6 +711,10 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		data["fulfillment_message"] = req.Body.FulfillmentMessage
 	}
 
+	if req.Body.FulfillmentAmountDue != nil {
+		data["fulfillment_amount_due"] = req.Body.FulfillmentAmountDue
+	}
+
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())
 
 	if err != nil {

@@ -21,10 +21,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Authenticate to GCP using WIF
-        uses: google-github-actions/auth@v2
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}  # Store GCP project ID as a secret in GitHub
+          service_account_key: ${{ secrets.GCP_SA_KEY }}  # Use the service account key stored in GitHub secrets
+          export_default_credentials: true
+      
+      # - name: Authenticate to GCP using WIF
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       
       - name: Test GCP access
         run: |

@@ -35,6 +35,8 @@ jobs:
       
       - name: Test GCP access
         run: |
+          echo "${{ secrets.GCP_SA_KEY }}" > ${HOME}/gcloud-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
           gcloud auth list
       
       - name: Deploy to Cloud Run

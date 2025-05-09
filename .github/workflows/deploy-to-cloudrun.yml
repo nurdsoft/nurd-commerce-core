@@ -1,0 +1,32 @@
+name: Deploy image to Cloud Run via WIF
+on:
+  push:
+    branches:
+      - main
+      - 'release/*' 
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          release-type: node
+          default-branch: main
+      
+      - name: Authenticate to GCP using WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      
+      - name: Test GCP access
+        run: |
+          gcloud auth list
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ secrets.SERVICE_NAME }} \
+            --image=ghcr.io/nurdsoft/nurd-commerce:latest \
+            --region=${{ secrets.GCP_REGION }}\
+            --platform=managed

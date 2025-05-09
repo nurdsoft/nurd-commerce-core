@@ -7,6 +7,9 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # Needed to publish to GHCR
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -1,9 +1,12 @@
 package config
 
 import (
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
-	"strings"
 
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	webhook "github.com/nurdsoft/nurd-commerce-core/internal/webhook/config"
@@ -68,6 +71,16 @@ func New(path, version string) func() (Config, error) {
 		err := cfg.Init("config", path, &cfgFile)
 		if err != nil {
 			return cfgFile, err
+		}
+
+		// Override the listen port if provided via an environment variable.
+		// This is specifically to run the container in GCP Cloud Run.
+		if str := os.Getenv("PORT"); str != "" {
+			port, err := strconv.Atoi(str)
+			if err != nil {
+				panic("failed to convert port to int: " + err.Error())
+			}
+			cfgFile.Transport.HTTP.Port = port
 		}
 
 		return cfgFile, nil

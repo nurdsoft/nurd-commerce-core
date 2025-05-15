@@ -23,7 +23,7 @@ clean:
 	rm -rf $(COVERAGE_FILE)
 
 ## Install all the build and lint dependencies
-setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff setup-mermaid
+setup: setup-covmerge setup-goimports setup-migrate setup-mockgen setup-security setup-docs setup-lint setup-sqlfluff setup-mermaid setup-mermerd
 
 setup-lint: ## Install the linter
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -51,6 +51,9 @@ setup-sqlfluff: ## Install sqlfluff to lint SQL files
 
 setup-mermaid: ## Install mermaid-cli via docker to generate ER diagrams
 	docker pull minlag/mermaid-cli:latest
+
+setup-mermerd:
+	go install github.com/KarnerTh/mermerd@latest
 
 fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
@@ -145,6 +148,9 @@ er:
 
 docs/swagger/swagger.yml:
 	swagger generate spec -o ./docs/swagger/swagger.yml --scan-models
+
+update-er: ## Update ER diagram based on local postgres db
+	mermerd -c "postgresql://db:123@localhost:5452/commerce-core" -s public --outputFileName docs/er/er.mmd 
 
 help: ## Display available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

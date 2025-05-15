@@ -1,180 +1,179 @@
-%% Left     Right   Meaning
-%%   |o       o|    Zero or one
-%%   ||       ||    Exactly one
-%%   }o       o{    Zero or more (no upper limit)
-%%   }|       |{    One or more (no upper limit)
-%% PK means Primary Key
-%% FK means Foreign Key
-%% UK means Unique Key
 erDiagram
-    customers {
-        uuid id PK
-        varchar email UK "max length: 255"
-        varchar first_name "max length: 255"
-        varchar last_name "max length: 255"
-        varchar phone_number "max length: 50"
-        text salesforce_id UK
-        text stripe_id UK
-        timestamp created_at
-        timestamp updated_at
-    }
-
     addresses {
-        uuid id PK
-        uuid customer_id FK "references customers(id)"
-        varchar full_name "max length: 255"
-        varchar address "max length: 255"
-        varchar apartment "max length: 255"
-        varchar city "max length: 255"
-        varchar phone_number "max length: 50"
-        varchar state_code "max length: 255"
-        varchar country_code "max length: 255"
-        varchar postal_code "max length: 255"
-        bool is_default
-        text salesforce_id
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    products {
-        uuid id PK
-        varchar name "max length: 255"
-        text description
-        text image_url
-        jsonb attributes
-        text salesforce_id
-        text salesforce_pricebook_entry_id
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    product_variants {
-        uuid id PK
-        uuid product_id FK "references products(id)"
-        varchar sku UK "max length: 255"
-        text image_url
-        text description
-        varchar name "max length: 255"
-        numeric price
-        varchar currency "max length: 3"
-        numeric length
-        numeric width
-        numeric height
-        numeric weight
-        jsonb attributes
-        text stripe_tax_code
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    wishlist_items {
-        uuid id PK
-        uuid customer_id FK "references customers(id)"
-        uuid product_id FK "references products(id)"
-        timestamp created_at
-    }
-
-    carts {
-        uuid id PK
-        uuid customer_id FK "references customers(id)"
-        enum status "enum: active, purchased, cleared"
-        varchar tax_currency "max length: 3"
-        numeric tax_amount
-        jsonb tax_breakdown
-        uuid shipping_rate_id
-        timestamp created_at
-        timestamp updated_at
+        character_varying address 
+        character_varying apartment 
+        character_varying city 
+        character_varying country_code 
+        timestamp_with_time_zone created_at 
+        uuid customer_id FK 
+        character_varying full_name 
+        uuid id PK 
+        boolean is_default 
+        character_varying phone_number 
+        character_varying postal_code 
+        text salesforce_id 
+        character_varying state_code 
+        timestamp_with_time_zone updated_at 
     }
 
     cart_items {
-        uuid id PK
-        uuid cart_id FK "references carts(id)"
-        uuid product_variant_id FK "references product_variants(id)"
-        int quantity
-        timestamp created_at
-        timestamp updated_at
+        uuid cart_id FK 
+        timestamp_with_time_zone created_at 
+        uuid id PK 
+        uuid product_variant_id FK 
+        integer quantity 
+        timestamp_with_time_zone updated_at 
     }
 
     cart_shipping_rates {
-        uuid id PK
-        uuid cart_id FK "references carts(id)"
-        uuid address_id FK "references addresses(id)"
-        numeric amount
-        varchar currency "max length: 3"
-        text carrier_name
-        text carrier_code
-        timestamp estimated_delivery_date
-        text service_type
-        text service_code
-        timestamp created_at
+        uuid address_id FK 
+        numeric amount 
+        text carrier_code 
+        text carrier_name 
+        uuid cart_id FK 
+        timestamp_with_time_zone created_at 
+        character_varying currency 
+        timestamp_with_time_zone estimated_delivery_date 
+        uuid id PK 
+        text service_code 
+        text service_type 
     }
 
-    orders {
-        uuid id PK
-        uuid customer_id FK "references customers(id)"
-        uuid cart_id FK "references carts(id)"
-        varchar order_reference UK "max length: 255"
-        numeric tax_amount
-        numeric subtotal
-        numeric total
-        varchar currency "max length: 3"
-        jsonb tax_breakdown
-        numeric shipping_rate
-        text shipping_carrier_name
-        text shipping_carrier_code
-        timestamp shipping_estimated_delivery_date
-        text shipping_service_type
-        text shipping_service_code
-        varchar delivery_full_name "max length: 255"
-        varchar delivery_address "max length: 255"
-        varchar delivery_apartment "max length: 255"
-        varchar delivery_city "max length: 255"
-        varchar delivery_state_code "max length: 255"
-        varchar delivery_country_code "max length: 255"
-        varchar delivery_postal_code "max length: 255"
-        varchar delivery_phone_number "max length: 50"
-        enum status "enum: pending, payment_success, payment_failed, shipped, fulfillment_failed, delivered, cancelled, return_requested, returned, refunded"
-        text fulfillment_message
-        timestamp fulfillment_shipment_date
-        numeric fulfillment_freight_charge
-        numeric fulfillment_order_total
-        numeric fulfillment_amount_due
-        text salesforce_id
-        text stripe_payment_intent_id
-        timestamp created_at
-        timestamp updated_at
+    carts {
+        timestamp_with_time_zone created_at 
+        uuid customer_id FK 
+        uuid id PK 
+        uuid shipping_rate_id 
+        cart_status status 
+        numeric tax_amount 
+        jsonb tax_breakdown 
+        character_varying tax_currency 
+        timestamp_with_time_zone updated_at 
+    }
+
+    customers {
+        timestamp_with_time_zone created_at 
+        character_varying email UK 
+        character_varying first_name 
+        uuid id PK 
+        character_varying last_name 
+        character_varying phone_number 
+        text salesforce_id UK 
+        text stripe_id UK 
+        timestamp_with_time_zone updated_at 
+    }
+
+    gorp_migrations {
+        timestamp_with_time_zone applied_at 
+        text id PK 
     }
 
     order_items {
-        uuid id PK
-        uuid order_id FK "references orders(id)"
-        uuid product_variant_id FK "references product_variants(id)"
-        text description
-        varchar sku UK "max length: 255"
-        text image_url
-        varchar name "max length: 255"
-        numeric length
-        numeric width
-        numeric height
-        numeric weight
-        int quantity
-        numeric price
-        text salesforce_id
-        jsonb attributes
-        timestamp created_at
-        timestamp updated_at
+        jsonb attributes 
+        timestamp_with_time_zone created_at 
+        text description 
+        numeric height 
+        uuid id PK 
+        text image_url 
+        numeric length 
+        character_varying name 
+        uuid order_id FK 
+        numeric price 
+        uuid product_id FK 
+        uuid product_variant_id FK 
+        integer quantity 
+        text salesforce_id 
+        character_varying sku 
+        timestamp_with_time_zone updated_at 
+        numeric weight 
+        numeric width 
     }
 
-    customers ||--o{ addresses : "has"
-    customers ||--o{ wishlist_items : "has"
-    customers ||--o{ carts : "has"
-    customers ||--o{ orders : "has"
-    products ||--o{ product_variants : "has"
-    products ||--o{ wishlist_items : "in"
-    carts ||--o{ cart_items : "has"
-    carts ||--o{ cart_shipping_rates : "has"
-    carts ||--|| orders : "creates"
-    orders ||--o{ order_items : "has"
-    product_variants ||--o{ cart_items : "in"
-    product_variants ||--o{ order_items : "in"
-    addresses ||--o{ cart_shipping_rates : "for"
+    orders {
+        uuid cart_id FK 
+        timestamp_with_time_zone created_at 
+        character_varying currency 
+        uuid customer_id FK 
+        character_varying delivery_address 
+        character_varying delivery_apartment 
+        character_varying delivery_city 
+        character_varying delivery_country_code 
+        character_varying delivery_full_name 
+        character_varying delivery_phone_number 
+        character_varying delivery_postal_code 
+        character_varying delivery_state_code 
+        numeric fulfillment_amount_due 
+        numeric fulfillment_freight_charge 
+        text fulfillment_message 
+        numeric fulfillment_order_total 
+        timestamp_with_time_zone fulfillment_shipment_date 
+        uuid id PK 
+        character_varying order_reference UK 
+        text salesforce_id 
+        text shipping_carrier_code 
+        text shipping_carrier_name 
+        timestamp_with_time_zone shipping_estimated_delivery_date 
+        numeric shipping_rate 
+        text shipping_service_code 
+        text shipping_service_type 
+        order_status status 
+        text stripe_payment_intent_id 
+        numeric subtotal 
+        numeric tax_amount 
+        jsonb tax_breakdown 
+        numeric total 
+        timestamp_with_time_zone updated_at 
+    }
+
+    product_variants {
+        jsonb attributes 
+        timestamp_with_time_zone created_at 
+        character_varying currency 
+        text description 
+        numeric height 
+        uuid id PK 
+        text image_url 
+        numeric length 
+        character_varying name 
+        numeric price 
+        uuid product_id FK 
+        character_varying sku UK 
+        text stripe_tax_code 
+        timestamp_with_time_zone updated_at 
+        numeric weight 
+        numeric width 
+    }
+
+    products {
+        jsonb attributes 
+        timestamp_with_time_zone created_at 
+        text description 
+        uuid id PK,UK 
+        text image_url 
+        character_varying name 
+        text salesforce_id UK 
+        text salesforce_pricebook_entry_id UK 
+        timestamp_with_time_zone updated_at 
+    }
+
+    wishlist_items {
+        timestamp_with_time_zone created_at 
+        uuid customer_id FK,UK 
+        uuid id PK 
+        uuid product_id FK,UK 
+    }
+
+    addresses }o--|| customers : "customer_id"
+    cart_shipping_rates }o--|| addresses : "address_id"
+    cart_items }o--|| carts : "cart_id"
+    cart_items }o--|| product_variants : "product_variant_id"
+    cart_shipping_rates }o--|| carts : "cart_id"
+    carts }o--|| customers : "customer_id"
+    orders }o--|| carts : "cart_id"
+    orders }o--|| customers : "customer_id"
+    wishlist_items }o--|| customers : "customer_id"
+    order_items }o--|| orders : "order_id"
+    order_items }o--|| product_variants : "product_variant_id"
+    order_items }o--|| products : "product_id"
+    product_variants }o--|| products : "product_id"
+    wishlist_items }o--|| products : "product_id"

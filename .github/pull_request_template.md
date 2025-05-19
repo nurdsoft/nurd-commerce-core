@@ -16,6 +16,8 @@ Include:
 ## 💥 Breaking Changes
 
 <!-- 
+Remove this section if there are no breaking changes.
+
 Does this PR introduce breaking changes?
 - What will break?
 - What action is required by consumers (if any)?

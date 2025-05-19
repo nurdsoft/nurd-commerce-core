@@ -1,0 +1,32 @@
+name: 🐞 Bug Report
+description: Create a bug report issue
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the issue in detail
+      description: Brief description about the issue, repro steps, and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Logs
+      description: Paste any relevant logs or error messages
+    validations:
+      required: false
+  - type: input
+    id: go_version
+    attributes:
+      label: Go Version
+      description: Paste the output of `go version`
+    validations:
+      required: true
+  - type: textarea
+    id: comments
+    attributes:
+      label: Any comments
+      description: Share any other information that you think is necessary
+    validations:
+      required: false

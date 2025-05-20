@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/errors"
 	httpError "github.com/nurdsoft/nurd-commerce-core/shared/errors/http"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
 
 type RequestBodyType interface {
-	entities.AddToWishlistRequestBody
+	entities.AddToWishlistRequestBody |
+		entities.GetWishlistProductTimestampsRequestBody
 }
 
 func decodeBodyFromRequest[T RequestBodyType](req *T, r *http.Request) error {
@@ -84,5 +85,17 @@ func decodeGetMoreFromWishlistRequest(_ context.Context, r *http.Request) (inter
 	return &entities.GetMoreFromWishlistRequest{
 		Limit:  limit,
 		Cursor: r.URL.Query().Get("cursor"),
+	}, nil
+}
+
+func decodeGetWishlistProductTimestampsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	reqBody := &entities.GetWishlistProductTimestampsRequestBody{}
+	err := decodeBodyFromRequest(reqBody, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.GetWishlistProductTimestampsRequest{
+		Body: reqBody,
 	}, nil
 }

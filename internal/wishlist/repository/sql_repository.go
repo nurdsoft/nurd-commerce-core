@@ -99,3 +99,28 @@ func (r *sqlRepository) BulkRemoveFromWishlist(ctx context.Context, customerID u
 
 	return nil
 }
+
+func (r *sqlRepository) GetWishlistProductTimestamps(customerID string, productIDs []uuid.UUID) (map[string]time.Time, error) {
+	// map of product_id to the added_at time
+	res := map[string]time.Time{}
+
+	rows, err := r.gormDB.Table("wishlist_items").
+		Select("product_id, created_at").
+		Where("customer_id = ? AND product_id IN ?", customerID, productIDs).
+		Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var productID string
+		var createdAt time.Time
+		if err := rows.Scan(&productID, &createdAt); err != nil {
+			return nil, err
+		}
+		res[productID] = createdAt
+	}
+
+	return res, nil
+}

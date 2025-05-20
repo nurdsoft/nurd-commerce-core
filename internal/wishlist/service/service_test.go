@@ -634,3 +634,64 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		assert.True(t, resp.Items[0].CreatedAt.After(resp.Items[1].CreatedAt))
 	})
 }
+
+func Test_service_GetWishlistProductTimestamps(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := repository.NewMockRepository(ctrl)
+	svc := &service{
+		repo: mockRepo,
+		log:  zap.NewExample().Sugar(),
+	}
+	customerUUID := uuid.New()
+	ctx := meta.WithXCustomerID(context.Background(), customerUUID.String())
+	productIDs := []uuid.UUID{uuid.New(), uuid.New()}
+
+	req := &entities.GetWishlistProductTimestampsRequest{
+		Body: &entities.GetWishlistProductTimestampsRequestBody{
+			ProductIDs: productIDs,
+		},
+	}
+
+	t.Run("Returns timestamps successfully", func(t *testing.T) {
+
+		expected := map[string]time.Time{
+			productIDs[0].String(): time.Now().Add(-time.Hour),
+			productIDs[1].String(): time.Now(),
+		}
+
+		expectedResp := &entities.GetWishlistProductTimestampsResponse{
+			Timestamps: expected,
+		}
+
+		mockRepo.EXPECT().
+			GetWishlistProductTimestamps(customerUUID.String(), productIDs).
+			Return(expected, nil).Times(1)
+
+		resp, err := svc.GetWishlistProductTimestamps(ctx, req)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedResp, resp)
+	})
+
+	t.Run("Returns error from repository", func(t *testing.T) {
+		expectedErr := errors.New("repository failure")
+
+		mockRepo.EXPECT().
+			GetWishlistProductTimestamps(customerUUID.String(), productIDs).
+			Return(nil, expectedErr).Times(1)
+
+		resp, err := svc.GetWishlistProductTimestamps(ctx, req)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Returns error when customer ID missing", func(t *testing.T) {
+		ctx := meta.WithXCustomerID(context.Background(), "")
+		resp, err := svc.GetWishlistProductTimestamps(ctx, req)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.IsType(t, &appErrors.APIError{}, err)
+	})
+}

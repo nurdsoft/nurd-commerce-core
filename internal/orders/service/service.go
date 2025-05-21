@@ -716,7 +716,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 	}
 
 	if req.Body.FulfilmentMetadata != nil {
-		data["fulfilment_metadata"] = req.Body.FulfilmentMetadata
+		data["fulfillment_metadata"] = req.Body.FulfilmentMetadata
 	}
 
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())

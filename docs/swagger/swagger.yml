@@ -880,6 +880,8 @@ definitions:
             fulfillment_message:
                 type: string
                 x-go-name: FulfillmentMessage
+            fulfillment_metadata:
+                $ref: '#/definitions/JSON'
             fulfillment_order_total:
                 type: string
                 x-go-name: FulfillmentOrderTotal
@@ -887,8 +889,6 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
-            fulfilment_metadata:
-                $ref: '#/definitions/JSON'
             status:
                 type: string
                 x-go-name: Status

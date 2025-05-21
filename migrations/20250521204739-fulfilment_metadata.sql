@@ -1,4 +1,4 @@
 -- +migrate Up
-ALTER TABLE orders ADD COLUMN fulfilment_metadata JSONB DEFAULT '{}'::JSONB;
+ALTER TABLE orders ADD COLUMN fulfillment_metadata JSONB DEFAULT '{}'::JSONB;
 -- +migrate Down
-ALTER TABLE orders DROP COLUMN fulfilment_metadata;
+ALTER TABLE orders DROP COLUMN fulfillment_metadata;

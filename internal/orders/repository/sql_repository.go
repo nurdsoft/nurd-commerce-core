@@ -87,8 +87,8 @@ func (r *sqlRepository) GetOrderByStripePaymentIntentID(ctx context.Context, str
 func (r *sqlRepository) Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error {
 	tx := r.gormDB.WithContext(ctx).Model(&entities.Order{}).Where("id = ?", orderID)
 
-	// Handle fulfilment_metadata append using Postgres || operator
-	if newMetaRaw, ok := details["fulfilment_metadata"]; ok {
+	// Handle fulfillment_metadata append using Postgres || operator
+	if newMetaRaw, ok := details["fulfillment_metadata"]; ok {
 		newMetaBytes, err := json.Marshal(newMetaRaw)
 		if err != nil {
 			return err
@@ -98,10 +98,10 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 		mergedPatch := sharedJSON.JSON(newMetaBytes)
 
 		// Apply merge in SQL using GORM expression
-		tx = tx.Update("fulfilment_metadata", gorm.Expr("fulfilment_metadata || ?", mergedPatch))
+		tx = tx.Update("fulfillment_metadata", gorm.Expr("fulfillment_metadata || ?", mergedPatch))
 
 		// Remove from generic update to avoid conflict
-		delete(details, "fulfilment_metadata")
+		delete(details, "fulfillment_metadata")
 	}
 
 	// Update other fields if any

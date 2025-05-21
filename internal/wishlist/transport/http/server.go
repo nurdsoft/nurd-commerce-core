@@ -1,12 +1,12 @@
 package http
 
 import (
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/encode"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/endpoints"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
-	goKitEndpoint "github.com/go-kit/kit/endpoint"
-	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 )
 
 // RegisterTransport for http.
@@ -20,6 +20,7 @@ func RegisterTransport(
 	registerRemoveFromWishlist(server, ep.RemoveFromWishlistEndpoint, svcTransportClient)
 	registerGetWishlist(server, ep.GetWishlistEndpoint, svcTransportClient)
 	registerGetMoreFromWishlist(server, ep.GetMoreFromWishlistEndpoint, svcTransportClient)
+	registerGetWishlistProductTimestamps(server, ep.GetWishlistProductTimestampsEndpoint, svcTransportClient)
 }
 
 func registerAddToWishlist(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -77,6 +78,22 @@ func registerGetMoreFromWishlist(server *httpTransport.Server, ep goKitEndpoint.
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeGetMoreFromWishlistRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerGetWishlistProductTimestamps(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "POST"
+	path := "/wishlist/timestamps"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeGetWishlistProductTimestampsRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

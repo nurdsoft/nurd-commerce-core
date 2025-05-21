@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	productEntities "github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
@@ -11,7 +12,6 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"sort"
 	"sync"
@@ -23,6 +23,7 @@ type Service interface {
 	GetWishlist(ctx context.Context, req *entities.GetWishlistRequest) (*entities.GetWishlistResponse, error)
 	BulkRemoveFromWishlist(ctx context.Context, req *entities.BulkRemoveFromWishlistRequest) error
 	GetMoreFromWishlist(ctx context.Context, req *entities.GetMoreFromWishlistRequest) (*entities.GetWishlistResponse, error)
+	GetWishlistProductTimestamps(ctx context.Context, req *entities.GetWishlistProductTimestampsRequest) (*entities.GetWishlistProductTimestampsResponse, error)
 }
 
 type service struct {
@@ -251,4 +252,34 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 		NextCursor: nextCursor,
 	}, nil
 
+}
+
+// swagger:route POST /wishlist/timestamps wishlist GetWishlistProductTimestampsRequest
+//
+// # Get Wishlist Product Timestamps
+// ### Retrieve the timestamps when products were added to the customer's wishlist
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: GetWishlistProductTimestampsResponse Timestamps retrieved successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) GetWishlistProductTimestamps(ctx context.Context, req *entities.GetWishlistProductTimestampsRequest) (*entities.GetWishlistProductTimestampsResponse, error) {
+	customerID := sharedMeta.XCustomerID(ctx)
+
+	if customerID == "" {
+		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+
+	timestamps, err := s.repo.GetWishlistProductTimestamps(customerID, req.Body.ProductIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.GetWishlistProductTimestampsResponse{
+		Timestamps: timestamps,
+	}, nil
 }

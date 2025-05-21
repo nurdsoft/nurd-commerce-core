@@ -541,6 +541,27 @@ definitions:
                 x-go-name: Total
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetWishlistProductTimestampsRequestBody:
+        properties:
+            product_ids:
+                items:
+                    format: uuid
+                    type: string
+                type: array
+                x-go-name: ProductIDs
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    GetWishlistProductTimestampsResponse:
+        properties:
+            timestamps:
+                additionalProperties:
+                    format: date-time
+                    type: string
+                description: Map of product ID to wishlist timestamp
+                type: object
+                x-go-name: Timestamps
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
     GetWishlistResponse:
         properties:
             items:
@@ -1814,6 +1835,34 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get More from Wishlist
+            tags:
+                - wishlist
+    /wishlist/timestamps:
+        post:
+            description: '### Retrieve the timestamps when products were added to the customer''s wishlist'
+            operationId: GetWishlistProductTimestampsRequest
+            parameters:
+                - description: Products to get timestamps for
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/GetWishlistProductTimestampsRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Timestamps retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetWishlistProductTimestampsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Wishlist Product Timestamps
             tags:
                 - wishlist
 produces:

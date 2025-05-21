@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 
@@ -15,6 +16,7 @@ type Repository interface {
 	DeleteFromWishlist(ctx context.Context, customerID string, productID uuid.UUID) error
 	GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, error)
 	BulkRemoveFromWishlist(ctx context.Context, customerID uuid.UUID, productIDs []uuid.UUID) error
+	GetWishlistProductTimestamps(customerID string, productIDs []uuid.UUID) (map[string]time.Time, error)
 }
 
 // New repository for wishlist.

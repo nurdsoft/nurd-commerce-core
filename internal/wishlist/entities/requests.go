@@ -66,3 +66,15 @@ type GetMoreFromWishlistRequest struct {
 	// in:query
 	Cursor string `json:"cursor"`
 }
+
+// swagger:parameters wishlist GetWishlistProductTimestampsRequest
+type GetWishlistProductTimestampsRequest struct {
+	// Products to get timestamps for
+	//
+	// in:body
+	Body *GetWishlistProductTimestampsRequestBody
+}
+
+type GetWishlistProductTimestampsRequestBody struct {
+	ProductIDs []uuid.UUID `json:"product_ids"`
+}

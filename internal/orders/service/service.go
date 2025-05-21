@@ -26,7 +26,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -47,7 +47,7 @@ type service struct {
 	log              *zap.SugaredLogger
 	customerClient   customerclient.Client
 	cartClient       cartclient.Client
-	stripeClient     stripeClient.Client
+	paymentClient    payment.Client
 	wishlistClient   wishlistclient.Client
 	salesforceClient salesforce.Client
 	addressClient    addressclient.Client
@@ -58,7 +58,7 @@ type service struct {
 
 func New(
 	repo repository.Repository, log *zap.SugaredLogger, customerClient customerclient.Client,
-	cartClient cartclient.Client, stripeClient stripeClient.Client,
+	cartClient cartclient.Client, paymentClient payment.Client,
 	wishlistClient wishlistclient.Client, config cfg.Config,
 	salesforceClient salesforce.Client, addressClient addressclient.Client, productClient productclient.Client,
 	webhookClient webhook.Client,
@@ -68,7 +68,7 @@ func New(
 		log:              log,
 		customerClient:   customerClient,
 		cartClient:       cartClient,
-		stripeClient:     stripeClient,
+		paymentClient:    paymentClient,
 		wishlistClient:   wishlistClient,
 		salesforceClient: salesforceClient,
 		addressClient:    addressClient,
@@ -168,7 +168,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		PaymentMethodId: req.Body.StripePaymentMethodID,
 	}
 
-	stripePaymentIntent, err := s.stripeClient.CreatePaymentIntent(ctx, stripeReq)
+	stripePaymentIntent, err := s.paymentClient.CreatePaymentIntent(ctx, stripeReq)
 	if err != nil {
 		return nil, err
 	}

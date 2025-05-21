@@ -59,6 +59,7 @@ type Order struct {
 	FulfillmentFreightCharge      *decimal.Decimal `json:"-" gorm:"column:fulfillment_freight_charge"`
 	FulfillmentOrderTotal         *decimal.Decimal `json:"-" gorm:"column:fulfillment_order_total"`
 	FulfillmentAmountDue          *decimal.Decimal `json:"-" gorm:"column:fulfillment_amount_due"`
+	FulfilmentMetadata            json.JSON        `json:"-" gorm:"column:fulfilment_metadata"`
 	SalesforceID                  string           `json:"-" gorm:"column:salesforce_id"`
 	StripePaymentIntentID         string           `json:"-" gorm:"column:stripe_payment_intent_id"`
 	CreatedAt                     time.Time        `json:"created_at" gorm:"column:created_at"`

@@ -887,6 +887,8 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
+            fulfilment_metadata:
+                $ref: '#/definitions/JSON'
             status:
                 type: string
                 x-go-name: Status

@@ -3,16 +3,14 @@ package orders
 import (
 	"database/sql"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
-	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
-
-	webhookClient "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
-	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
-
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/transport/http"
+	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
+	webhookClient "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
+	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
+	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -37,7 +35,7 @@ type ModuleParams struct {
 	Logger           *zap.SugaredLogger
 	CustomerClient   customerclient.Client
 	CartClient       cart.Client
-	StripeClient     stripeClient.Client
+	PaymentClient    payment.Client
 	WishlistClient   wishlistclient.Client
 	SalesforceClient salesforce.Client
 	AddressClient    addressclient.Client
@@ -49,7 +47,7 @@ type ModuleParams struct {
 // nolint:gocritic
 func NewModule(p ModuleParams) error {
 	repo := repository.New(p.DB, p.GormDB)
-	svc := service.New(repo, p.Logger, p.CustomerClient, p.CartClient, p.StripeClient, p.WishlistClient,
+	svc := service.New(repo, p.Logger, p.CustomerClient, p.CartClient, p.PaymentClient, p.WishlistClient,
 		p.CommonConfig, p.SalesforceClient, p.AddressClient, p.ProductClient, p.WebhookClient)
 	eps := endpoints.New(svc)
 

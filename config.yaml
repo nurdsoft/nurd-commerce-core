@@ -27,9 +27,13 @@ Shipping:
     Token: ""
     CarrierIds: ""
 Payment:
+  Provider: "stripe"
   Stripe:
     Key: ""
     SigningSecret: ""
+  AuthorizeDotNet:
+    ApiLoginID: ""
+    TransactionKey: ""
 Taxes:
   Stripe:
     Key: ""

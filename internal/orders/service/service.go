@@ -732,7 +732,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 				CustomerID:     order.CustomerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
-				Status:         order.Status.String(),
+				Status:         *req.Body.Status,
 			})
 			if err != nil {
 				s.log.Errorf("Error notifying order status change: %v", err)

@@ -18,6 +18,8 @@ const (
 	Pending           OrderStatus = "pending"
 	PaymentSuccess    OrderStatus = "payment_success"
 	PaymentFailed     OrderStatus = "payment_failed"
+	Processing        OrderStatus = "processing"
+	Packed            OrderStatus = "packed"
 	Shipped           OrderStatus = "shipped"
 	FulfillmentFailed OrderStatus = "fulfillment_failed"
 	Delivered         OrderStatus = "delivered"

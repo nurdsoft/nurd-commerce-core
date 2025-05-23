@@ -1,11 +1,11 @@
-package shipengine
+package ups
 
 import (
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/config"
 	"net/http"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/service"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/service"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -14,7 +14,7 @@ import (
 type ModuleParams struct {
 	fx.In
 
-	Config     shipping.Config
+	Config     config.Config
 	HttpClient *http.Client
 	Logger     *zap.SugaredLogger
 }

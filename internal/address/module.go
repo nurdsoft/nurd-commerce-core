@@ -8,7 +8,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -28,7 +28,7 @@ type ModuleParams struct {
 	HTTPServer       *httpTransport.Server
 	APPTransport     svcTransport.Client
 	CommonConfig     cfg.Config
-	ShipengineClient shipengine.Client
+	ShippingClient   shipping.Client
 	Logger           *zap.SugaredLogger
 	SalesforceClient salesforce.Client
 	CustomerClient   customerclient.Client
@@ -38,7 +38,7 @@ type ModuleParams struct {
 // nolint:gocritic
 func NewModule(p ModuleParams) error {
 	repo := repository.New(p.DB, p.GormDB)
-	svc := service.New(repo, p.Logger, p.CommonConfig, p.ShipengineClient, p.SalesforceClient, p.CustomerClient)
+	svc := service.New(repo, p.Logger, p.CommonConfig, p.ShippingClient, p.SalesforceClient, p.CustomerClient)
 	eps := endpoints.New(svc)
 
 	http.RegisterTransport(p.HTTPServer, eps, p.APPTransport)

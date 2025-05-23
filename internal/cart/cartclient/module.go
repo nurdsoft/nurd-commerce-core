@@ -16,7 +16,7 @@ import (
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
 )
 
@@ -30,7 +30,7 @@ type ModuleParams struct {
 	APPTransport     svcTransport.Client
 	CommonConfig     cfg.Config
 	Logger           *zap.SugaredLogger
-	ShipengineClient shipengine.Client
+	ShippingClient   shipping.Client
 	StripeClient     stripe.Client
 	ProductClient    productclient.Client
 	AddressClient    addressclient.Client
@@ -42,7 +42,7 @@ type ModuleParams struct {
 func NewClientModule(p ModuleParams) Client {
 	repo := repository.New(p.DB, p.GormDB)
 	cacheClient := cache.NewMemoryCache()
-	svc := service.New(repo, p.Logger, p.ShipengineClient, p.StripeClient, cacheClient, p.ProductClient, p.AddressClient, p.SalesforceClient)
+	svc := service.New(repo, p.Logger, p.ShippingClient, p.StripeClient, cacheClient, p.ProductClient, p.AddressClient, p.SalesforceClient)
 
 	client := NewClient(svc)
 

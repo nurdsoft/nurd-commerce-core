@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -12,12 +13,9 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
-	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
-
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +31,7 @@ type service struct {
 	repo             repository.Repository
 	log              *zap.SugaredLogger
 	config           cfg.Config
-	shipengineClient shipengine.Client
+	shippingClient   shipping.Client
 	salesforceClient salesforce.Client
 	customerClient   customerclient.Client
 }
@@ -42,7 +40,7 @@ func New(
 	repo repository.Repository,
 	logger *zap.SugaredLogger,
 	config cfg.Config,
-	shipengineClient shipengine.Client,
+	shippingClient shipping.Client,
 	salesforceClient salesforce.Client,
 	customerClient customerclient.Client,
 ) Service {
@@ -50,7 +48,7 @@ func New(
 		repo:             repo,
 		log:              logger,
 		config:           config,
-		shipengineClient: shipengineClient,
+		shippingClient:   shippingClient,
 		salesforceClient: salesforceClient,
 		customerClient:   customerClient,
 	}
@@ -351,30 +349,13 @@ func (s *service) validateAddress(ctx context.Context, city *string, state, zipC
 		parsedCity = *city
 	}
 
-	_, err := s.shipengineClient.GetRatesEstimate(ctx,
-		// From address
-		shipengineEntities.ShippingAddress{
-			City:    "La Vergne",
-			State:   "TN",
-			Zip:     "37086",
-			Country: "US",
-		},
-		// To address
-
-		shipengineEntities.ShippingAddress{
-			City:    parsedCity,
-			State:   state,
-			Zip:     zipCode,
-			Country: country,
-		},
-		// Package dimensions
-		shipengineEntities.Dimensions{
-			Length: decimal.NewFromFloat(1),
-			Width:  decimal.NewFromFloat(1),
-			Height: decimal.NewFromFloat(1),
-			Weight: decimal.NewFromFloat(1),
+	return s.shippingClient.ValidateAddress(ctx,
+		shippingEntities.Address{
+			City:        parsedCity,
+			StateCode:   state,
+			PostalCode:  zipCode,
+			CountryCode: country,
 		})
-	return err
 }
 
 func (s *service) createSalesforceUserAddress(ctx context.Context, customerID, addressID string, req *salesforceEntities.CreateSFAddressRequest) error {

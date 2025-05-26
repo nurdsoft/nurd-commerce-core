@@ -1,9 +1,11 @@
 package entities
 
 import (
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
+	"github.com/shopspring/decimal"
 )
 
 // swagger:parameters orders CreateOrderRequest
@@ -71,4 +73,5 @@ type UpdateOrderRequestBody struct {
 	FulfillmentFreightCharge *decimal.Decimal `json:"fulfillment_freight_charge,omitempty"`
 	FulfillmentOrderTotal    *decimal.Decimal `json:"fulfillment_order_total,omitempty"`
 	FulfillmentAmountDue     *decimal.Decimal `json:"fulfillment_amount_due,omitempty"`
+	FulfilmentMetadata       *json.JSON       `json:"fulfillment_metadata,omitempty"`
 }

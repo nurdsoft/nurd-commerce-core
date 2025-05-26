@@ -1,6 +1,7 @@
 package shipping
 
 import (
+	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	shipengineClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/shipengine/client"
 	shipengineService "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/shipengine/service"
@@ -33,7 +34,8 @@ func NewModule(p ModuleParams) (client.Client, error) {
 
 		return shipengineClient.NewClient(service), nil
 	case ProviderUPS:
-		service, err := upsService.New(p.HttpClient, p.Config.UPS, p.Logger)
+		cache := cache.New()
+		service, err := upsService.New(p.HttpClient, p.Config.UPS, p.Logger, cache)
 		if err != nil {
 			return nil, err
 		}

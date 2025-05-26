@@ -270,6 +270,11 @@
     "message": "Invalid postal code."
   },
   {
+    "error_code": "UPS_INVALID_ADDRESS",
+    "status_code": 400,
+    "message": "Invalid UPS address."
+  },
+  {
     "error_code": "STRIPE_INVALID_CUSTOMER_LOCATION",
     "status_code": 400,
     "message": "Customer tax location is invalid."

@@ -7,7 +7,7 @@ import (
 )
 
 type Client interface {
-	ValidateAddress(ctx context.Context, address entities.Address) error
+	ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error)
 	GetShippingRates(ctx context.Context, shipment entities.Shipment) ([]entities.ShippingRate, error)
 }
 
@@ -19,7 +19,7 @@ type localClient struct {
 	svc service.Service
 }
 
-func (c *localClient) ValidateAddress(ctx context.Context, address entities.Address) error {
+func (c *localClient) ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error) {
 	return c.svc.ValidateAddress(ctx, address)
 }
 

@@ -111,7 +111,7 @@ func Test_service_AddAddress(t *testing.T) {
 			},
 		}
 
-		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(&appErrors.APIError{Message: "Invalid address"}).Times(1)
+		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
 		_, err := svc.AddAddress(ctx, req)
 
 		assert.Error(t, err)
@@ -270,7 +270,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 		}
 
 		mockRepo.EXPECT().UpdateAddress(ctx, expectedAddress).Return(&entities.Address{}, nil).Times(1)
-		mockShipingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil).Times(1)
+		mockShipingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, nil).Times(1)
 
 		// sfID := "demo-sf-user-id"
 		// mockRepo.EXPECT().FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{
@@ -327,7 +327,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 			},
 		}
 
-		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(&appErrors.APIError{Message: "Invalid address"}).Times(1)
+		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
 		_, err := svc.AddAddress(ctx, req)
 
 		assert.Error(t, err)

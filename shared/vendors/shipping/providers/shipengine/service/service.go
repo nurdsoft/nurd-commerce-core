@@ -18,12 +18,12 @@ import (
 )
 
 type Service interface {
-	ValidateAddress(ctx context.Context, address entities.Address) error
+	ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error)
 	GetShippingRates(ctx context.Context, shipment entities.Shipment) ([]entities.ShippingRate, error)
 }
 
 func New(httpClient *http.Client, config shipengineConfig.Config, logger *zap.SugaredLogger) (Service, error) {
-	hc := client.New(fmt.Sprintf("https://%s", config.Host), httpClient, client.WithExternalCall(true))
+	hc := client.New(fmt.Sprintf("https://%s", config.Host), httpClient, logger, client.WithExternalCall(true))
 
 	return &service{hc, config, logger}, nil
 }
@@ -158,7 +158,7 @@ func (s *service) GetShippingRates(ctx context.Context, shipment entities.Shipme
 
 // ValidateAddress return validation result for the given shipping address
 // https://shipengine.github.io/shipengine-openapi/#operation/estimate_rates
-func (s *service) ValidateAddress(ctx context.Context, address entities.Address) error {
+func (s *service) ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error) {
 	// TODO Change to the actual validation address API once paid tier is enabled to test
 	_, err := s.GetShippingRates(ctx,
 		entities.Shipment{
@@ -176,7 +176,7 @@ func (s *service) ValidateAddress(ctx context.Context, address entities.Address)
 				Weight: decimal.NewFromFloat(1),
 			},
 		})
-	return err
+	return nil, err
 }
 
 func (s *service) getShipengineApiHeaders() map[string]string {

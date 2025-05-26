@@ -51,11 +51,12 @@ func (mr *MockClientMockRecorder) GetShippingRates(ctx, shipment interface{}) *g
 }
 
 // ValidateAddress mocks base method.
-func (m *MockClient) ValidateAddress(ctx context.Context, address entities.Address) error {
+func (m *MockClient) ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateAddress", ctx, address)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*entities.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ValidateAddress indicates an expected call of ValidateAddress.

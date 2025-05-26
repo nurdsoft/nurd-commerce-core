@@ -6,6 +6,7 @@ import (
 )
 
 type Address struct {
+	Address     string
 	City        string
 	StateCode   string
 	PostalCode  string

@@ -79,12 +79,12 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 		return nil, err
 	}
 
-	err = s.validateAddress(ctx, req.Address.City, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode)
+	validatedAddress, err := s.validateAddress(ctx, req.Address.Address, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode, req.Address.City)
 	if err != nil {
 		return nil, err
 	}
 
-	address, err := s.repo.CreateAddress(ctx, &entities.Address{
+	address := &entities.Address{
 		ID:          uuid.New(),
 		CustomerID:  customer,
 		FullName:    req.Address.FullName,
@@ -96,7 +96,17 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 		PostalCode:  req.Address.PostalCode,
 		PhoneNumber: req.Address.PhoneNumber,
 		IsDefault:   req.Address.IsDefault,
-	})
+	}
+
+	if validatedAddress != nil {
+		address.Address = validatedAddress.Address
+		address.StateCode = validatedAddress.StateCode
+		address.CountryCode = validatedAddress.CountryCode
+		address.PostalCode = validatedAddress.PostalCode
+		address.City = &validatedAddress.City
+	}
+
+	address, err = s.repo.CreateAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	} else {
@@ -219,13 +229,12 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 		return nil, err
 	}
 
-	err = s.validateAddress(ctx, req.Address.City, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode)
+	validatedAddress, err := s.validateAddress(ctx, req.Address.Address, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode, req.Address.City)
 	if err != nil {
 		return nil, err
 	}
 
-	// update address in the database
-	updatedAddress, err := s.repo.UpdateAddress(ctx, &entities.Address{
+	address := &entities.Address{
 		ID:          req.AddressID,
 		CustomerID:  customer,
 		FullName:    req.Address.FullName,
@@ -233,11 +242,22 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 		Apartment:   req.Address.Apartment,
 		City:        req.Address.City,
 		StateCode:   req.Address.StateCode,
-		PostalCode:  req.Address.PostalCode,
 		CountryCode: req.Address.CountryCode,
+		PostalCode:  req.Address.PostalCode,
 		PhoneNumber: req.Address.PhoneNumber,
 		IsDefault:   req.Address.IsDefault,
-	})
+	}
+
+	if validatedAddress != nil {
+		address.Address = validatedAddress.Address
+		address.StateCode = validatedAddress.StateCode
+		address.CountryCode = validatedAddress.CountryCode
+		address.PostalCode = validatedAddress.PostalCode
+		address.City = &validatedAddress.City
+	}
+
+	// update address in the database
+	updatedAddress, err := s.repo.UpdateAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	} else {
@@ -343,14 +363,14 @@ func (s *service) DeleteAddress(ctx context.Context, req *entities.DeleteAddress
 	return nil
 }
 
-func (s *service) validateAddress(ctx context.Context, city *string, state, zipCode, country string) error {
+func (s *service) validateAddress(ctx context.Context, address, state, zipCode, country string, city *string) (*shippingEntities.Address, error) {
 	parsedCity := ""
 	if city != nil {
 		parsedCity = *city
 	}
-
 	return s.shippingClient.ValidateAddress(ctx,
 		shippingEntities.Address{
+			Address:     address,
 			City:        parsedCity,
 			StateCode:   state,
 			PostalCode:  zipCode,

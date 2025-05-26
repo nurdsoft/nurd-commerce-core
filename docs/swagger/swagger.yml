@@ -901,6 +901,8 @@ definitions:
             fulfillment_message:
                 type: string
                 x-go-name: FulfillmentMessage
+            fulfillment_metadata:
+                $ref: '#/definitions/JSON'
             fulfillment_order_total:
                 type: string
                 x-go-name: FulfillmentOrderTotal

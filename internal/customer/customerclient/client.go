@@ -10,7 +10,7 @@ import (
 type Client interface {
 	GetCustomer(ctx context.Context) (*entities.Customer, error)
 	GetCustomerByID(ctx context.Context, id string) (*entities.Customer, error)
-	UpdateCustomerStripeID(ctx context.Context, id string, stripeID string) error
+	UpdateCustomerExternalID(ctx context.Context, id string, externalID string) error
 }
 
 func NewClient(svc service.Service) Client {
@@ -29,6 +29,6 @@ func (c *localClient) GetCustomerByID(ctx context.Context, id string) (*entities
 	return c.svc.GetCustomerByID(ctx, id)
 }
 
-func (c *localClient) UpdateCustomerStripeID(ctx context.Context, id string, stripeID string) error {
-	return c.svc.UpdateCustomerStripeID(ctx, id, stripeID)
+func (c *localClient) UpdateCustomerExternalID(ctx context.Context, id string, externalID string) error {
+	return c.svc.UpdateCustomerExternalID(ctx, id, externalID)
 }

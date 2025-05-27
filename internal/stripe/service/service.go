@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"strings"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities"
@@ -9,10 +11,9 @@ import (
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type Service interface {
@@ -25,7 +26,7 @@ type service struct {
 	log              *zap.SugaredLogger
 	config           cfg.Config
 	salesforceClient salesforce.Client
-	paymentClient    payment.Client
+	stripeClient     stripeClient.Client
 	ordersClient     ordersclient.Client
 	customerClient   customerclient.Client
 }
@@ -33,14 +34,14 @@ type service struct {
 func New(
 	logger *zap.SugaredLogger,
 	config cfg.Config,
-	paymentClient payment.Client,
+	stripeClient stripeClient.Client,
 	ordersClient ordersclient.Client,
 	customerClient customerclient.Client,
 ) Service {
 	return &service{
 		log:            logger,
 		config:         config,
-		paymentClient:  paymentClient,
+		stripeClient:   stripeClient,
 		ordersClient:   ordersClient,
 		customerClient: customerClient,
 	}
@@ -78,7 +79,7 @@ func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMe
 		return resp, nil
 	}
 
-	result, err := s.paymentClient.GetCustomerPaymentMethods(ctx, stripeId)
+	result, err := s.stripeClient.GetCustomerPaymentMethods(ctx, stripeId)
 
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func (s *service) GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentR
 		return nil, err
 	}
 
-	result, err := s.paymentClient.GetSetupIntent(ctx, stripeId)
+	result, err := s.stripeClient.GetSetupIntent(ctx, stripeId)
 
 	if err != nil {
 		return nil, err
@@ -154,7 +155,7 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		return nil, false, err
 	}
 
-	if customer.StripeId == nil {
+	if customer.ExternalCustomerId == nil {
 		var fullName strings.Builder
 		fullName.WriteString(customer.FirstName)
 		if customer.LastName != nil {
@@ -165,21 +166,21 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 			Name:  fullName.String(),
 			Email: customer.Email,
 		}
-		stripeCustomer, err := s.paymentClient.CreateCustomer(ctx, customerReq)
+		stripeCustomer, err := s.stripeClient.CreateCustomer(ctx, customerReq)
 
 		if err != nil {
 			return nil, false, err
 		}
-		customer.StripeId = &stripeCustomer.Id
+		customer.ExternalCustomerId = &stripeCustomer.Id
 
-		err = s.customerClient.UpdateCustomerStripeID(ctx, customerID, stripeCustomer.Id)
+		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, stripeCustomer.Id)
 
 		if err != nil {
 			return nil, false, err
 		}
-		return customer.StripeId, true, nil
+		return customer.ExternalCustomerId, true, nil
 	}
-	return customer.StripeId, false, nil
+	return customer.ExternalCustomerId, false, nil
 }
 
 // swagger:route POST /stripe/webhook stripe StripeWebhookRequest
@@ -201,7 +202,7 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 		Payload:   req.Payload,
 		Signature: req.Signature,
 	}
-	event, err := s.paymentClient.GetWebhookEvent(ctx, webhookReq)
+	event, err := s.stripeClient.GetWebhookEvent(ctx, webhookReq)
 	if err != nil {
 		s.log.Error("Webhook Stripe signature verification failed ", err)
 		return moduleErrors.NewAPIError("STRIPE_SIGNATURE_VERIFICATION_FAILED")

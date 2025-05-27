@@ -65,16 +65,16 @@ func (mr *MockClientMockRecorder) GetCustomerByID(ctx, id interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerByID", reflect.TypeOf((*MockClient)(nil).GetCustomerByID), ctx, id)
 }
 
-// UpdateCustomerStripeID mocks base method.
-func (m *MockClient) UpdateCustomerStripeID(ctx context.Context, id, stripeID string) error {
+// UpdateCustomerExternalID mocks base method.
+func (m *MockClient) UpdateCustomerExternalID(ctx context.Context, id, externalID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCustomerStripeID", ctx, id, stripeID)
+	ret := m.ctrl.Call(m, "UpdateCustomerExternalID", ctx, id, externalID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateCustomerStripeID indicates an expected call of UpdateCustomerStripeID.
-func (mr *MockClientMockRecorder) UpdateCustomerStripeID(ctx, id, stripeID interface{}) *gomock.Call {
+// UpdateCustomerExternalID indicates an expected call of UpdateCustomerExternalID.
+func (mr *MockClientMockRecorder) UpdateCustomerExternalID(ctx, id, externalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerStripeID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerStripeID), ctx, id, stripeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerExternalID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerExternalID), ctx, id, externalID)
 }

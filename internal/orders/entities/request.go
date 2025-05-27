@@ -1,9 +1,10 @@
 package entities
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 // swagger:parameters orders CreateOrderRequest
@@ -18,6 +19,15 @@ type CreateOrderRequestBody struct {
 	AddressID             uuid.UUID `json:"address_id"`
 	ShippingRateID        uuid.UUID `json:"shipping_rate_id"`
 	StripePaymentMethodID string    `json:"stripe_payment_method_id,omitempty"`
+	PaymentNonce          string    `json:"payment_nonce,omitempty"`
+}
+
+type CreatePaymentRequest struct {
+	Amount          decimal.Decimal
+	Currency        string
+	CustomerId      string
+	PaymentMethodId string
+	PaymentNonce    string
 }
 
 // swagger:parameters orders ListOrdersRequest

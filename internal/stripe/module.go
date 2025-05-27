@@ -7,7 +7,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -28,14 +28,14 @@ type ModuleParams struct {
 	CommonConfig   cfg.Config
 	Logger         *zap.SugaredLogger
 	OrdersClient   ordersclient.Client
-	PaymentClient  payment.Client
+	StripeClient   stripeClient.Client
 	CustomerClient customerclient.Client
 }
 
 // NewModule
 // nolint:gocritic
 func NewModule(p ModuleParams) error {
-	svc := service.New(p.Logger, p.CommonConfig, p.PaymentClient, p.OrdersClient, p.CustomerClient)
+	svc := service.New(p.Logger, p.CommonConfig, p.StripeClient, p.OrdersClient, p.CustomerClient)
 	eps := endpoints.New(svc)
 
 	http.RegisterTransport(p.HTTPServer, eps, p.APPTransport)

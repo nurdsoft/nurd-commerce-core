@@ -1,8 +1,9 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"net/http"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 )
 
 // Module-specific errors
@@ -21,6 +22,7 @@ var moduleErrors = map[string]struct {
 	"ORDER_IS_ALREADY_CANCELLED":           {StatusCode: http.StatusNotModified, Message: "Order is already cancelled."},
 	"ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID": {StatusCode: http.StatusNotFound, Message: "Order not found by payment intent ID."},
 	"ORDER_IS_NOT_PENDING":                 {StatusCode: http.StatusBadRequest, Message: "Order is not pending."},
+	"PAYMENT_FAILED":                       {StatusCode: http.StatusInternalServerError, Message: "Payment failed."},
 }
 
 func NewAPIError(errorCode string, customMessage ...string) *errors.APIError {

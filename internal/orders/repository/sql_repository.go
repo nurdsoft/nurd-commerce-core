@@ -7,10 +7,10 @@ import (
 
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 
+	"github.com/google/uuid"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/cart/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -73,9 +73,9 @@ func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, li
 	return orders, nextCursor, nil
 }
 
-func (r *sqlRepository) GetOrderByStripePaymentIntentID(ctx context.Context, stripePaymentIntentID string) (*entities.Order, error) {
+func (r *sqlRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string) (*entities.Order, error) {
 	order := &entities.Order{}
-	if err := r.gormDB.WithContext(ctx).Where("stripe_payment_intent_id = ?", stripePaymentIntentID).First(order).Error; err != nil {
+	if err := r.gormDB.WithContext(ctx).Where("external_payment_id = ?", externalPaymentID).First(order).Error; err != nil {
 		return nil, err
 	}
 

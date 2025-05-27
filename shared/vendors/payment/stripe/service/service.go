@@ -8,6 +8,7 @@ import (
 	stripeConfig "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/errors"
+	"github.com/shopspring/decimal"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/ephemeralkey"
@@ -173,8 +174,9 @@ func (s *service) GetSetupIntent(_ context.Context, customerId *string) (*entiti
 func (s *service) CreatePaymentIntent(_ context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error) {
 	stripe.Key = s.config.Key
 
+	integerAmount := req.Amount.Mul(decimal.NewFromInt(100)).IntPart()
 	params := &stripe.PaymentIntentParams{
-		Amount:        stripe.Int64(req.Amount),
+		Amount:        stripe.Int64(integerAmount),
 		Currency:      stripe.String(req.Currency),
 		Customer:      stripe.String(*req.CustomerId),
 		PaymentMethod: stripe.String(req.PaymentMethodId),

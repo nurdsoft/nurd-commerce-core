@@ -10,6 +10,8 @@ import (
 type Config struct {
 	ApiLoginID     string
 	TransactionKey string
+	LiveMode       bool
+	SignatureKey   string
 }
 
 // Validate config
@@ -22,6 +24,10 @@ func (c *Config) Validate() error {
 
 	if c.TransactionKey == "" {
 		errs = append(errs, "authorize.net transaction key shouldn't be empty")
+	}
+
+	if c.SignatureKey == "" {
+		errs = append(errs, "authorize.net signature key shouldn't be empty")
 	}
 
 	if len(errs) > 0 {

@@ -2,16 +2,20 @@ package client
 
 import (
 	"context"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/service"
+	"github.com/pkg/errors"
 )
 
 type Client interface {
 	CreateCustomer(ctx context.Context, req *entities.CreateCustomerRequest) (*entities.CreateCustomerResponse, error)
 	GetCustomerPaymentMethods(ctx context.Context, customerId *string) (*entities.GetCustomerPaymentMethodsResponse, error)
 	GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error)
-	CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error)
+	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
+	GetProvider() providers.ProviderType
 }
 
 func NewClient(svc service.Service) Client {
@@ -34,10 +38,27 @@ func (c *localClient) GetSetupIntent(ctx context.Context, customerId *string) (*
 	return c.svc.GetSetupIntent(ctx, customerId)
 }
 
-func (c *localClient) CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error) {
-	return c.svc.CreatePaymentIntent(ctx, req)
-}
-
 func (c *localClient) GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error) {
 	return c.svc.GetWebhookEvent(ctx, req)
+}
+
+func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error) {
+	stripeReq, ok := req.(*entities.CreatePaymentIntentRequest)
+	if !ok {
+		return providers.PaymentProviderResponse{}, errors.New("invalid request type")
+	}
+
+	res, err := c.svc.CreatePaymentIntent(ctx, stripeReq)
+	if err != nil {
+		return providers.PaymentProviderResponse{}, err
+	}
+
+	return providers.PaymentProviderResponse{
+		ID:     res.Id,
+		Status: providers.PaymentStatusPending,
+	}, nil
+}
+
+func (c *localClient) GetProvider() providers.ProviderType {
+	return providers.ProviderStripe
 }

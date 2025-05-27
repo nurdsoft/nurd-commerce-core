@@ -3,12 +3,14 @@ package cmd
 
 import (
 	"database/sql"
-
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
 	"time"
 
 	"github.com/nurdsoft/nurd-commerce-core/config"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
+	authorizenetModule "github.com/nurdsoft/nurd-commerce-core/internal/authorizenet"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer"
@@ -51,6 +53,8 @@ var apiCommand = &cobra.Command{
 			transport.ModuleAPI,
 			health.Module,
 			shipengine.Module,
+			stripe.Module,
+			authorizenet.Module,
 			payment.Module,
 			stripeTaxes.Module,
 			log.Module,
@@ -70,6 +74,7 @@ var apiCommand = &cobra.Command{
 			salesforce.Module,
 			swagger.ModuleServeSwagger,
 			stripeModule.ModuleHttpAPI,
+			authorizenetModule.ModuleHttpAPI,
 			fx.NopLogger,
 			fx.StartTimeout(time.Second*60),
 		)

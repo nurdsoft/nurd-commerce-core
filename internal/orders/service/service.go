@@ -754,6 +754,10 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		data["fulfillment_amount_due"] = req.Body.FulfillmentAmountDue
 	}
 
+	if req.Body.FulfilmentMetadata != nil {
+		data["fulfillment_metadata"] = req.Body.FulfilmentMetadata
+	}
+
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())
 
 	if err != nil {
@@ -771,7 +775,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 				CustomerID:     order.CustomerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
-				Status:         order.Status.String(),
+				Status:         *req.Body.Status,
 			})
 			if err != nil {
 				s.log.Errorf("Error notifying order status change: %v", err)

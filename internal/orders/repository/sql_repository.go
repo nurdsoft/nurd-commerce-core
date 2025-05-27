@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"time"
 
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
+	sharedJSON "github.com/nurdsoft/nurd-commerce-core/shared/json"
 
 	"github.com/google/uuid"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
@@ -83,19 +85,46 @@ func (r *sqlRepository) GetOrderByExternalPaymentID(ctx context.Context, externa
 }
 
 func (r *sqlRepository) Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error {
-	result := r.gormDB.WithContext(ctx).Model(&entities.Order{}).Where("id = ?", orderID).Updates(details)
-	if result.Error != nil {
-		return result.Error
+	tx := r.gormDB.WithContext(ctx).Model(&entities.Order{}).Where("id = ?", orderID)
+
+	// Handle fulfillment_metadata append using Postgres || operator
+	if newMetaRaw, ok := details["fulfillment_metadata"]; ok {
+		newMetaBytes, err := json.Marshal(newMetaRaw)
+		if err != nil {
+			return err
+		}
+
+		// Wrap using your custom JSON type
+		mergedPatch := sharedJSON.JSON(newMetaBytes)
+
+		// Apply merge in SQL using GORM expression
+		tx = tx.Update("fulfillment_metadata", gorm.Expr("fulfillment_metadata || ?", mergedPatch))
+
+		// Remove from generic update to avoid conflict
+		delete(details, "fulfillment_metadata")
 	}
 
-	if result.RowsAffected == 0 {
+	// Update other fields if any
+	if len(details) > 0 {
+		tx = tx.Updates(details)
+	}
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
 		return moduleErrors.NewAPIError("ORDER_NOT_FOUND")
 	}
 
+	// Fetch related order items
 	var orderItems []*entities.OrderItem
-	if err := r.gormDB.WithContext(ctx).Where("order_id = ?", orderID).Find(&orderItems).Error; err != nil {
+	if err := r.gormDB.WithContext(ctx).
+		Where("order_id = ?", orderID).
+		Find(&orderItems).Error; err != nil {
 		return moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
 	}
+
 	return nil
 }
 

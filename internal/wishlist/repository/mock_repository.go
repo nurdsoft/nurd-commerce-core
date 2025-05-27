@@ -7,6 +7,7 @@ package repository
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
@@ -78,6 +79,21 @@ func (m *MockRepository) GetWishlist(ctx context.Context, customerID string, lim
 func (mr *MockRepositoryMockRecorder) GetWishlist(ctx, customerID, limit, cursor interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWishlist", reflect.TypeOf((*MockRepository)(nil).GetWishlist), ctx, customerID, limit, cursor)
+}
+
+// GetWishlistProductTimestamps mocks base method.
+func (m *MockRepository) GetWishlistProductTimestamps(customerID string, productIDs []uuid.UUID) (map[string]time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWishlistProductTimestamps", customerID, productIDs)
+	ret0, _ := ret[0].(map[string]time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWishlistProductTimestamps indicates an expected call of GetWishlistProductTimestamps.
+func (mr *MockRepositoryMockRecorder) GetWishlistProductTimestamps(customerID, productIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWishlistProductTimestamps", reflect.TypeOf((*MockRepository)(nil).GetWishlistProductTimestamps), customerID, productIDs)
 }
 
 // UpdateWishlist mocks base method.

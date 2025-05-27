@@ -8,10 +8,12 @@ import (
 
 // Config is a common service config
 type Config struct {
-	SecurityHost string
-	APIHost      string
-	ClientID     string
-	ClientSecret string
+	SecurityHost  string
+	APIHost       string
+	ClientID      string
+	ClientSecret  string
+	ShipperName string
+	ShipperNumber string
 }
 
 // Validate config
@@ -32,6 +34,14 @@ func (c *Config) Validate() error {
 
 	if c.ClientSecret == "" {
 		errs = append(errs, "ups clientsecret shouldn't be empty")
+	}
+
+	if c.ShipperName == "" {
+		errs = append(errs, "ups shippername shouldn't be empty")
+	}
+
+	if c.ShipperNumber == "" {
+		errs = append(errs, "ups shippernumber shouldn't be empty")
 	}
 
 	if len(errs) > 0 {

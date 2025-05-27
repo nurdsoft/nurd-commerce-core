@@ -12,6 +12,7 @@ import (
 	upsConfig "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/config"
 	upsEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/errors"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -23,6 +24,24 @@ const (
 	logPrefix       = "ups"
 	sessionCacheKey = "ups-session-cache"
 )
+
+var serviceCodeMappings = map[string]struct {
+	Code        string
+	Description string
+}{
+	"02": {Code: "ups_second_day_air", Description: "UPS 2nd Day Air"},
+	"59": {Code: "ups_second_day_air_am", Description: "UPS 2nd Day Air A.M."},
+	"12": {Code: "ups_three_day_select", Description: "UPS 3 Day Select"},
+	"03": {Code: "ups_ground", Description: "UPS Ground"},
+	"01": {Code: "ups_next_day_air", Description: "UPS Next Day Air"},
+	"14": {Code: "ups_next_day_air_early", Description: "UPS Next Day Air Early"},
+	"13": {Code: "ups_next_day_air_saver", Description: "UPS Next Day Air Saver"},
+	"11": {Code: "ups_standard", Description: "UPS Standard"},
+	"07": {Code: "ups_worldwide_express", Description: "UPS Worldwide Express"},
+	"08": {Code: "ups_worldwide_expedited", Description: "UPS Worldwide Expedited"},
+	"54": {Code: "ups_worldwide_express_plus", Description: "UPS Worldwide Express Plus"},
+	"65": {Code: "ups_worldwide_saver", Description: "UPS Worldwide Saver"},
+}
 
 type Service interface {
 	ValidateAddress(ctx context.Context, address entities.Address) (*entities.Address, error)
@@ -41,10 +60,122 @@ type service struct {
 }
 
 // GetShippingRates returns the estimated rates for the given shipping address and dimensions
-// https://shipengine.github.io/shipengine-openapi/#operation/estimate_rates
+// https://developer.ups.com/tag/Rating?loc=en_US&tag=Rating#operation/Rate
 func (s *service) GetShippingRates(ctx context.Context, shipment entities.Shipment) ([]entities.ShippingRate, error) {
+	url := fmt.Sprintf("%s/api/rating/v2409/Shop", s.config.APIHost)
 
-	return nil, nil
+	session, err := s.newSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &upsEntities.RateRequestWrapper{
+		RateRequest: upsEntities.RateRequest{
+			Request: upsEntities.Request{
+				TransactionReference: upsEntities.TransactionReference{
+					CustomerContext: "Shipping Rate Request",
+				},
+			},
+			Shipment: upsEntities.Shipment{
+				Shipper: upsEntities.Party{
+					Name:          s.config.ShipperName,
+					ShipperNumber: s.config.ShipperNumber,
+					Address: upsEntities.Address{
+						AddressLine:       []string{shipment.Origin.Address},
+						City:              shipment.Origin.City,
+						StateProvinceCode: shipment.Origin.StateCode,
+						PostalCode:        shipment.Origin.PostalCode,
+						CountryCode:       shipment.Origin.CountryCode,
+					},
+				},
+				ShipTo: upsEntities.Party{
+					Name: shipment.Destination.FullName,
+					Address: upsEntities.Address{
+						AddressLine:       []string{shipment.Destination.Address},
+						City:              shipment.Destination.City,
+						StateProvinceCode: shipment.Destination.StateCode,
+						PostalCode:        shipment.Destination.PostalCode,
+						CountryCode:       shipment.Destination.CountryCode,
+					},
+				},
+				NumOfPieces: "1", // Assuming only one package will be shipped
+				Package: upsEntities.Package{
+					PackagingType: upsEntities.CodeDescription{
+						Code:        "02",
+						Description: "Package",
+					},
+					Dimensions: upsEntities.Dimensions{
+						UnitOfMeasurement: upsEntities.CodeDescription{
+							Code:        "IN",
+							Description: "Inches",
+						},
+						Length: shipment.Dimensions.Length.StringFixed(2),
+						Width:  shipment.Dimensions.Width.StringFixed(2),
+						Height: shipment.Dimensions.Height.StringFixed(2),
+					},
+					PackageWeight: upsEntities.PackageWeight{
+						UnitOfMeasurement: upsEntities.CodeDescription{
+							Code:        "LBS",
+							Description: "Pounds",
+						},
+						Weight: shipment.Dimensions.Weight.StringFixed(2),
+					},
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err = json.NewEncoder(&buf).Encode(req)
+	if err != nil {
+		s.log.Error(logPrefix, "json encode failed,", err)
+		return nil, err
+	}
+
+	data, err := session.httpRequest(http.MethodPost, url, &buf)
+	if err != nil {
+		s.log.Error(logPrefix, "http request failed,", err)
+		return nil, errors.NewAPIError("UPS_RATES_ERROR", err.Error())
+	}
+
+	res := &upsEntities.RateResponseWrapper{}
+	err = json.Unmarshal(data, res)
+	if err != nil {
+		s.log.Error(logPrefix, "json decode failed,", err)
+		return nil, errors.NewAPIError("UPS_RATES_ERROR", err.Error())
+	}
+
+	if res.RateResponse.Response.ResponseStatus.Code != "1" || len(res.RateResponse.RatedShipment) == 0 {
+		s.log.Error(logPrefix, "UPS response error:", res.RateResponse.Response.ResponseStatus.Description)
+		return nil, errors.NewAPIError("UPS_RATES_ERROR")
+	} else {
+		var shippingRates []entities.ShippingRate
+		for _, rate := range res.RateResponse.RatedShipment {
+
+			totalRate, err := decimal.NewFromString(rate.TotalCharges.MonetaryValue)
+			if err != nil {
+				s.log.Error(logPrefix, "failed to parse total rate:", err)
+				return nil, errors.NewAPIError("UPS_INVALID_RATE")
+			}
+
+			mapping := serviceCodeMappings[rate.Service.Code]
+
+			shippingRate := entities.ShippingRate{
+				Amount:      totalRate,
+				Currency:    rate.TotalCharges.CurrencyCode,
+				CarrierName: "UPS",
+				CarrierCode: "ups",
+				ServiceType: mapping.Description,
+				ServiceCode: mapping.Code,
+			}
+			if rate.GuaranteedDelivery != nil {
+				shippingRate.BusinessDaysInTransit = rate.GuaranteedDelivery.BusinessDaysInTransit
+			}
+			shippingRates = append(shippingRates, shippingRate)
+		}
+
+		return shippingRates, nil
+	}
 }
 
 // ValidateAddress return validation result for the given shipping address
@@ -90,6 +221,7 @@ func (s *service) ValidateAddress(ctx context.Context, address entities.Address)
 	}
 
 	if res.XAVResponse.Response.ResponseStatus.Code != "1" || len(res.XAVResponse.Candidate) == 0 {
+		s.log.Error(logPrefix, "invalid address response from UPS:", res.XAVResponse.Response.ResponseStatus.Description)
 		return nil, errors.NewAPIError("UPS_INVALID_ADDRESS")
 	} else {
 		candidate := res.XAVResponse.Candidate[0]

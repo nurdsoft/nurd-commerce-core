@@ -591,7 +591,7 @@ func (s *service) GetShippingRate(ctx context.Context, req *entities.GetShipping
 
 	for _, item := range getActiveCarItems.Items {
 		// TODO revise package calculation
-		if item.Length == nil || item.Width == nil || item.Height == nil || item.Weight == nil {
+		if item.Length != nil || item.Width != nil || item.Height != nil || item.Weight != nil {
 			for i := 0; i < item.Quantity; i++ {
 				if item.Length != nil {
 					lengths = append(lengths, *item.Length)
@@ -674,6 +674,7 @@ func (s *service) GetShippingRate(ctx context.Context, req *entities.GetShipping
 			ServiceType:           estimate.ServiceType,
 			ServiceCode:           estimate.ServiceCode,
 			EstimatedDeliveryDate: estimate.EstimatedDeliveryDate,
+			BusinessDaysInTransit: estimate.BusinessDaysInTransit,
 			Amount:                estimate.Amount,
 			Currency:              estimate.Currency,
 			CreatedAt:             time.Now(),

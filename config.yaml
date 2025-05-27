@@ -32,6 +32,8 @@ Shipping:
     APIHost: ""
     ClientID: ""
     ClientSecret: ""
+    ShipperName: ""
+    ShipperNumber: ""
 Payment:
   Stripe:
     Key: ""

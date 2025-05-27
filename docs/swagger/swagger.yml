@@ -115,6 +115,9 @@ definitions:
             amount:
                 type: string
                 x-go-name: Amount
+            business_days_in_transit:
+                type: string
+                x-go-name: BusinessDaysInTransit
             carrier_code:
                 type: string
                 x-go-name: CarrierCode
@@ -648,6 +651,9 @@ definitions:
             order_reference:
                 type: string
                 x-go-name: OrderReference
+            shipping_business_days_in_transit:
+                type: string
+                x-go-name: ShippingBusinessDaysInTransit
             shipping_carrier_code:
                 type: string
                 x-go-name: ShippingCarrierCode

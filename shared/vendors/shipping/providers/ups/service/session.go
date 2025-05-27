@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/errors"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/errors"
 )
 
 type Session struct {
@@ -46,7 +46,7 @@ func (s *Session) httpRequest(method, url string, body io.Reader) ([]byte, error
 
 		newStr := buf.String()
 
-		sfErr := errors.ParseSalesforceError(resp.StatusCode, buf.Bytes())
+		sfErr := errors.ParseError(resp.StatusCode, buf.Bytes())
 
 		log.Println(logPrefix, "Failed resp.body: ", newStr)
 		return nil, sfErr

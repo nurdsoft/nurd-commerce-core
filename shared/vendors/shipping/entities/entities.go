@@ -6,6 +6,7 @@ import (
 )
 
 type Address struct {
+	FullName    string
 	Address     string
 	City        string
 	StateCode   string
@@ -39,5 +40,6 @@ type ShippingRate struct {
 	ServiceType           string
 	ServiceCode           string
 	EstimatedDeliveryDate time.Time
+	BusinessDaysInTransit string
 	CreatedAt             time.Time
 }

@@ -1,10 +1,35 @@
 package errors
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"net/http"
 )
+
+const (
+	messageFor401Error string = "Credentials are invalid or have expired. Please contact Nurdsoft Support."
+)
+
+type jsonError struct {
+	Response Response `json:"response"`
+}
+
+type Response struct {
+	Errors []Error `json:"errors"`
+}
+
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type UPSError struct {
+	Message      string
+	HttpCode     int
+	ErrorCode    string
+	ErrorMessage string
+}
 
 type ErrorObject struct {
 	RequestID string   `json:"request_id,omitempty"`
@@ -18,6 +43,14 @@ type Errors struct {
 	Message     string `json:"message,omitempty"`
 	FieldName   string `json:"field_name,omitempty"`
 	FieldValue  string `json:"field_value,omitempty"`
+}
+
+func (err UPSError) Error() string {
+	return err.Message
+}
+
+func (err UPSError) Cause() string {
+	return "ups"
 }
 
 func (e *ErrorObject) Error() string {
@@ -34,13 +67,14 @@ func (e *ErrorObject) Unwrap() error {
 	return nil
 }
 
-
 // Module-specific errors
 var moduleErrors = map[string]struct {
 	StatusCode int
 	Message    string
 }{
 	"UPS_INVALID_ADDRESS": {StatusCode: http.StatusBadRequest, Message: "Invalid UPS address."},
+	"UPS_RATES_ERROR":     {StatusCode: http.StatusBadRequest, Message: "Error fetching UPS shipping rates."},
+	"UPS_INVALID_RATE":    {StatusCode: http.StatusInternalServerError, Message: "Invalid UPS shipping rate."},
 }
 
 func NewAPIError(errorCode string, customMessage ...string) *errors.APIError {
@@ -59,4 +93,33 @@ func NewAPIError(errorCode string, customMessage ...string) *errors.APIError {
 
 	// Fallback to global/common errors
 	return errors.NewAPIError(errorCode, customMessage...)
+}
+
+// Need to get information out of this package.
+func ParseError(statusCode int, responseBody []byte) (err error) {
+	var upsStatusCode int
+	var message string
+
+	jsonError := jsonError{}
+	err = json.Unmarshal(responseBody, &jsonError)
+
+	if statusCode == http.StatusUnauthorized {
+		// prevent frontend from being logged out
+		upsStatusCode = http.StatusInternalServerError
+		message = messageFor401Error
+	}
+
+	if err == nil && len(jsonError.Response.Errors) > 0 {
+		return &UPSError{
+			Message: jsonError.Response.Errors[0].Message,
+			HttpCode:     upsStatusCode,
+			ErrorCode:    jsonError.Response.Errors[0].Code,
+			ErrorMessage: message,
+		}
+	}
+
+	return &UPSError{
+		Message:  string(responseBody),
+		HttpCode: statusCode,
+	}
 }

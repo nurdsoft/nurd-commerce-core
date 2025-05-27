@@ -192,6 +192,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		ShippingCarrierName:           shipping.CarrierName,
 		ShippingCarrierCode:           shipping.CarrierCode,
 		ShippingEstimatedDeliveryDate: shipping.EstimatedDeliveryDate,
+		ShippingBusinessDaysInTransit: shipping.BusinessDaysInTransit,
 		ShippingServiceType:           shipping.ServiceType,
 		ShippingServiceCode:           shipping.ServiceCode,
 		DeliveryFullName:              address.FullName,
@@ -262,7 +263,12 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 				ShippingCarrierServiceC: order.ShippingServiceType,
 				CurrencyC:               order.Currency,
 				Pricebook2ID:            salesforceEntities.StandardPriceBook,
-				EstimatedDeliveryDateC:  order.ShippingEstimatedDeliveryDate.Format("2006-01-02"),
+				EstimatedDeliveryDateC:  func() string {
+					if order.ShippingEstimatedDeliveryDate.IsZero() {
+						return time.Now().Format("2006-01-02")
+					}
+					return order.ShippingEstimatedDeliveryDate.Format("2006-01-02")
+				}(),
 				OrderCreatedAtC:         time.Now().Format("2006-01-02"),
 			})
 			if err != nil {

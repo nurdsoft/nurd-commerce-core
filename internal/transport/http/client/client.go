@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -58,7 +57,6 @@ func (c *client) GetRawBody(ctx context.Context, reqURL string, headers map[stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending GET request to", reqURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
 	if err != nil {
@@ -84,10 +82,6 @@ func (c *client) GetRawBody(ctx context.Context, reqURL string, headers map[stri
 		return nil, err
 	}
 
-	c.log.Infoln("Raw Response Status: %d\n", httpResponse.StatusCode)
-	c.log.Infoln("Raw Response Headers: %+v\n", httpResponse.Header)
-	c.log.Infoln("Raw Response Body (truncated): %s\n", string(responseBody))
-
 	return responseBody, nil
 }
 
@@ -95,7 +89,7 @@ func (c *client) Get(ctx context.Context, reqURL string, headers map[string]stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending GET request to", reqURL)
+
 	var requestBody string
 
 	if value, exists := headers["Content-Type"]; exists && value == "application/x-www-form-urlencoded" {
@@ -119,9 +113,6 @@ func (c *client) Get(ctx context.Context, reqURL string, headers map[string]stri
 		req.Header.Set(k, v)
 	}
 
-	c.log.Infoln("GET Request Headers: %+v\n", req.Header)
-	c.log.Infoln("GET Request Body: %s\n", requestBody)
-
 	httpResponse, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -134,10 +125,6 @@ func (c *client) Get(ctx context.Context, reqURL string, headers map[string]stri
 		return err
 	}
 
-	c.log.Infoln("Response Status: %d\n", httpResponse.StatusCode)
-	c.log.Infoln("Response Headers: %+v\n", httpResponse.Header)
-	c.log.Infoln("Response Body: %s\n", string(responseBody))
-
 	return c.parseResponseBody(responseBody, httpResponse.StatusCode, out)
 }
 
@@ -145,7 +132,6 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending POST request to", reqURL)
 
 	var requestBody string
 
@@ -156,7 +142,7 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 	}
 
 	if err != nil {
-		log.Println("Error marshalling request data to JSON")
+		c.log.Error("Error marshalling request data to JSON", err)
 		return err
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, strings.NewReader(requestBody))
@@ -170,9 +156,6 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 		req.Header.Set(k, v)
 	}
 
-	c.log.Infoln("POST Request Headers: %+v\n", req.Header)
-	c.log.Infoln("POST Request Body: %s\n", requestBody)
-
 	httpResponse, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -182,14 +165,9 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 
 	responseBody, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		log.Println("Error reading response body")
+		c.log.Error("Error reading response body", err)
 		return err
 	}
-
-	c.log.Infoln("Response Status: %d\n", httpResponse.StatusCode)
-	c.log.Infoln("Response Headers: %+v\n", httpResponse.Header)
-	c.log.Infoln("Response Body: %s\n", string(responseBody))
-
 	return c.parseResponseBody(responseBody, httpResponse.StatusCode, out)
 }
 
@@ -197,7 +175,6 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending PUT request to", reqURL)
 
 	// Convert the map to JSON
 	jsonData, err := json.Marshal(in)
@@ -205,7 +182,6 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 		return err
 	}
 
-	c.log.Infoln("PUT Request Body", string(jsonData))
 	req, err := http.NewRequestWithContext(ctx, "PUT", reqURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
@@ -215,9 +191,6 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 		req.Header.Set(k, v)
 	}
 
-	c.log.Infoln("PUT Request Headers: %+v\n", req.Header)
-	c.log.Infoln("PUT Request Body: %s\n", string(jsonData))
-
 	httpResponse, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -227,14 +200,9 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 
 	responseBody, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		c.log.Infoln("Error reading response body")
+		c.log.Error("Error reading response body", err)
 		return err
 	}
-	c.log.Infoln("Response: ", string(responseBody))
-
-	c.log.Infoln("Response Status: %d\n", httpResponse.StatusCode)
-	c.log.Infoln("Response Headers: %+v\n", httpResponse.Header)
-	c.log.Infoln("Response Body: %s\n", string(responseBody))
 
 	return c.parseResponseBody(responseBody, httpResponse.StatusCode, out)
 }

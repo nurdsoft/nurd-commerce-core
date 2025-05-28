@@ -641,6 +641,8 @@ definitions:
             delivery_state_code:
                 type: string
                 x-go-name: DeliveryStateCode
+            fulfillment_metadata:
+                $ref: '#/definitions/JSON'
             id:
                 format: uuid
                 type: string

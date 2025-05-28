@@ -77,7 +77,10 @@ env:
 	$(shell export $$(grep --color=never -v '^#' .env | xargs))
 	@echo "Done"
 
-run-dev: $(NAME)
+run-dev: docs
+	go generate ./...
+	go run scripts/error_extractor.go
+	go build -race -o $(NAME) .
 	@export $(shell grep --color=never -v '^#' .env | xargs) && ./$(NAME) api
 
 test:

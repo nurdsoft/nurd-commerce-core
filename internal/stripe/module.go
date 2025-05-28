@@ -2,13 +2,12 @@ package stripe
 
 import (
 	"database/sql"
-	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
-
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
+	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
-	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -29,7 +28,7 @@ type ModuleParams struct {
 	CommonConfig   cfg.Config
 	Logger         *zap.SugaredLogger
 	OrdersClient   ordersclient.Client
-	StripeClient   stripe.Client
+	StripeClient   stripeClient.Client
 	CustomerClient customerclient.Client
 }
 

@@ -1,9 +1,9 @@
-package stripe
+package authorizenet
 
 import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/service"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/service"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -19,14 +19,10 @@ type ModuleParams struct {
 // NewModule
 // nolint:gocritic
 func NewModule(p ModuleParams) (client.Client, error) {
-	svc, err := service.New(p.Config.Stripe, p.Logger)
-	if err != nil {
-		return nil, err
-	}
+	svc := service.New(p.Config.AuthorizeNet, p.Logger)
+	authClient := client.NewClient(svc)
 
-	stripeClient := client.NewClient(svc)
-
-	return stripeClient, nil
+	return authClient, nil
 }
 
 var (

@@ -2,18 +2,18 @@ package service
 
 import (
 	"context"
+	"strings"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
-
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type Service interface {
@@ -26,7 +26,7 @@ type service struct {
 	log              *zap.SugaredLogger
 	config           cfg.Config
 	salesforceClient salesforce.Client
-	stripeClient     stripe.Client
+	stripeClient     stripeClient.Client
 	ordersClient     ordersclient.Client
 	customerClient   customerclient.Client
 }
@@ -34,7 +34,7 @@ type service struct {
 func New(
 	logger *zap.SugaredLogger,
 	config cfg.Config,
-	stripeClient stripe.Client,
+	stripeClient stripeClient.Client,
 	ordersClient ordersclient.Client,
 	customerClient customerclient.Client,
 ) Service {
@@ -155,7 +155,7 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		return nil, false, err
 	}
 
-	if customer.StripeId == nil {
+	if customer.ExternalCustomerId == nil {
 		var fullName strings.Builder
 		fullName.WriteString(customer.FirstName)
 		if customer.LastName != nil {
@@ -171,16 +171,16 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		if err != nil {
 			return nil, false, err
 		}
-		customer.StripeId = &stripeCustomer.Id
+		customer.ExternalCustomerId = &stripeCustomer.Id
 
-		err = s.customerClient.UpdateCustomerStripeID(ctx, customerID, stripeCustomer.Id)
+		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, stripeCustomer.Id)
 
 		if err != nil {
 			return nil, false, err
 		}
-		return customer.StripeId, true, nil
+		return customer.ExternalCustomerId, true, nil
 	}
-	return customer.StripeId, false, nil
+	return customer.ExternalCustomerId, false, nil
 }
 
 // swagger:route POST /stripe/webhook stripe StripeWebhookRequest

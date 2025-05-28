@@ -64,6 +64,21 @@ func (mr *MockRepositoryMockRecorder) CreateOrder(ctx, cartID, order, orderItems
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockRepository)(nil).CreateOrder), ctx, cartID, order, orderItems)
 }
 
+// GetOrderByExternalPaymentID mocks base method.
+func (m *MockRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string) (*entities.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderByExternalPaymentID", ctx, externalPaymentID)
+	ret0, _ := ret[0].(*entities.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderByExternalPaymentID indicates an expected call of GetOrderByExternalPaymentID.
+func (mr *MockRepositoryMockRecorder) GetOrderByExternalPaymentID(ctx, externalPaymentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByExternalPaymentID", reflect.TypeOf((*MockRepository)(nil).GetOrderByExternalPaymentID), ctx, externalPaymentID)
+}
+
 // GetOrderByID mocks base method.
 func (m *MockRepository) GetOrderByID(ctx context.Context, orderID uuid.UUID) (*entities.Order, error) {
 	m.ctrl.T.Helper()
@@ -92,21 +107,6 @@ func (m *MockRepository) GetOrderByReference(ctx context.Context, orderReference
 func (mr *MockRepositoryMockRecorder) GetOrderByReference(ctx, orderReference interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByReference", reflect.TypeOf((*MockRepository)(nil).GetOrderByReference), ctx, orderReference)
-}
-
-// GetOrderByStripePaymentIntentID mocks base method.
-func (m *MockRepository) GetOrderByStripePaymentIntentID(ctx context.Context, stripePaymentIntentID string) (*entities.Order, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrderByStripePaymentIntentID", ctx, stripePaymentIntentID)
-	ret0, _ := ret[0].(*entities.Order)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOrderByStripePaymentIntentID indicates an expected call of GetOrderByStripePaymentIntentID.
-func (mr *MockRepositoryMockRecorder) GetOrderByStripePaymentIntentID(ctx, stripePaymentIntentID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByStripePaymentIntentID", reflect.TypeOf((*MockRepository)(nil).GetOrderByStripePaymentIntentID), ctx, stripePaymentIntentID)
 }
 
 // GetOrderItemsByID mocks base method.

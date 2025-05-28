@@ -108,6 +108,9 @@ start-env: ## Start the local env
 	docker-compose up -d otel-collector
 	docker-compose up -d db
 
+start-db: ## Start the local db
+	docker-compose up -d db
+
 start-app: ## Start the application in docker container
 	docker-compose up --build api
 

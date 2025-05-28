@@ -97,8 +97,13 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 		// Wrap using your custom JSON type
 		mergedPatch := sharedJSON.JSON(newMetaBytes)
 
-		// Apply merge in SQL using GORM expression
-		tx = tx.Update("fulfillment_metadata", gorm.Expr("fulfillment_metadata || ?", mergedPatch))
+		// Normalize 'null'::jsonb to '{}' inline using CASE
+		tx = tx.Update("fulfillment_metadata", gorm.Expr(`
+			CASE
+				WHEN fulfillment_metadata IS NULL OR fulfillment_metadata = 'null'::jsonb THEN '{}'::jsonb
+				ELSE fulfillment_metadata
+			END || ?
+		`, mergedPatch))
 
 		// Remove from generic update to avoid conflict
 		delete(details, "fulfillment_metadata")

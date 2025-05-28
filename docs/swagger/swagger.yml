@@ -678,6 +678,9 @@ definitions:
             total:
                 type: string
                 x-go-name: Total
+            tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
             updated_at:
                 format: date-time
                 type: string
@@ -910,6 +913,9 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
+            fulfillment_tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
             status:
                 type: string
                 x-go-name: Status

@@ -67,11 +67,12 @@ type UpdateOrderRequest struct {
 }
 
 type UpdateOrderRequestBody struct {
-	Status                   *string          `json:"status"`
-	FulfillmentMessage       *string          `json:"fulfillment_message,omitempty"`
-	FulfillmentShipmentDate  *time.Time       `json:"fulfillment_shipment_date,omitempty"`
-	FulfillmentFreightCharge *decimal.Decimal `json:"fulfillment_freight_charge,omitempty"`
-	FulfillmentOrderTotal    *decimal.Decimal `json:"fulfillment_order_total,omitempty"`
-	FulfillmentAmountDue     *decimal.Decimal `json:"fulfillment_amount_due,omitempty"`
-	FulfilmentMetadata       *json.JSON       `json:"fulfillment_metadata,omitempty"`
+	Status                    *string          `json:"status"`
+	FulfillmentMessage        *string          `json:"fulfillment_message,omitempty"`
+	FulfillmentShipmentDate   *time.Time       `json:"fulfillment_shipment_date,omitempty"`
+	FulfillmentFreightCharge  *decimal.Decimal `json:"fulfillment_freight_charge,omitempty"`
+	FulfillmentOrderTotal     *decimal.Decimal `json:"fulfillment_order_total,omitempty"`
+	FulfillmentAmountDue      *decimal.Decimal `json:"fulfillment_amount_due,omitempty"`
+	FulfillmentTrackingNumber *string          `json:"fulfillment_tracking_number,omitempty"`
+	FulfilmentMetadata        *json.JSON       `json:"fulfillment_metadata,omitempty"`
 }

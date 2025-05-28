@@ -1,7 +1,7 @@
 package entities
 
-// swagger:model GetPaymentMethodResponse
-type GetPaymentMethodResponse struct {
+// swagger:model GetPaymentMethodsResponse
+type GetPaymentMethodsResponse struct {
 	PaymentMethods []PaymentMethod `json:"payment_methods"`
 }
 
@@ -22,12 +22,16 @@ type PaymentMethod struct {
 	Created      int64   `json:"created"`
 }
 
-
 type SetupIntent struct {
 	// Client secret of the SetupIntent.
-	SetupIntent  string `json:"setup_intent"`
+	SetupIntent string `json:"setup_intent"`
 	// Short-lived key associated with a specific Stripe Customer, will be used by StripeSDK
 	EphemeralKey string `json:"ephemeral_key"`
 	// Customer ID associated with the SetupIntent
-	CustomerId   string `json:"customer"`
+	CustomerId string `json:"customer"`
+}
+
+// swagger:model GetPaymentMethodResponse
+type GetPaymentMethodResponse struct {
+	PaymentMethod PaymentMethod `json:"payment_method"`
 }

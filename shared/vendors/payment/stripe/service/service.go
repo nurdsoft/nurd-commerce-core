@@ -20,6 +20,7 @@ import (
 type Service interface {
 	CreateCustomer(ctx context.Context, req *entities.CreateCustomerRequest) (*entities.CreateCustomerResponse, error)
 	GetCustomerPaymentMethods(_ context.Context, customerId *string) (*entities.GetCustomerPaymentMethodsResponse, error)
+	GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error)
 	GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error)
 	CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error)
 	GetWebhookEvent(_ context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
@@ -238,4 +239,42 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 		s.logger.Warnf("Unhandled event type: %s", event.Type)
 		return &entities.HandleWebhookEventResponse{}, nil
 	}
+}
+
+// GetCustomerPaymentMethodById retrieves a specific payment method by its ID.
+func (s *service) GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error) {
+	stripe.Key = s.config.Stripe.Key
+
+	params := &stripe.CustomerRetrievePaymentMethodParams{
+		Customer: stripe.String(*customerId),
+	}
+
+	pm, err := customer.RetrievePaymentMethod(*paymentMethodId, params)
+	if err != nil {
+		s.logger.Error("Failed to fetch payment method from stripe-api:", err)
+		var stripeErr *stripe.Error
+		if errors.As(err, &stripeErr) {
+			switch stripeErr.Type {
+			case stripe.ErrorTypeInvalidRequest:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			case stripe.ErrorTypeAPI:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			}
+		}
+		return nil, moduleErrors.NewAPIError("STRIPE_UNABLE_TO_FETCH_PAYMENT_METHOD")
+	}
+
+	resp := &entities.GetCustomerPaymentMethodResponse{
+		PaymentMethod: entities.PaymentMethod{
+			Id:           pm.ID,
+			Brand:        string(pm.Card.Brand),
+			DisplayBrand: pm.Card.DisplayBrand,
+			Country:      pm.Card.Country,
+			Last4:        pm.Card.Last4,
+			ExpiryMonth:  pm.Card.ExpMonth,
+			ExpiryYear:   pm.Card.ExpYear,
+		},
+	}
+
+	return resp, nil
 }

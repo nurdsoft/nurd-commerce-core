@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,17 +22,18 @@ type Client interface {
 	GetRawBody(ctx context.Context, reqURL string, headers map[string]string, in interface{}) ([]byte, error)
 }
 
-func New(hostname string, httpClient *http.Client, opts ...Option) Client {
+func New(hostname string, httpClient *http.Client, log *zap.SugaredLogger, opts ...Option) Client {
 	// Disable SSL/TLS certificate verification
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	clnt := http.Client(*httpClient)
+	clnt := *httpClient
 	clnt.Transport = tr
 
 	c := &client{}
 	c.hostname = hostname
+	c.log = log
 	c.httpClient = &clnt
 
 	defaultOptions := options{}
@@ -48,6 +49,7 @@ func New(hostname string, httpClient *http.Client, opts ...Option) Client {
 type client struct {
 	hostname   string
 	httpClient *http.Client
+	log        *zap.SugaredLogger
 	external   bool
 }
 
@@ -55,7 +57,6 @@ func (c *client) GetRawBody(ctx context.Context, reqURL string, headers map[stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending GET request to", reqURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
 	if err != nil {
@@ -88,7 +89,7 @@ func (c *client) Get(ctx context.Context, reqURL string, headers map[string]stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending GET request to", reqURL)
+
 	var requestBody string
 
 	if value, exists := headers["Content-Type"]; exists && value == "application/x-www-form-urlencoded" {
@@ -131,7 +132,6 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending POST request to", reqURL)
 
 	var requestBody string
 
@@ -142,7 +142,7 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 	}
 
 	if err != nil {
-		log.Println("Error marshalling request data to JSON")
+		c.log.Error("Error marshalling request data to JSON", err)
 		return err
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, strings.NewReader(requestBody))
@@ -165,7 +165,7 @@ func (c *client) Post(ctx context.Context, reqURL string, headers map[string]str
 
 	responseBody, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		log.Println("Error reading response body")
+		c.log.Error("Error reading response body", err)
 		return err
 	}
 	return c.parseResponseBody(responseBody, httpResponse.StatusCode, out)
@@ -175,7 +175,6 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 	var err error
 
 	reqURL = c.requestURL(reqURL)
-	log.Println("Sending PUT request to", reqURL)
 
 	// Convert the map to JSON
 	jsonData, err := json.Marshal(in)
@@ -183,7 +182,6 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 		return err
 	}
 
-	log.Println("Request Body", string(jsonData))
 	req, err := http.NewRequestWithContext(ctx, "PUT", reqURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
@@ -202,10 +200,9 @@ func (c *client) Put(ctx context.Context, reqURL string, headers map[string]stri
 
 	responseBody, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		log.Println("Error reading response body")
+		c.log.Error("Error reading response body", err)
 		return err
 	}
-	log.Println("Response: ", string(responseBody))
 
 	return c.parseResponseBody(responseBody, httpResponse.StatusCode, out)
 }

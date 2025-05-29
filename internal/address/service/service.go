@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -12,12 +13,9 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
-	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
-
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +31,7 @@ type service struct {
 	repo             repository.Repository
 	log              *zap.SugaredLogger
 	config           cfg.Config
-	shipengineClient shipengine.Client
+	shippingClient   shipping.Client
 	salesforceClient salesforce.Client
 	customerClient   customerclient.Client
 }
@@ -42,7 +40,7 @@ func New(
 	repo repository.Repository,
 	logger *zap.SugaredLogger,
 	config cfg.Config,
-	shipengineClient shipengine.Client,
+	shippingClient shipping.Client,
 	salesforceClient salesforce.Client,
 	customerClient customerclient.Client,
 ) Service {
@@ -50,7 +48,7 @@ func New(
 		repo:             repo,
 		log:              logger,
 		config:           config,
-		shipengineClient: shipengineClient,
+		shippingClient:   shippingClient,
 		salesforceClient: salesforceClient,
 		customerClient:   customerClient,
 	}
@@ -81,12 +79,12 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 		return nil, err
 	}
 
-	err = s.validateAddress(ctx, req.Address.City, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode)
+	validatedAddress, err := s.validateAddress(ctx, req.Address.Address, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode, req.Address.City)
 	if err != nil {
 		return nil, err
 	}
 
-	address, err := s.repo.CreateAddress(ctx, &entities.Address{
+	address := &entities.Address{
 		ID:          uuid.New(),
 		CustomerID:  customer,
 		FullName:    req.Address.FullName,
@@ -98,7 +96,17 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 		PostalCode:  req.Address.PostalCode,
 		PhoneNumber: req.Address.PhoneNumber,
 		IsDefault:   req.Address.IsDefault,
-	})
+	}
+
+	if validatedAddress != nil {
+		address.Address = validatedAddress.Address
+		address.StateCode = validatedAddress.StateCode
+		address.CountryCode = validatedAddress.CountryCode
+		address.PostalCode = validatedAddress.PostalCode
+		address.City = &validatedAddress.City
+	}
+
+	address, err = s.repo.CreateAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	} else {
@@ -221,13 +229,12 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 		return nil, err
 	}
 
-	err = s.validateAddress(ctx, req.Address.City, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode)
+	validatedAddress, err := s.validateAddress(ctx, req.Address.Address, req.Address.StateCode, req.Address.PostalCode, req.Address.CountryCode, req.Address.City)
 	if err != nil {
 		return nil, err
 	}
 
-	// update address in the database
-	updatedAddress, err := s.repo.UpdateAddress(ctx, &entities.Address{
+	address := &entities.Address{
 		ID:          req.AddressID,
 		CustomerID:  customer,
 		FullName:    req.Address.FullName,
@@ -235,11 +242,22 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 		Apartment:   req.Address.Apartment,
 		City:        req.Address.City,
 		StateCode:   req.Address.StateCode,
-		PostalCode:  req.Address.PostalCode,
 		CountryCode: req.Address.CountryCode,
+		PostalCode:  req.Address.PostalCode,
 		PhoneNumber: req.Address.PhoneNumber,
 		IsDefault:   req.Address.IsDefault,
-	})
+	}
+
+	if validatedAddress != nil {
+		address.Address = validatedAddress.Address
+		address.StateCode = validatedAddress.StateCode
+		address.CountryCode = validatedAddress.CountryCode
+		address.PostalCode = validatedAddress.PostalCode
+		address.City = &validatedAddress.City
+	}
+
+	// update address in the database
+	updatedAddress, err := s.repo.UpdateAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	} else {
@@ -345,36 +363,19 @@ func (s *service) DeleteAddress(ctx context.Context, req *entities.DeleteAddress
 	return nil
 }
 
-func (s *service) validateAddress(ctx context.Context, city *string, state, zipCode, country string) error {
+func (s *service) validateAddress(ctx context.Context, address, state, zipCode, country string, city *string) (*shippingEntities.Address, error) {
 	parsedCity := ""
 	if city != nil {
 		parsedCity = *city
 	}
-
-	_, err := s.shipengineClient.GetRatesEstimate(ctx,
-		// From address
-		shipengineEntities.ShippingAddress{
-			City:    "La Vergne",
-			State:   "TN",
-			Zip:     "37086",
-			Country: "US",
-		},
-		// To address
-
-		shipengineEntities.ShippingAddress{
-			City:    parsedCity,
-			State:   state,
-			Zip:     zipCode,
-			Country: country,
-		},
-		// Package dimensions
-		shipengineEntities.Dimensions{
-			Length: decimal.NewFromFloat(1),
-			Width:  decimal.NewFromFloat(1),
-			Height: decimal.NewFromFloat(1),
-			Weight: decimal.NewFromFloat(1),
+	return s.shippingClient.ValidateAddress(ctx,
+		shippingEntities.Address{
+			Address:     address,
+			City:        parsedCity,
+			StateCode:   state,
+			PostalCode:  zipCode,
+			CountryCode: country,
 		})
-	return err
 }
 
 func (s *service) createSalesforceUserAddress(ctx context.Context, customerID, addressID string, req *salesforceEntities.CreateSFAddressRequest) error {

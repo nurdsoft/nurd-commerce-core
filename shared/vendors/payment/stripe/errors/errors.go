@@ -1,8 +1,9 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"net/http"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 )
 
 // Module-specific errors
@@ -13,6 +14,7 @@ var moduleErrors = map[string]struct {
 	"STRIPE_ERROR":                                      {StatusCode: http.StatusBadRequest, Message: "Stripe error."},
 	"STRIPE_UNABLE_TO_CREATE_USER":                      {StatusCode: http.StatusBadRequest, Message: "Unable to create user."},
 	"STRIPE_UNABLE_TO_FETCH_PAYMENT_METHODS":            {StatusCode: http.StatusInternalServerError, Message: "Unable to fetch payment methods."},
+	"STRIPE_UNABLE_TO_FETCH_PAYMENT_METHOD":             {StatusCode: http.StatusInternalServerError, Message: "Unable to fetch payment method."},
 	"STRIPE_UNABLE_TO_CREATE_SETUP_INTENT":              {StatusCode: http.StatusInternalServerError, Message: "Unable to create setup intent."},
 	"STRIPE_PAYMENT_INTENT_AUTHENTICATION_FAILURE":      {StatusCode: http.StatusBadRequest, Message: "Payment intent authentication failure."},
 	"STRIPE_PAYMENT_INTENT_INVALID_PARAMETER":           {StatusCode: http.StatusBadRequest, Message: "Payment intent invalid parameter."},

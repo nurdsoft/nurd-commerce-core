@@ -18,6 +18,7 @@ type CartShippingRate struct {
 	ServiceType           string          `json:"service_type" gorm:"column:service_type"`
 	ServiceCode           string          `json:"service_code" gorm:"column:service_code"`
 	EstimatedDeliveryDate time.Time       `json:"estimated_delivery_date" gorm:"column:estimated_delivery_date"`
+	BusinessDaysInTransit string          `json:"business_days_in_transit" gorm:"column:business_days_in_transit"`
 	CreatedAt             time.Time       `json:"-" gorm:"column:created_at"`
 }
 

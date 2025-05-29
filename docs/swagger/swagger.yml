@@ -115,6 +115,9 @@ definitions:
             amount:
                 type: string
                 x-go-name: Amount
+            business_days_in_transit:
+                type: string
+                x-go-name: BusinessDaysInTransit
             carrier_code:
                 type: string
                 x-go-name: CarrierCode
@@ -374,6 +377,12 @@ definitions:
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     GetPaymentMethodResponse:
+        properties:
+            payment_method:
+                $ref: '#/definitions/PaymentMethod'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetPaymentMethodsResponse:
         properties:
             payment_methods:
                 items:
@@ -645,9 +654,17 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: ID
+            items_summary:
+                items:
+                    $ref: '#/definitions/OrderItemSummary'
+                type: array
+                x-go-name: ItemsSummary
             order_reference:
                 type: string
                 x-go-name: OrderReference
+            shipping_business_days_in_transit:
+                type: string
+                x-go-name: ShippingBusinessDaysInTransit
             shipping_carrier_code:
                 type: string
                 x-go-name: ShippingCarrierCode
@@ -669,6 +686,9 @@ definitions:
                 x-go-name: ShippingServiceType
             status:
                 $ref: '#/definitions/OrderStatus'
+            stripe_payment_method_id:
+                type: string
+                x-go-name: StripePaymentMethodID
             subtotal:
                 type: string
                 x-go-name: Subtotal
@@ -678,6 +698,9 @@ definitions:
             total:
                 type: string
                 x-go-name: Total
+            tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
             updated_at:
                 format: date-time
                 type: string
@@ -744,6 +767,41 @@ definitions:
             width:
                 type: string
                 x-go-name: Width
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItemSummary:
+        description: OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            product_variant_id:
+                format: uuid
+                type: string
+                x-go-name: ProductVariantID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderStatus:
@@ -910,6 +968,9 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
+            fulfillment_tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
             status:
                 type: string
                 x-go-name: Status
@@ -1352,6 +1413,7 @@ paths:
             operationId: ListOrdersRequest
             parameters:
                 - description: Limit of orders to return
+                  example: 10
                   format: int64
                   in: query
                   name: limit
@@ -1359,10 +1421,18 @@ paths:
                   type: integer
                   x-go-name: Limit
                 - description: Cursor to paginate orders
+                  example: MjAyNS0wNS0yNlQxNjo0Mjo1MSswNTozMA==
                   in: query
                   name: cursor
                   type: string
                   x-go-name: Cursor
+                - description: |-
+                    Boolean to indicate whether order items should be included in the response.
+                    If true, the response will include an additional `items_summary` field in the response for each order item.
+                  in: query
+                  name: include_items
+                  type: boolean
+                  x-go-name: IncludeItems
             produces:
                 - application/json
             responses:
@@ -1628,6 +1698,36 @@ paths:
             summary: Get Product Variant
             tags:
                 - products
+    /stripe/payment-method/{payment_method_id}:
+        get:
+            description: '### Get a specific payment method of the customer'
+            operationId: GetPaymentMethodsRequest
+            parameters:
+                - description: Payment Method ID
+                  example: pm_1J2Y3Z4A5B6C7D8E9F0G
+                  in: path
+                  name: payment_method_id
+                  required: true
+                  type: string
+                  x-go-name: PaymentMethodId
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment method retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentMethodResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Method
+            tags:
+                - stripe
     /stripe/payment-methods:
         get:
             description: '### Get all payment methods of the customer'
@@ -1638,7 +1738,7 @@ paths:
                 "200":
                     description: Payment methods retrieved successfully
                     schema:
-                        $ref: '#/definitions/GetPaymentMethodResponse'
+                        $ref: '#/definitions/GetPaymentMethodsResponse'
                 "400":
                     description: Bad Request
                     schema:

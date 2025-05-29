@@ -31,7 +31,7 @@ import (
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce"
 	stripePayment "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
 	stripeTaxes "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
@@ -50,7 +50,7 @@ var apiCommand = &cobra.Command{
 			httpTransport.Module,
 			transport.ModuleAPI,
 			health.Module,
-			shipengine.Module,
+			shipping.Module,
 			stripePayment.Module,
 			stripeTaxes.Module,
 			log.Module,

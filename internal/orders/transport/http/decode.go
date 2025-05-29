@@ -52,9 +52,22 @@ func decodeListOrdersRequest(_ context.Context, r *http.Request) (interface{}, e
 		return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "invalid limit")
 	}
 
+	var includeItems bool
+
+	includeItemsStr := r.URL.Query().Get("include_items")
+	if includeItemsStr == "" {
+		includeItems = false
+	} else {
+		includeItems, err = strconv.ParseBool(includeItemsStr)
+		if err != nil {
+			return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "invalid value for include_items")
+		}
+	}
+
 	return &entities.ListOrdersRequest{
-		Limit:  limit,
-		Cursor: r.URL.Query().Get("cursor"),
+		Limit:        limit,
+		Cursor:       r.URL.Query().Get("cursor"),
+		IncludeItems: includeItems,
 	}, nil
 }
 

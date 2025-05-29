@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
 	"gorm.io/gorm"
 )
 
 type Repository interface {
 	CreateOrder(ctx context.Context, cartID uuid.UUID, order *entities.Order, orderItems []*entities.OrderItem) error
-	ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string) ([]*entities.Order, string, error)
+	ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string, includeItems bool) ([]*entities.Order, string, error)
 	GetOrderByStripePaymentIntentID(ctx context.Context, stripePaymentIntentID string) (*entities.Order, error)
 	Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error
 	GetOrderByID(ctx context.Context, orderID uuid.UUID) (*entities.Order, error)

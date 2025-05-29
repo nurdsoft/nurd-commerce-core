@@ -654,6 +654,11 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: ID
+            items_summary:
+                items:
+                    $ref: '#/definitions/OrderItemSummary'
+                type: array
+                x-go-name: ItemsSummary
             order_reference:
                 type: string
                 x-go-name: OrderReference
@@ -762,6 +767,41 @@ definitions:
             width:
                 type: string
                 x-go-name: Width
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItemSummary:
+        description: OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            product_variant_id:
+                format: uuid
+                type: string
+                x-go-name: ProductVariantID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderStatus:
@@ -1373,6 +1413,7 @@ paths:
             operationId: ListOrdersRequest
             parameters:
                 - description: Limit of orders to return
+                  example: 10
                   format: int64
                   in: query
                   name: limit
@@ -1380,10 +1421,18 @@ paths:
                   type: integer
                   x-go-name: Limit
                 - description: Cursor to paginate orders
+                  example: MjAyNS0wNS0yNlQxNjo0Mjo1MSswNTozMA==
                   in: query
                   name: cursor
                   type: string
                   x-go-name: Cursor
+                - description: |-
+                    Boolean to indicate whether order items should be included in the response.
+                    If true, the response will include an additional `items_summary` field in the response for each order item.
+                  in: query
+                  name: include_items
+                  type: boolean
+                  x-go-name: IncludeItems
             produces:
                 - application/json
             responses:

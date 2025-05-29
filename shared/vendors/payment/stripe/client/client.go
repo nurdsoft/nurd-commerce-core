@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/service"
 )
@@ -9,6 +10,7 @@ import (
 type Client interface {
 	CreateCustomer(ctx context.Context, req *entities.CreateCustomerRequest) (*entities.CreateCustomerResponse, error)
 	GetCustomerPaymentMethods(ctx context.Context, customerId *string) (*entities.GetCustomerPaymentMethodsResponse, error)
+	GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error)
 	GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error)
 	CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error)
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
@@ -28,6 +30,10 @@ func (c *localClient) CreateCustomer(ctx context.Context, req *entities.CreateCu
 
 func (c *localClient) GetCustomerPaymentMethods(ctx context.Context, customerId *string) (*entities.GetCustomerPaymentMethodsResponse, error) {
 	return c.svc.GetCustomerPaymentMethods(ctx, customerId)
+}
+
+func (c *localClient) GetCustomerPaymentMethodById(ctx context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error) {
+	return c.svc.GetCustomerPaymentMethodById(ctx, customerId, paymentMethodId)
 }
 
 func (c *localClient) GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error) {

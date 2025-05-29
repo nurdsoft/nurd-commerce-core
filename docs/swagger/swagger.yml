@@ -378,6 +378,12 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     GetPaymentMethodResponse:
         properties:
+            payment_method:
+                $ref: '#/definitions/PaymentMethod'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetPaymentMethodsResponse:
+        properties:
             payment_methods:
                 items:
                     $ref: '#/definitions/PaymentMethod'
@@ -675,6 +681,9 @@ definitions:
                 x-go-name: ShippingServiceType
             status:
                 $ref: '#/definitions/OrderStatus'
+            stripe_payment_method_id:
+                type: string
+                x-go-name: StripePaymentMethodID
             subtotal:
                 type: string
                 x-go-name: Subtotal
@@ -1640,6 +1649,36 @@ paths:
             summary: Get Product Variant
             tags:
                 - products
+    /stripe/payment-method/{payment_method_id}:
+        get:
+            description: '### Get a specific payment method of the customer'
+            operationId: GetPaymentMethodsRequest
+            parameters:
+                - description: Payment Method ID
+                  example: pm_1J2Y3Z4A5B6C7D8E9F0G
+                  in: path
+                  name: payment_method_id
+                  required: true
+                  type: string
+                  x-go-name: PaymentMethodId
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment method retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentMethodResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Method
+            tags:
+                - stripe
     /stripe/payment-methods:
         get:
             description: '### Get all payment methods of the customer'
@@ -1650,7 +1689,7 @@ paths:
                 "200":
                     description: Payment methods retrieved successfully
                     schema:
-                        $ref: '#/definitions/GetPaymentMethodResponse'
+                        $ref: '#/definitions/GetPaymentMethodsResponse'
                 "400":
                     description: Bad Request
                     schema:

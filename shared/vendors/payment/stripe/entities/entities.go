@@ -52,3 +52,7 @@ type HandleWebhookEventResponse struct {
 	ObjectId string
 	Type     string
 }
+
+type GetCustomerPaymentMethodResponse struct {
+	PaymentMethod PaymentMethod `json:"payment_methods"`
+}

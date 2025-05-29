@@ -215,6 +215,11 @@
     "message": "Unable to fetch payment methods."
   },
   {
+    "error_code": "STRIPE_UNABLE_TO_FETCH_PAYMENT_METHOD",
+    "status_code": 500,
+    "message": "Unable to fetch payment method."
+  },
+  {
     "error_code": "STRIPE_UNABLE_TO_CREATE_SETUP_INTENT",
     "status_code": 500,
     "message": "Unable to create setup intent."

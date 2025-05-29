@@ -203,6 +203,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		DeliveryPostalCode:            address.PostalCode,
 		DeliveryPhoneNumber:           address.PhoneNumber,
 		StripePaymentIntentID:         stripePaymentIntent.Id,
+		StripePaymentMethodID:         req.Body.StripePaymentMethodID,
 		Status:                        entities.Pending,
 	}
 	// create order
@@ -263,13 +264,13 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 				ShippingCarrierServiceC: order.ShippingServiceType,
 				CurrencyC:               order.Currency,
 				Pricebook2ID:            salesforceEntities.StandardPriceBook,
-				EstimatedDeliveryDateC:  func() string {
+				EstimatedDeliveryDateC: func() string {
 					if order.ShippingEstimatedDeliveryDate.IsZero() {
 						return time.Now().Format("2006-01-02")
 					}
 					return order.ShippingEstimatedDeliveryDate.Format("2006-01-02")
 				}(),
-				OrderCreatedAtC:         time.Now().Format("2006-01-02"),
+				OrderCreatedAtC: time.Now().Format("2006-01-02"),
 			})
 			if err != nil {
 				s.log.Errorf("Error creating order on salesforce: %v", err)

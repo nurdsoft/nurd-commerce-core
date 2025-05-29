@@ -1,8 +1,9 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"time"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -32,4 +33,17 @@ type OrderItem struct {
 
 func (m *OrderItem) TableName() string {
 	return "order_items"
+}
+
+// OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
+type OrderItemSummary struct {
+	ID               uuid.UUID       `json:"id" gorm:"column:id;default:gen_random_uuid()"`
+	ProductID        uuid.UUID       `json:"product_id" gorm:"column:product_id"`
+	ProductVariantID uuid.UUID       `json:"product_variant_id" gorm:"column:product_variant_id"`
+	SKU              string          `json:"sku" gorm:"column:sku"`
+	ImageURL         string          `json:"image_url" gorm:"column:image_url"`
+	Name             string          `json:"name" gorm:"column:name"`
+	Quantity         int             `json:"quantity" gorm:"column:quantity"`
+	Price            decimal.Decimal `json:"price" gorm:"column:price"`
+	Attributes       *json.JSON      `json:"attributes" db:"attributes"`
 }

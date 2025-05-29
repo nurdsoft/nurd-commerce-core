@@ -28,11 +28,18 @@ type ListOrdersRequest struct {
 	//
 	// required: true
 	// in:query
+	// example: 10
 	Limit int `json:"limit"`
 	// Cursor to paginate orders
 	//
 	// in:query
+	// example: MjAyNS0wNS0yNlQxNjo0Mjo1MSswNTozMA==
 	Cursor string `json:"cursor"`
+	// Boolean to indicate whether order items should be included in the response.
+	// If true, the response will include an additional `items_summary` field in the response for each order item.
+	//
+	// in:query
+	IncludeItems bool `json:"include_items,omitempty"`
 }
 
 // swagger:parameters orders GetOrderRequest

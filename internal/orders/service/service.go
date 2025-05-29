@@ -398,7 +398,14 @@ func (s *service) ListOrders(ctx context.Context, req *entities.ListOrdersReques
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	orders, nextCursor, err := s.repo.ListOrders(ctx, customerID, req.Limit, req.Cursor)
+	orders, nextCursor, err := s.repo.ListOrders(
+		ctx,
+		customerID,
+		req.Limit,
+		req.Cursor,
+		req.IncludeItems,
+	)
+
 	if err != nil {
 		return nil, moduleErrors.NewAPIError("ORDER_ERROR_LISTING")
 	}

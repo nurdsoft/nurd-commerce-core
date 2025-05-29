@@ -49,9 +49,12 @@ func (r *sqlRepository) CreateOrder(ctx context.Context, cartID uuid.UUID, order
 	return nil
 }
 
-func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string) ([]*entities.Order, string, error) {
-	var orders []*entities.Order
-	query := r.gormDB.WithContext(ctx).Where("customer_id = ?", customerID).Order("created_at DESC").Limit(limit + 1)
+func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string, includeItems bool) ([]*entities.Order, string, error) {
+	// Base query for orders
+	query := r.gormDB.WithContext(ctx).
+		Where("customer_id = ?", customerID).
+		Order("created_at DESC").
+		Limit(limit + 1)
 
 	if cursor != "" {
 		decodedCursor, err := base64.StdEncoding.DecodeString(cursor)
@@ -61,15 +64,61 @@ func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, li
 		query = query.Where("created_at < ?", string(decodedCursor))
 	}
 
+	// Fetch orders
+	var orders []*entities.Order
 	if err := query.Find(&orders).Error; err != nil {
 		return nil, "", err
 	}
 
+	// Handle pagination
 	var nextCursor string
 	if len(orders) > limit {
 		lastOrder := orders[limit-1]
 		nextCursor = base64.StdEncoding.EncodeToString([]byte(lastOrder.CreatedAt.Format(time.RFC3339)))
-		orders = orders[:limit] // Return only the number of records requested
+		orders = orders[:limit] // Return only the requested number of records
+	}
+
+	// If includeItems is true, fetch item summaries for all orders
+	if includeItems && len(orders) > 0 {
+		// Extract order IDs
+		var orderIDs []uuid.UUID
+		orderMap := make(map[uuid.UUID]*entities.Order)
+		for _, order := range orders {
+			orderIDs = append(orderIDs, order.ID)
+			orderMap[order.ID] = order
+			// Initialize the ItemSummary slice for each order
+			order.ItemsSummary = make([]*entities.OrderItemSummary, 0)
+		}
+
+		// Query order items for all orders at once
+		var orderItems []*entities.OrderItem
+		err := r.gormDB.WithContext(ctx).
+			Where("order_id IN ?", orderIDs).
+			Find(&orderItems).Error
+
+		if err != nil {
+			return nil, "", err
+		}
+
+		// Convert order items to order item summaries and associate with orders
+		for _, item := range orderItems {
+			summary := &entities.OrderItemSummary{
+				ID:               item.ID,
+				ProductID:        item.ProductID,
+				ProductVariantID: item.ProductVariantID,
+				SKU:              item.SKU,
+				ImageURL:         item.ImageURL,
+				Name:             item.Name,
+				Quantity:         item.Quantity,
+				Price:            item.Price,
+				Attributes:       item.Attributes,
+			}
+
+			// Add summary to its parent order
+			if order, exists := orderMap[item.OrderID]; exists {
+				order.ItemsSummary = append(order.ItemsSummary, summary)
+			}
+		}
 	}
 
 	return orders, nextCursor, nil

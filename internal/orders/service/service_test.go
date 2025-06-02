@@ -83,6 +83,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 	cartID := uuid.New()
 	shippingRateID := uuid.New()
 	paymentMethodID := "pm_123"
+	customerStripeID := "cus_123"
 	expectedPaymentIntentID := "pi_123"
 	expectedAddress := "123 Main St"
 	expectedTotal := decimal.NewFromInt(115)
@@ -144,7 +145,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		GetCustomer(gomock.Any()).
 		Return(&customerEntities.Customer{
 			ID:       customerID,
-			StripeID: stringPtr("cus_123"),
+			StripeID: stringPtr(customerStripeID),
 		}, nil)
 
 	tc.mockPayment.EXPECT().
@@ -156,7 +157,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		Do(func(_ context.Context, req stripeEntities.CreatePaymentIntentRequest) {
 			assert.Equal(t, expectedTotal, req.Amount)
 			assert.Equal(t, paymentMethodID, req.PaymentMethodId)
-			assert.Equal(t, "cus_123", *req.CustomerId)
+			assert.Equal(t, customerStripeID, *req.CustomerId)
 		}).
 		Return(providers.PaymentProviderResponse{
 			ID:     expectedPaymentIntentID,
@@ -218,6 +219,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	cartID := uuid.New()
 	shippingRateID := uuid.New()
 	paymentNonce := "fake-nonce"
+	customerAuthorizeNetID := "123456"
 	expectedTransactionID := "123456"
 	expectedAddress := "123 Main St"
 	expectedTotal := decimal.NewFromInt(115)
@@ -279,7 +281,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		GetCustomer(gomock.Any()).
 		Return(&customerEntities.Customer{
 			ID:             customerID,
-			AuthorizeNetID: stringPtr("123456"),
+			AuthorizeNetID: stringPtr(customerAuthorizeNetID),
 		}, nil)
 
 	tc.mockPayment.EXPECT().
@@ -290,7 +292,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		CreatePayment(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req authorizenetEntities.CreatePaymentTransactionRequest) {
 			assert.Equal(t, expectedTotal, req.Amount)
-			assert.Equal(t, "123456", req.ProfileID)
+			assert.Equal(t, customerAuthorizeNetID, req.ProfileID)
 			assert.Equal(t, paymentNonce, req.PaymentNonce)
 		}).
 		Return(providers.PaymentProviderResponse{

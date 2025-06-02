@@ -11,6 +11,7 @@ type Config struct {
 	ApiLoginID     string
 	TransactionKey string
 	LiveMode       bool
+	Endpoint       string
 	SignatureKey   string
 }
 
@@ -28,6 +29,10 @@ func (c *Config) Validate() error {
 
 	if c.SignatureKey == "" {
 		errs = append(errs, "authorize.net signature key shouldn't be empty")
+	}
+
+	if c.Endpoint == "" {
+		errs = append(errs, "authorize.net endpoint shouldn't be empty")
 	}
 
 	if len(errs) > 0 {

@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	entities "github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
+	providers "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -65,18 +66,18 @@ func (mr *MockRepositoryMockRecorder) CreateOrder(ctx, cartID, order, orderItems
 }
 
 // GetOrderByExternalPaymentID mocks base method.
-func (m *MockRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string) (*entities.Order, error) {
+func (m *MockRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string, provider providers.ProviderType) (*entities.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrderByExternalPaymentID", ctx, externalPaymentID)
+	ret := m.ctrl.Call(m, "GetOrderByExternalPaymentID", ctx, externalPaymentID, provider)
 	ret0, _ := ret[0].(*entities.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrderByExternalPaymentID indicates an expected call of GetOrderByExternalPaymentID.
-func (mr *MockRepositoryMockRecorder) GetOrderByExternalPaymentID(ctx, externalPaymentID interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetOrderByExternalPaymentID(ctx, externalPaymentID, provider interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByExternalPaymentID", reflect.TypeOf((*MockRepository)(nil).GetOrderByExternalPaymentID), ctx, externalPaymentID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByExternalPaymentID", reflect.TypeOf((*MockRepository)(nil).GetOrderByExternalPaymentID), ctx, externalPaymentID, provider)
 }
 
 // GetOrderByID mocks base method.

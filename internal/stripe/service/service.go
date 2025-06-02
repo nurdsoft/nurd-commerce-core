@@ -11,6 +11,7 @@ import (
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"go.uber.org/zap"
@@ -155,7 +156,7 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		return nil, false, err
 	}
 
-	if customer.ExternalCustomerId == nil {
+	if customer.StripeID == nil {
 		var fullName strings.Builder
 		fullName.WriteString(customer.FirstName)
 		if customer.LastName != nil {
@@ -171,16 +172,16 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		if err != nil {
 			return nil, false, err
 		}
-		customer.ExternalCustomerId = &stripeCustomer.Id
+		customer.StripeID = &stripeCustomer.Id
 
-		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, stripeCustomer.Id)
+		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, stripeCustomer.Id, providers.ProviderStripe)
 
 		if err != nil {
 			return nil, false, err
 		}
-		return customer.ExternalCustomerId, true, nil
+		return customer.StripeID, true, nil
 	}
-	return customer.ExternalCustomerId, false, nil
+	return customer.StripeID, false, nil
 }
 
 // swagger:route POST /stripe/webhook stripe StripeWebhookRequest

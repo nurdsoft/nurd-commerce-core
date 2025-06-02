@@ -53,7 +53,7 @@ func decodeCreatePaymentProfileRequest(c context.Context, r *http.Request) (inte
 		return nil, err
 	}
 
-	var req entities.CreatePaymentProfileRequest
+	var req entities.CreatePaymentProfileRequestBody
 	err := decodeBodyFromRequest(&req, r)
 	if err != nil {
 		return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "unable to read request body")
@@ -80,7 +80,7 @@ func NewDecodeWebhookRequest(signatureKey string) goKitHTTPTransport.DecodeReque
 			return nil, err
 		}
 
-		var req entities.WebhookRequest
+		var req entities.WebhookRequestBody
 		err = json.Unmarshal(bodyBytes, &req)
 		if err != nil {
 			return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "unable to decode request body")

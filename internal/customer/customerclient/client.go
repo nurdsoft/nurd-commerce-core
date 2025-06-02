@@ -5,12 +5,13 @@ import (
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/service"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 )
 
 type Client interface {
 	GetCustomer(ctx context.Context) (*entities.Customer, error)
 	GetCustomerByID(ctx context.Context, id string) (*entities.Customer, error)
-	UpdateCustomerExternalID(ctx context.Context, id string, externalID string) error
+	UpdateCustomerExternalID(ctx context.Context, id string, externalID string, paymentProvider providers.ProviderType) error
 }
 
 func NewClient(svc service.Service) Client {
@@ -29,6 +30,6 @@ func (c *localClient) GetCustomerByID(ctx context.Context, id string) (*entities
 	return c.svc.GetCustomerByID(ctx, id)
 }
 
-func (c *localClient) UpdateCustomerExternalID(ctx context.Context, id string, externalID string) error {
-	return c.svc.UpdateCustomerExternalID(ctx, id, externalID)
+func (c *localClient) UpdateCustomerExternalID(ctx context.Context, id string, externalID string, paymentProvider providers.ProviderType) error {
+	return c.svc.UpdateCustomerExternalID(ctx, id, externalID, paymentProvider)
 }

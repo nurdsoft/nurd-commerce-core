@@ -43,17 +43,15 @@ func New(cfg config.Config, logger *zap.SugaredLogger) Service {
 		Timeout:   30 * time.Second,
 	}
 
-	endpoint := "https://apitest.authorize.net/xml/v1/request.api"
 	validationMode := "testMode"
 	if cfg.LiveMode {
-		endpoint = "https://api.authorize.net/xml/v1/request.api"
 		validationMode = "liveMode"
 	}
 
 	return &service{
 		apiLoginID:     cfg.ApiLoginID,
 		transactionKey: cfg.TransactionKey,
-		endpoint:       endpoint,
+		endpoint:       cfg.Endpoint,
 		validationMode: validationMode,
 		httpClient:     httpClient,
 		logger:         logger,
@@ -242,7 +240,7 @@ func (s *service) CreatePaymentTransaction(ctx context.Context, req entities.Cre
 					ID: req.ProfileID,
 				},
 				// BillTo: BillTo{
-				// 	Zip: "46282",
+				// 	Zip: "46207",
 				// },
 			},
 		},
@@ -358,7 +356,6 @@ func (s *service) sendRequest(ctx context.Context, requestData any) (map[string]
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
-	fmt.Println(string(body))
 
 	// Remove BOM if present: responses from Authorize.net start with a BOM (byte order mark)
 	body = removeBOM(body)

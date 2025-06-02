@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
@@ -26,7 +27,7 @@ type CreateOrderRequestBody struct {
 type CreatePaymentRequest struct {
 	Amount          decimal.Decimal
 	Currency        string
-	CustomerId      string
+	Customer        entities.Customer
 	PaymentMethodId string
 	PaymentNonce    string
 }

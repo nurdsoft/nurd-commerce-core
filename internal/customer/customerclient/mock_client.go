@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	entities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
+	providers "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 )
 
 // MockClient is a mock of Client interface.
@@ -66,15 +67,15 @@ func (mr *MockClientMockRecorder) GetCustomerByID(ctx, id interface{}) *gomock.C
 }
 
 // UpdateCustomerExternalID mocks base method.
-func (m *MockClient) UpdateCustomerExternalID(ctx context.Context, id, externalID string) error {
+func (m *MockClient) UpdateCustomerExternalID(ctx context.Context, id, externalID string, paymentProvider providers.ProviderType) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCustomerExternalID", ctx, id, externalID)
+	ret := m.ctrl.Call(m, "UpdateCustomerExternalID", ctx, id, externalID, paymentProvider)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateCustomerExternalID indicates an expected call of UpdateCustomerExternalID.
-func (mr *MockClientMockRecorder) UpdateCustomerExternalID(ctx, id, externalID interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateCustomerExternalID(ctx, id, externalID, paymentProvider interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerExternalID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerExternalID), ctx, id, externalID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerExternalID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerExternalID), ctx, id, externalID, paymentProvider)
 }

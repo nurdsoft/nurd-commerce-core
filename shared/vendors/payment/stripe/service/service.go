@@ -84,7 +84,7 @@ func (s *service) GetCustomerPaymentMethods(_ context.Context, customerId *strin
 	if iter.Err() != nil {
 		s.logger.Error("Failed to fetch customer payment methods from stripe-api:", iter.Err())
 		var stripeErr *stripe.Error
-		if errors.As(stripeErr, &stripeErr) {
+		if errors.As(iter.Err(), &stripeErr) {
 			s.logger.Error("Stripe error: ", stripeErr.Msg)
 			switch stripeErr.Type {
 			case stripe.ErrorTypeInvalidRequest:

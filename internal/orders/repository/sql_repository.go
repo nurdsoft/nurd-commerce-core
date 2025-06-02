@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 	sharedJSON "github.com/nurdsoft/nurd-commerce-core/shared/json"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 
 	"github.com/google/uuid"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
@@ -75,9 +77,17 @@ func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, li
 	return orders, nextCursor, nil
 }
 
-func (r *sqlRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string) (*entities.Order, error) {
+func (r *sqlRepository) GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string, provider providers.ProviderType) (*entities.Order, error) {
+	var columnName string
+	switch provider {
+	case providers.ProviderAuthorizeNet:
+		columnName = "authorizenet_payment_id"
+	case providers.ProviderStripe:
+		columnName = "stripe_payment_intent_id"
+	}
+
 	order := &entities.Order{}
-	if err := r.gormDB.WithContext(ctx).Where("external_payment_id = ?", externalPaymentID).First(order).Error; err != nil {
+	if err := r.gormDB.WithContext(ctx).Where(fmt.Sprintf("%s = ?", columnName), externalPaymentID).First(order).Error; err != nil {
 		return nil, err
 	}
 

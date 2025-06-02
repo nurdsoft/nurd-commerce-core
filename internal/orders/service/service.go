@@ -165,7 +165,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	paymentReq := entities.CreatePaymentRequest{
 		Amount:          total,
 		Currency:        cart.TaxCurrency,
-		CustomerId:      *customer.ExternalCustomerId,
+		Customer:        *customer,
 		PaymentMethodId: req.Body.StripePaymentMethodID,
 		PaymentNonce:    req.Body.PaymentNonce,
 	}
@@ -176,8 +176,11 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	}
 
 	orderStatus := entities.Pending
-	if paymentResponse.Status == providers.PaymentStatusSuccess {
+	switch paymentResponse.Status {
+	case providers.PaymentStatusSuccess:
 		orderStatus = entities.PaymentSuccess
+	case providers.PaymentStatusFailed:
+		orderStatus = entities.PaymentFailed
 	}
 
 	orderRef, err := s.generateOrderRef(ctx, orderId.String())
@@ -208,9 +211,16 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		DeliveryCountryCode:           address.CountryCode,
 		DeliveryPostalCode:            address.PostalCode,
 		DeliveryPhoneNumber:           address.PhoneNumber,
-		ExternalPaymentID:             paymentResponse.ID,
 		Status:                        orderStatus,
 	}
+
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		order.StripePaymentIntentID = &paymentResponse.ID
+	case providers.ProviderAuthorizeNet:
+		order.AuthorizeNetPaymentID = &paymentResponse.ID
+	}
+
 	// create order
 	err = s.repo.CreateOrder(ctx, cart.Id, order, orderItems)
 	if err != nil {
@@ -387,13 +397,13 @@ func (s *service) createPaymentByProvider(ctx context.Context, paymentReq entiti
 		req = stripeEntities.CreatePaymentIntentRequest{
 			Amount:          paymentReq.Amount,
 			Currency:        paymentReq.Currency,
-			CustomerId:      &paymentReq.CustomerId,
+			CustomerId:      paymentReq.Customer.StripeID,
 			PaymentMethodId: paymentReq.PaymentMethodId,
 		}
 	case providers.ProviderAuthorizeNet:
-		req = &authorizenetEntities.CreatePaymentTransactionRequest{
+		req = authorizenetEntities.CreatePaymentTransactionRequest{
 			Amount:       paymentReq.Amount,
-			ProfileID:    paymentReq.CustomerId,
+			ProfileID:    *paymentReq.Customer.AuthorizeNetID,
 			PaymentNonce: paymentReq.PaymentNonce,
 		}
 	}
@@ -401,11 +411,6 @@ func (s *service) createPaymentByProvider(ctx context.Context, paymentReq entiti
 	res, err := s.paymentClient.CreatePayment(ctx, req)
 	if err != nil {
 		return providers.PaymentProviderResponse{}, err
-	}
-
-	// should this return an error? Maybe we want to just log it and store the payment failed response in the order?
-	if res.Status == providers.PaymentStatusFailed {
-		return providers.PaymentProviderResponse{}, moduleErrors.NewAPIError("PAYMENT_FAILED", "Payment failed.")
 	}
 
 	return res, nil
@@ -569,9 +574,9 @@ func (s *service) CancelOrder(ctx context.Context, req *entities.CancelOrderRequ
 }
 
 func (s *service) ProcessPaymentSucceeded(ctx context.Context, externalPaymentID string) error {
-	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID)
+	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID, s.paymentClient.GetProvider())
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_EXTERNAL_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {
@@ -650,9 +655,9 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, externalPaymentID
 }
 
 func (s *service) ProcessPaymentFailed(ctx context.Context, externalPaymentID string) error {
-	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID)
+	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID, s.paymentClient.GetProvider())
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_EXTERNAL_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {

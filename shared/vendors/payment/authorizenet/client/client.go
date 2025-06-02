@@ -40,7 +40,7 @@ func (c *localClient) GetCustomerPaymentMethods(ctx context.Context, req entitie
 func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error) {
 	authorizeNetReq, ok := req.(entities.CreatePaymentTransactionRequest)
 	if !ok {
-		return providers.PaymentProviderResponse{}, errors.New("invalid request type")
+		return providers.PaymentProviderResponse{}, errors.New("invalid payment request type")
 	}
 
 	res, err := c.svc.CreatePaymentTransaction(ctx, authorizeNetReq)

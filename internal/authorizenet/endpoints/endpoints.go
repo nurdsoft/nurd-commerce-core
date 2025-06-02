@@ -30,14 +30,14 @@ func makeGetPaymentProfiles(svc service.Service) endpoint.Endpoint {
 
 func makeCreatePaymentProfile(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(entities.CreatePaymentProfileRequest)
+		req := request.(entities.CreatePaymentProfileRequestBody)
 		return svc.CreatePaymentProfile(ctx, req)
 	}
 }
 
 func makeWebhookEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(entities.WebhookRequest)
+		req := request.(entities.WebhookRequestBody)
 		err := svc.HandleWebhook(ctx, req)
 		if err != nil {
 			return nil, err

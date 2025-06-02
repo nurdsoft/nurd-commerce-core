@@ -12,6 +12,7 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +21,7 @@ type Service interface {
 	GetCustomer(ctx context.Context) (*entities.Customer, error)
 	GetCustomerByID(ctx context.Context, id string) (*entities.Customer, error)
 	UpdateCustomer(ctx context.Context, req *entities.UpdateCustomerRequest) (*entities.Customer, error)
-	UpdateCustomerExternalID(ctx context.Context, customerID string, externalID string) error
+	UpdateCustomerExternalID(ctx context.Context, customerID string, externalID string, paymentProvider providers.ProviderType) error
 }
 
 type service struct {
@@ -228,9 +229,18 @@ func (s *service) createSalesforceUser(ctx context.Context, firstName, lastName,
 	return res, nil
 }
 
-func (s *service) UpdateCustomerExternalID(ctx context.Context, customerID string, externalID string) error {
+func (s *service) UpdateCustomerExternalID(ctx context.Context, customerID string, externalID string, paymentProvider providers.ProviderType) error {
+	var columnName string
+
+	switch paymentProvider {
+	case providers.ProviderAuthorizeNet:
+		columnName = "authorizenet_id"
+	default:
+		columnName = "stripe_id"
+	}
+
 	err := s.repo.Update(ctx, map[string]interface{}{
-		"external_customer_id": externalID,
+		columnName: externalID,
 	}, customerID)
 
 	if err != nil {

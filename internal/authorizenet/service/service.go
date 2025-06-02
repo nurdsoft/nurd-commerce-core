@@ -12,13 +12,14 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	authorizenetClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/client"
 	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	"go.uber.org/zap"
 )
 
 type Service interface {
 	GetPaymentProfiles(ctx context.Context) (entities.GetPaymentProfileResponse, error)
-	CreatePaymentProfile(ctx context.Context, req entities.CreatePaymentProfileRequest) (entities.CreatePaymentProfileResponse, error)
-	HandleWebhook(ctx context.Context, req entities.WebhookRequest) error
+	CreatePaymentProfile(ctx context.Context, req entities.CreatePaymentProfileRequestBody) (entities.CreatePaymentProfileResponse, error)
+	HandleWebhook(ctx context.Context, req entities.WebhookRequestBody) error
 }
 
 type service struct {
@@ -114,7 +115,7 @@ func (s *service) GetPaymentProfiles(ctx context.Context) (entities.GetPaymentPr
 //	200: CreatePaymentProfileResponse Customer payment profile created successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) CreatePaymentProfile(ctx context.Context, req entities.CreatePaymentProfileRequest) (entities.CreatePaymentProfileResponse, error) {
+func (s *service) CreatePaymentProfile(ctx context.Context, req entities.CreatePaymentProfileRequestBody) (entities.CreatePaymentProfileResponse, error) {
 	customerID := sharedMeta.XCustomerID(ctx)
 
 	profileID, _, err := s.getProfileID(ctx, customerID)
@@ -145,7 +146,7 @@ func (s *service) getProfileID(ctx context.Context, customerID string) (string, 
 		return "", false, err
 	}
 
-	if customer.ExternalCustomerId == nil {
+	if customer.AuthorizeNetID == nil {
 		var fullName strings.Builder
 		fullName.WriteString(customer.FirstName)
 		if customer.LastName != nil {
@@ -162,16 +163,16 @@ func (s *service) getProfileID(ctx context.Context, customerID string) (string, 
 		if err != nil {
 			return "", false, err
 		}
-		customer.ExternalCustomerId = &authProfile.ProfileID
+		customer.AuthorizeNetID = &authProfile.ProfileID
 
-		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, authProfile.ProfileID)
+		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, authProfile.ProfileID, providers.ProviderAuthorizeNet)
 
 		if err != nil {
 			return "", false, err
 		}
-		return *customer.ExternalCustomerId, true, nil
+		return *customer.AuthorizeNetID, true, nil
 	}
-	return *customer.ExternalCustomerId, false, nil
+	return *customer.AuthorizeNetID, false, nil
 }
 
 // swagger:route POST /authorizenet/webhook authorizenet WebhookRequest
@@ -187,20 +188,20 @@ func (s *service) getProfileID(ctx context.Context, customerID string) (string, 
 //	200: DefaultResponse Event handled successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) HandleWebhook(ctx context.Context, req entities.WebhookRequest) error {
+func (s *service) HandleWebhook(ctx context.Context, req entities.WebhookRequestBody) error {
 	switch req.EventType {
 	case "net.authorize.payment.fraud.approved":
 		s.log.Info("Payment fraud approved ", "transaction_id ", req.Payload.ID, "fraud_action", req.Payload.FraudList)
 		err := s.ordersClient.ProcessPaymentSucceeded(ctx, req.Payload.ID)
 		if err != nil {
-			s.log.Errorf("Error processing payment intent succeeded: %v", err)
+			s.log.Errorf("Error processing payment succeeded: %v", err)
 			return nil
 		}
 	case "net.authorize.payment.fraud.declined":
 		s.log.Info("Payment fraud declined ", "transaction_id", req.Payload.ID, "fraud_action", req.Payload.FraudList)
 		err := s.ordersClient.ProcessPaymentFailed(ctx, req.Payload.ID)
 		if err != nil {
-			s.log.Errorf("Error processing payment intent failed: %v", err)
+			s.log.Errorf("Error processing payment failed: %v", err)
 			return nil
 		}
 	default:

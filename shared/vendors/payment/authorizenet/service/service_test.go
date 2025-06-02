@@ -33,7 +33,7 @@ func TestCreateCustomerProfile(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Verify request structure
-			assert.Equal(t, customerID, requestBody.Data.Profile.MerchantCustomerID)
+			assert.Equal(t, customerID[:20], requestBody.Data.Profile.MerchantCustomerID)
 			assert.Equal(t, "Test Customer", requestBody.Data.Profile.Description)
 			assert.Equal(t, "test@example.com", requestBody.Data.Profile.Email)
 			assert.Equal(t, apiLoginID, requestBody.Data.MerchantAuthentication.Name)

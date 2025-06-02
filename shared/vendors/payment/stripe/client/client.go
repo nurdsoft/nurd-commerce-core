@@ -15,7 +15,6 @@ type Client interface {
 	GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error)
 	GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error)
 	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
-	GetPayment(ctx context.Context, paymentId *string) (*entities.GetPaymentResponse, error)
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 	GetProvider() providers.ProviderType
 }
@@ -63,10 +62,6 @@ func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.Pay
 		ID:     res.Id,
 		Status: providers.PaymentStatusPending,
 	}, nil
-}
-
-func (c *localClient) GetPayment(ctx context.Context, paymentId *string) (*entities.GetPaymentResponse, error) {
-	return c.svc.GetPayment(ctx, paymentId)
 }
 
 func (c *localClient) GetProvider() providers.ProviderType {

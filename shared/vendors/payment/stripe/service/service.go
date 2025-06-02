@@ -245,7 +245,7 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 
 // GetCustomerPaymentMethodById retrieves a specific payment method by its ID.
 func (s *service) GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	params := &stripe.CustomerRetrievePaymentMethodParams{
 		Customer: stripe.String(*customerId),

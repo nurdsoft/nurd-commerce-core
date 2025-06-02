@@ -178,6 +178,6 @@ func TestClient_CreatePayment(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, providers.PaymentProviderResponse{}, resp)
-		assert.Equal(t, "invalid request type", err.Error())
+		assert.Equal(t, "invalid payment request type", err.Error())
 	})
 }

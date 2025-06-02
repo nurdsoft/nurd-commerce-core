@@ -3,12 +3,11 @@ package cart
 import (
 	"database/sql"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
-
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -32,7 +31,7 @@ type ModuleParams struct {
 	APPTransport     svcTransport.Client
 	CommonConfig     cfg.Config
 	Logger           *zap.SugaredLogger
-	ShipengineClient shipengine.Client
+	ShippingClient   shipping.Client
 	StripeClient     stripe.Client
 	ProductClient    productclient.Client
 	AddressClient    addressclient.Client
@@ -44,7 +43,7 @@ type ModuleParams struct {
 func NewModule(p ModuleParams) error {
 	repo := repository.New(p.DB, p.GormDB)
 	cacheClient := cache.New()
-	svc := service.New(repo, p.Logger, p.ShipengineClient, p.StripeClient, cacheClient, p.ProductClient, p.AddressClient, p.SalesforceClient)
+	svc := service.New(repo, p.Logger, p.ShippingClient, p.StripeClient, cacheClient, p.ProductClient, p.AddressClient, p.SalesforceClient)
 	eps := endpoints.New(svc)
 
 	http.RegisterTransport(p.HTTPServer, eps, p.APPTransport)

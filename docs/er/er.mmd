@@ -28,6 +28,7 @@ erDiagram
     cart_shipping_rates {
         uuid address_id FK 
         numeric amount 
+        text business_days_in_transit 
         text carrier_code 
         text carrier_name 
         uuid cart_id FK 
@@ -106,11 +107,14 @@ erDiagram
         numeric fulfillment_amount_due 
         numeric fulfillment_freight_charge 
         text fulfillment_message 
+        jsonb fulfillment_metadata 
         numeric fulfillment_order_total 
         timestamp_with_time_zone fulfillment_shipment_date 
+        text fulfillment_tracking_number 
         uuid id PK 
         character_varying order_reference UK 
         text salesforce_id 
+        text shipping_business_days_in_transit 
         text shipping_carrier_code 
         text shipping_carrier_name 
         timestamp_with_time_zone shipping_estimated_delivery_date 
@@ -119,6 +123,7 @@ erDiagram
         text shipping_service_type 
         order_status status 
         text stripe_payment_intent_id
+        text stripe_payment_method_id 
         text authorizenet_payment_id
         numeric subtotal 
         numeric tax_amount 

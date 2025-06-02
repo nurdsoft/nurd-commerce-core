@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	CreateOrder(ctx context.Context, cartID uuid.UUID, order *entities.Order, orderItems []*entities.OrderItem) error
-	ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string) ([]*entities.Order, string, error)
+	ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string, includeItems bool) ([]*entities.Order, string, error)
 	Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error
 	GetOrderByID(ctx context.Context, orderID uuid.UUID) (*entities.Order, error)
 	GetOrderItemsByID(ctx context.Context, orderID uuid.UUID) ([]*entities.OrderItem, error)

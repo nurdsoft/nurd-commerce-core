@@ -215,6 +215,11 @@
     "message": "Unable to fetch payment methods."
   },
   {
+    "error_code": "STRIPE_UNABLE_TO_FETCH_PAYMENT_METHOD",
+    "status_code": 500,
+    "message": "Unable to fetch payment method."
+  },
+  {
     "error_code": "STRIPE_UNABLE_TO_CREATE_SETUP_INTENT",
     "status_code": 500,
     "message": "Unable to create setup intent."
@@ -268,6 +273,21 @@
     "error_code": "SHIPENGINE_INVALID_POSTAL_CODE",
     "status_code": 400,
     "message": "Invalid postal code."
+  },
+  {
+    "error_code": "UPS_INVALID_ADDRESS",
+    "status_code": 400,
+    "message": "Invalid UPS address."
+  },
+  {
+    "error_code": "UPS_RATES_ERROR",
+    "status_code": 400,
+    "message": "Error fetching UPS shipping rates."
+  },
+  {
+    "error_code": "UPS_INVALID_RATE",
+    "status_code": 500,
+    "message": "Invalid UPS shipping rate."
   },
   {
     "error_code": "STRIPE_INVALID_CUSTOMER_LOCATION",

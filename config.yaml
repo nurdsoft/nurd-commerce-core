@@ -22,10 +22,18 @@ DB:
     Password: 123
     SSLMode: "disable"
 Shipping:
+  Provider: "Shipengine"
   Shipengine:
     Host: ""
     Token: ""
     CarrierIds: ""
+  UPS:
+    SecurityHost: ""
+    APIHost: ""
+    ClientID: ""
+    ClientSecret: ""
+    ShipperName: ""
+    ShipperNumber: ""
 Payment:
   Provider: "authorizeNet"
   Stripe:

@@ -3,9 +3,10 @@ package cmd
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
-	"time"
 
 	"github.com/nurdsoft/nurd-commerce-core/config"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address"
@@ -33,7 +34,7 @@ import (
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
 	stripeTaxes "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
@@ -52,7 +53,7 @@ var apiCommand = &cobra.Command{
 			httpTransport.Module,
 			transport.ModuleAPI,
 			health.Module,
-			shipengine.Module,
+			shipping.Module,
 			stripe.Module,
 			authorizenet.Module,
 			payment.Module,

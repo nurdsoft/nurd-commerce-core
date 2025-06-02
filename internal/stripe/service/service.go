@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"strings"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
@@ -18,9 +19,10 @@ import (
 )
 
 type Service interface {
-	GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodResponse, error)
+	GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodsResponse, error)
 	GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentResponse, error)
 	HandleStripeWebhook(ctx context.Context, req *entities.StripeWebhookRequest) error
+	GetPaymentMethod(ctx context.Context, req *entities.StripeGetPaymentMethodRequest) (*entities.GetPaymentMethodResponse, error)
 }
 
 type service struct {
@@ -58,10 +60,10 @@ func New(
 //
 // Responses:
 //
-//	200: GetPaymentMethodResponse Payment methods retrieved successfully
+//	200: GetPaymentMethodsResponse Payment methods retrieved successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodResponse, error) {
+func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodsResponse, error) {
 	customerID := sharedMeta.XCustomerID(ctx)
 
 	if customerID == "" {
@@ -74,7 +76,7 @@ func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMe
 	}
 
 	if recentlyCreated {
-		resp := &entities.GetPaymentMethodResponse{
+		resp := &entities.GetPaymentMethodsResponse{
 			PaymentMethods: []entities.PaymentMethod{},
 		}
 		return resp, nil
@@ -100,7 +102,7 @@ func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMe
 			Created:      pm.Created,
 		})
 	}
-	resp := &entities.GetPaymentMethodResponse{
+	resp := &entities.GetPaymentMethodsResponse{
 		PaymentMethods: paymentMethods,
 	}
 
@@ -144,6 +146,51 @@ func (s *service) GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentR
 	}
 	resp := &entities.GetSetupIntentResponse{
 		SetupIntent: setupIntent,
+	}
+	return resp, nil
+}
+
+// swagger:route GET /stripe/payment-method/{payment_method_id} stripe GetPaymentMethodsRequest
+//
+// # Get Customer Payment Method
+// ### Get a specific payment method of the customer
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: GetPaymentMethodResponse Payment method retrieved successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) GetPaymentMethod(ctx context.Context, req *entities.StripeGetPaymentMethodRequest) (*entities.GetPaymentMethodResponse, error) {
+	customerID := sharedMeta.XCustomerID(ctx)
+	if customerID == "" {
+		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+	stripeId, _, err := s.getCustomerStripeID(ctx, customerID)
+	if err != nil {
+		return nil, err
+	}
+	if req.PaymentMethodId == "" {
+		return nil, moduleErrors.NewAPIError("PAYMENT_METHOD_ID_REQUIRED")
+	}
+	paymentMethod, err := s.stripeClient.GetCustomerPaymentMethodById(ctx, stripeId, &req.PaymentMethodId)
+	if err != nil {
+		return nil, err
+	}
+	resp := &entities.GetPaymentMethodResponse{
+		PaymentMethod: entities.PaymentMethod{
+			Id:           paymentMethod.PaymentMethod.Id,
+			Brand:        paymentMethod.PaymentMethod.Brand,
+			DisplayBrand: paymentMethod.PaymentMethod.DisplayBrand,
+			Country:      paymentMethod.PaymentMethod.Country,
+			Last4:        paymentMethod.PaymentMethod.Last4,
+			ExpiryMonth:  paymentMethod.PaymentMethod.ExpiryMonth,
+			ExpiryYear:   paymentMethod.PaymentMethod.ExpiryYear,
+			Wallet:       paymentMethod.PaymentMethod.Wallet,
+			Created:      paymentMethod.PaymentMethod.Created,
+		},
 	}
 	return resp, nil
 }

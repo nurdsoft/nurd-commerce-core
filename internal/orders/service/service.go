@@ -202,6 +202,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		ShippingCarrierName:           shipping.CarrierName,
 		ShippingCarrierCode:           shipping.CarrierCode,
 		ShippingEstimatedDeliveryDate: shipping.EstimatedDeliveryDate,
+		ShippingBusinessDaysInTransit: shipping.BusinessDaysInTransit,
 		ShippingServiceType:           shipping.ServiceType,
 		ShippingServiceCode:           shipping.ServiceCode,
 		DeliveryFullName:              address.FullName,
@@ -217,6 +218,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	switch s.paymentClient.GetProvider() {
 	case providers.ProviderStripe:
 		order.StripePaymentIntentID = &paymentResponse.ID
+		order.StripePaymentMethodID = req.Body.StripePaymentMethodID
 	case providers.ProviderAuthorizeNet:
 		order.AuthorizeNetPaymentID = &paymentResponse.ID
 	}
@@ -279,8 +281,13 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 				ShippingCarrierServiceC: order.ShippingServiceType,
 				CurrencyC:               order.Currency,
 				Pricebook2ID:            salesforceEntities.StandardPriceBook,
-				EstimatedDeliveryDateC:  order.ShippingEstimatedDeliveryDate.Format("2006-01-02"),
-				OrderCreatedAtC:         time.Now().Format("2006-01-02"),
+				EstimatedDeliveryDateC: func() string {
+					if order.ShippingEstimatedDeliveryDate.IsZero() {
+						return time.Now().Format("2006-01-02")
+					}
+					return order.ShippingEstimatedDeliveryDate.Format("2006-01-02")
+				}(),
+				OrderCreatedAtC: time.Now().Format("2006-01-02"),
 			})
 			if err != nil {
 				s.log.Errorf("Error creating order on salesforce: %v", err)
@@ -435,7 +442,14 @@ func (s *service) ListOrders(ctx context.Context, req *entities.ListOrdersReques
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	orders, nextCursor, err := s.repo.ListOrders(ctx, customerID, req.Limit, req.Cursor)
+	orders, nextCursor, err := s.repo.ListOrders(
+		ctx,
+		customerID,
+		req.Limit,
+		req.Cursor,
+		req.IncludeItems,
+	)
+
 	if err != nil {
 		return nil, moduleErrors.NewAPIError("ORDER_ERROR_LISTING")
 	}
@@ -761,6 +775,10 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 
 	if req.Body.FulfilmentMetadata != nil {
 		data["fulfillment_metadata"] = req.Body.FulfilmentMetadata
+	}
+
+	if req.Body.FulfillmentTrackingNumber != nil {
+		data["fulfillment_tracking_number"] = req.Body.FulfillmentTrackingNumber
 	}
 
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())

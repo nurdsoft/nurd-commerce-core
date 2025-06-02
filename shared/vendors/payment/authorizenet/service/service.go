@@ -68,7 +68,7 @@ type service struct {
 }
 
 func (s *service) CreateCustomerProfile(ctx context.Context, req entities.CreateCustomerRequest) (entities.CreateCustomerResponse, error) {
-	s.logger.Infof("Creating customer profile: customerID=%s, email=%s", req.CustomerID, req.Email)
+	s.logger.Infof("Creating customer profile: customerID=%s", req.CustomerID)
 	requestData := CreateCustomerProfileRequest{
 		Data: CreateCustomerProfileRequestData{
 			MerchantAuthentication: merchantAuthentication{
@@ -83,24 +83,18 @@ func (s *service) CreateCustomerProfile(ctx context.Context, req entities.Create
 		},
 	}
 
-	response, err := s.sendRequest(ctx, requestData)
-	if err != nil {
+	var response CreateCustomerProfileResponse
+	if err := s.sendRequest(ctx, requestData, &response); err != nil {
 		s.logger.Errorf("Failed to create customer profile (sendRequest): %v", err)
 		return entities.CreateCustomerResponse{}, fmt.Errorf("failed to create customer profile: %w", err)
 	}
 
-	if err = checkResponseForErrors(response); err != nil {
-		s.logger.Errorf("API error when creating customer profile: %v", err)
+	if err := checkResponseForErrors(response.Messages); err != nil {
+		s.logger.Errorf("authorize.net API error when creating customer profile: %v", err)
 		return entities.CreateCustomerResponse{}, err
 	}
 
-	customerProfileID, ok := response["customerProfileId"].(string)
-	if !ok {
-		s.logger.Error("Customer profile ID not found in response")
-		return entities.CreateCustomerResponse{}, fmt.Errorf("customer profile ID not found in response")
-	}
-
-	return entities.CreateCustomerResponse{ProfileID: customerProfileID}, nil
+	return entities.CreateCustomerResponse{ProfileID: response.CustomerProfileID}, nil
 }
 
 func (s *service) CreateCustomerPaymentProfile(ctx context.Context, req entities.CreateCustomerPaymentProfileRequest) (entities.CreateCustomerPaymentProfileResponse, error) {
@@ -121,31 +115,24 @@ func (s *service) CreateCustomerPaymentProfile(ctx context.Context, req entities
 				},
 				DefaultPaymentProfile: true,
 			},
-			ValidationMode: s.validationMode, // Options: "none", "testMode", "liveMode"
+			ValidationMode: s.validationMode,
 		},
 	}
 
-	response, err := s.sendRequest(ctx, requestData)
-	if err != nil {
+	var response CreateCustomerPaymentProfileResponse
+	if err := s.sendRequest(ctx, requestData, &response); err != nil {
 		s.logger.Errorf("Failed to create customer payment profile (sendRequest): %v", err)
 		return entities.CreateCustomerPaymentProfileResponse{}, fmt.Errorf("failed to create customer profile: %w", err)
 	}
 
-	if err = checkResponseForErrors(response); err != nil {
-		s.logger.Errorf("API error when creating customer payment profile: %v", err)
+	if err := checkResponseForErrors(response.Messages); err != nil {
+		s.logger.Errorf("authorize.net API error when creating customer payment profile: %v", err)
 		return entities.CreateCustomerPaymentProfileResponse{}, err
 	}
 
-	paymentProfileID, ok := response["customerPaymentProfileId"].(string)
-	if !ok {
-		s.logger.Error("Customer payment profile ID not found in response")
-		return entities.CreateCustomerPaymentProfileResponse{}, fmt.Errorf("customer payment profile ID not found in response")
-	}
-	customerProfileID, _ := response["customerProfileId"].(string)
-
 	return entities.CreateCustomerPaymentProfileResponse{
-		ProfileID:        customerProfileID,
-		PaymentProfileID: paymentProfileID,
+		ProfileID:        response.CustomerProfileID,
+		PaymentProfileID: response.CustomerPaymentProfileID,
 	}, nil
 }
 
@@ -162,53 +149,31 @@ func (s *service) GetCustomerPaymentProfiles(ctx context.Context, req entities.G
 		},
 	}
 
-	response, err := s.sendRequest(ctx, requestData)
-	if err != nil {
+	var response GetCustomerProfileResponse
+	if err := s.sendRequest(ctx, requestData, &response); err != nil {
 		s.logger.Errorf("Failed to get customer payment profiles (sendRequest): %v", err)
 		return entities.GetPaymentProfilesResponse{}, fmt.Errorf("failed to get customer payment profiles: %w", err)
 	}
 
-	if err = checkResponseForErrors(response); err != nil {
-		s.logger.Errorf("API error when getting customer payment profiles: %v", err)
+	if err := checkResponseForErrors(response.Messages); err != nil {
+		s.logger.Errorf("authorize.net API error when getting customer payment profiles: %v", err)
 		return entities.GetPaymentProfilesResponse{}, err
 	}
 
-	profileResponse, ok := response["profile"].(map[string]any)
-	if !ok {
-		s.logger.Error("Profile not found in response (get payment methods)")
-		return entities.GetPaymentProfilesResponse{}, fmt.Errorf("profile not found in response")
-	}
-
-	paymentProfilesResp, ok := profileResponse["paymentProfiles"].([]any)
-	if !ok {
+	if len(response.Profile.PaymentProfiles) == 0 {
 		s.logger.Info("No payment profiles found for customer profile")
 		return entities.GetPaymentProfilesResponse{
 			PaymentProfiles: []entities.PaymentProfile{},
 		}, nil
 	}
 
-	paymentProfiles := make([]entities.PaymentProfile, 0, len(paymentProfilesResp))
-	for _, paymentProfile := range paymentProfilesResp {
-		profileMap, ok := paymentProfile.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		paymentMap, ok := profileMap["payment"].(map[string]any)
-		if !ok {
-			continue
-		}
-
-		creditCardMap, ok := paymentMap["creditCard"].(map[string]any)
-		if !ok {
-			continue
-		}
-
+	paymentProfiles := make([]entities.PaymentProfile, 0, len(response.Profile.PaymentProfiles))
+	for _, profile := range response.Profile.PaymentProfiles {
 		paymentProfiles = append(paymentProfiles, entities.PaymentProfile{
-			ID:             profileMap["customerPaymentProfileId"].(string),
-			CardNumber:     creditCardMap["cardNumber"].(string),
-			CardType:       creditCardMap["cardType"].(string),
-			ExpirationDate: creditCardMap["expirationDate"].(string),
+			ID:             profile.CustomerPaymentProfileID,
+			CardNumber:     profile.Payment.CreditCard.CardNumber,
+			CardType:       profile.Payment.CreditCard.CardType,
+			ExpirationDate: profile.Payment.CreditCard.ExpirationDate,
 		})
 	}
 
@@ -219,7 +184,7 @@ func (s *service) GetCustomerPaymentProfiles(ctx context.Context, req entities.G
 
 func (s *service) CreatePaymentTransaction(ctx context.Context, req entities.CreatePaymentTransactionRequest) (entities.CreatePaymentTransactionResponse, error) {
 	amount := req.Amount.StringFixed(2)
-	s.logger.Infof("Creating payment transaction: profileID=%s, amount=%s", req.ProfileID, amount)
+	s.logger.Infof("Creating payment transaction: profileID=%s", req.ProfileID)
 
 	requestData := CreateTransactionRequest{
 		Data: TransactionRequestData{
@@ -239,104 +204,62 @@ func (s *service) CreatePaymentTransaction(ctx context.Context, req entities.Cre
 				Customer: Customer{
 					ID: req.ProfileID,
 				},
-				// BillTo: BillTo{
-				// 	Zip: "46207",
-				// },
 			},
 		},
 	}
 
-	response, err := s.sendRequest(ctx, requestData)
-	if err != nil {
+	var response CreateTransactionResponse
+	if err := s.sendRequest(ctx, requestData, &response); err != nil {
 		s.logger.Errorf("Failed to create transaction (sendRequest): %v", err)
 		return entities.CreatePaymentTransactionResponse{}, fmt.Errorf("failed to create transaction: %w", err)
 	}
 
-	transID, status, err := extractTransactionDetails(response)
-	if err != nil {
-		s.logger.Errorf("Failed to extract transaction details: %v", err)
+	if err := checkResponseForErrors(response.Messages); err != nil {
+		s.logger.Errorf("authorize.net API error when creating transaction: %v", err)
 		return entities.CreatePaymentTransactionResponse{}, err
 	}
 
+	status := mapResponseCodeToStatus(response.TransactionResponse.ResponseCode)
 	return entities.CreatePaymentTransactionResponse{
-		ID:     transID,
+		ID:     response.TransactionResponse.TransID,
 		Status: status,
 	}, nil
 }
 
-func extractTransactionDetails(response map[string]any) (string, string, error) {
-	transactionResponse, ok := response["transactionResponse"].(map[string]any)
-	if !ok {
-		return "", "", fmt.Errorf("transaction response not found")
-	}
-
-	transID, ok := transactionResponse["transId"].(string)
-	if !ok {
-		return "", "", fmt.Errorf("transaction ID not found")
-	}
-
-	responseCode, ok := transactionResponse["responseCode"].(string)
-	if !ok {
-		return "", "", fmt.Errorf("response code not found")
-	}
-
-	var status string
+func mapResponseCodeToStatus(responseCode string) string {
 	switch responseCode {
 	case "1":
-		status = AuthorizeNetStatusApproved
+		return AuthorizeNetStatusApproved
 	case "2":
-		status = AuthorizeNetStatusDeclined
+		return AuthorizeNetStatusDeclined
 	case "3":
-		status = AuthorizeNetStatusError
+		return AuthorizeNetStatusError
 	case "4":
-		status = AuthorizeNetStatusHeldForReview
+		return AuthorizeNetStatusHeldForReview
 	default:
-		status = AuthorizeNetStatusUnknown
+		return AuthorizeNetStatusUnknown
 	}
-
-	return transID, status, nil
 }
 
-func checkResponseForErrors(response map[string]any) error {
-	messagesObj, ok := response["messages"].(map[string]any)
-	if !ok {
-		return fmt.Errorf("messages object not found in response")
-	}
-
-	resultCode, ok := messagesObj["resultCode"].(string)
-	if !ok {
-		return fmt.Errorf("result code not found in response")
-	}
-
-	if resultCode != "Ok" {
-		messageList, ok := messagesObj["message"].([]any)
-		if !ok || len(messageList) == 0 {
+func checkResponseForErrors(messages Messages) error {
+	if messages.ResultCode != "Ok" {
+		if len(messages.Message) == 0 {
 			return fmt.Errorf("unknown error occurred")
 		}
-
-		message, ok := messageList[0].(map[string]any)
-		if !ok {
-			return fmt.Errorf("unknown error occurred")
-		}
-
-		code, _ := message["code"].(string)
-		text, _ := message["text"].(string)
-
-		return fmt.Errorf("API error: %s - %s", code, text)
+		return fmt.Errorf("authorize.net API error: %s - %s", messages.Message[0].Code, messages.Message[0].Text)
 	}
-
 	return nil
 }
 
-func (s *service) sendRequest(ctx context.Context, requestData any) (map[string]any, error) {
+func (s *service) sendRequest(ctx context.Context, requestData any, responseData any) error {
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling request: %w", err)
+		return fmt.Errorf("error marshaling request: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -344,29 +267,28 @@ func (s *service) sendRequest(ctx context.Context, requestData any) (map[string]
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error sending request: %w", err)
+		return fmt.Errorf("error sending request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid status code: %d", resp.StatusCode)
+		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
+		return fmt.Errorf("error reading response body: %w", err)
 	}
 
 	// Remove BOM if present: responses from Authorize.net start with a BOM (byte order mark)
 	body = removeBOM(body)
 
-	var responseData map[string]any
-	err = json.Unmarshal(body, &responseData)
+	err = json.Unmarshal(body, responseData)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing response: %w", err)
+		return fmt.Errorf("error parsing response: %w", err)
 	}
 
-	return responseData, nil
+	return nil
 }
 
 // Response body has a ZWNBSP char prefix: remove it

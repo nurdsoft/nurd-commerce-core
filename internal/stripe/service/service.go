@@ -8,11 +8,8 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities"
-	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"go.uber.org/zap"
@@ -26,24 +23,20 @@ type Service interface {
 }
 
 type service struct {
-	log              *zap.SugaredLogger
-	config           cfg.Config
-	salesforceClient salesforce.Client
-	stripeClient     stripeClient.Client
-	ordersClient     ordersclient.Client
-	customerClient   customerclient.Client
+	log            *zap.SugaredLogger
+	stripeClient   stripeClient.Client
+	ordersClient   ordersclient.Client
+	customerClient customerclient.Client
 }
 
 func New(
 	logger *zap.SugaredLogger,
-	config cfg.Config,
 	stripeClient stripeClient.Client,
 	ordersClient ordersclient.Client,
 	customerClient customerclient.Client,
 ) Service {
 	return &service{
 		log:            logger,
-		config:         config,
 		stripeClient:   stripeClient,
 		ordersClient:   ordersClient,
 		customerClient: customerClient,
@@ -221,7 +214,7 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		}
 		customer.StripeID = &stripeCustomer.Id
 
-		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, stripeCustomer.Id, providers.ProviderStripe)
+		err = s.customerClient.UpdateCustomerStripeID(ctx, customerID, stripeCustomer.Id)
 
 		if err != nil {
 			return nil, false, err

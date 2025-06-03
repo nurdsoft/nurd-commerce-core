@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +18,8 @@ type Repository interface {
 	AddSalesforceIDPerOrderItem(ctx context.Context, ids map[string]string) error
 	OrderReferenceExists(ctx context.Context, orderReference string) (bool, error)
 	GetOrderByReference(ctx context.Context, orderReference string) (*entities.Order, error)
-	GetOrderByExternalPaymentID(ctx context.Context, externalPaymentID string, provider providers.ProviderType) (*entities.Order, error)
+	GetOrderByStripePaymentIntentID(ctx context.Context, stripePaymentIntentID string) (*entities.Order, error)
+	GetOrderByAuthorizeNetPaymentID(ctx context.Context, authorizeNetPaymentID string) (*entities.Order, error)
 }
 
 func New(_ *sql.DB, gormDB *gorm.DB) Repository {

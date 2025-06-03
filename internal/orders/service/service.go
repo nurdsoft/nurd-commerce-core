@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"strings"
@@ -38,8 +39,8 @@ type Service interface {
 	ListOrders(ctx context.Context, req *entities.ListOrdersRequest) (*entities.ListOrdersResponse, error)
 	GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderData, error)
 	CancelOrder(ctx context.Context, req *entities.CancelOrderRequest) error
-	ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error
-	ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error
+	ProcessPaymentSucceeded(ctx context.Context, paymentID string) error
+	ProcessPaymentFailed(ctx context.Context, paymentID string) error
 	UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequest) error
 }
 
@@ -587,10 +588,10 @@ func (s *service) CancelOrder(ctx context.Context, req *entities.CancelOrderRequ
 	return nil
 }
 
-func (s *service) ProcessPaymentSucceeded(ctx context.Context, externalPaymentID string) error {
-	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID, s.paymentClient.GetProvider())
+func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string) error {
+	order, err := s.getOrderByPaymentID(ctx, paymentID)
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_EXTERNAL_PAYMENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {
@@ -668,10 +669,10 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, externalPaymentID
 	return nil
 }
 
-func (s *service) ProcessPaymentFailed(ctx context.Context, externalPaymentID string) error {
-	order, err := s.repo.GetOrderByExternalPaymentID(ctx, externalPaymentID, s.paymentClient.GetProvider())
+func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) error {
+	order, err := s.getOrderByPaymentID(ctx, paymentID)
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_EXTERNAL_PAYMENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {
@@ -724,6 +725,18 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, externalPaymentID st
 	}()
 
 	return nil
+}
+
+func (s *service) getOrderByPaymentID(ctx context.Context, paymentID string) (*entities.Order, error) {
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		return s.repo.GetOrderByStripePaymentIntentID(ctx, paymentID)
+	case providers.ProviderAuthorizeNet:
+		return s.repo.GetOrderByAuthorizeNetPaymentID(ctx, paymentID)
+	default:
+		// this should never happen, but just in case
+		return nil, errors.New("payment provider not supported")
+	}
 }
 
 // swagger:route PUT /orders/{order_reference} orders UpdateOrderRequest

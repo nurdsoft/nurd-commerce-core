@@ -2,11 +2,11 @@ package stripe
 
 import (
 	"database/sql"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/transport/http"
-	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -25,7 +25,6 @@ type ModuleParams struct {
 	GormDB         *gorm.DB
 	HTTPServer     *httpTransport.Server
 	APPTransport   svcTransport.Client
-	CommonConfig   cfg.Config
 	Logger         *zap.SugaredLogger
 	OrdersClient   ordersclient.Client
 	StripeClient   stripeClient.Client
@@ -35,7 +34,7 @@ type ModuleParams struct {
 // NewModule
 // nolint:gocritic
 func NewModule(p ModuleParams) error {
-	svc := service.New(p.Logger, p.CommonConfig, p.StripeClient, p.OrdersClient, p.CustomerClient)
+	svc := service.New(p.Logger, p.StripeClient, p.OrdersClient, p.CustomerClient)
 	eps := endpoints.New(svc)
 
 	http.RegisterTransport(p.HTTPServer, eps, p.APPTransport)

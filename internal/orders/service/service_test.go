@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -14,13 +15,18 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	customerEntities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
+	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/orders/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
+	productEntities "github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
 	webhookclient "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
 	webhookEntities "github.com/nurdsoft/nurd-commerce-core/internal/webhook/entities"
+	wishlistEntities "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 	wishlistclient "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
 	salesforceclient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
@@ -97,11 +103,11 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		Return(&addressEntities.Address{
 			FullName:    "John Doe",
 			Address:     expectedAddress,
-			City:        stringPtr("New York"),
+			City:        nullable.StringPtr("New York"),
 			StateCode:   "NY",
 			CountryCode: "US",
 			PostalCode:  "10001",
-			PhoneNumber: stringPtr("1234567890"),
+			PhoneNumber: nullable.StringPtr("1234567890"),
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -145,7 +151,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		GetCustomer(gomock.Any()).
 		Return(&customerEntities.Customer{
 			ID:       customerID,
-			StripeID: stringPtr(customerStripeID),
+			StripeID: nullable.StringPtr(customerStripeID),
 		}, nil)
 
 	tc.mockPayment.EXPECT().
@@ -233,11 +239,11 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		Return(&addressEntities.Address{
 			FullName:    "John Doe",
 			Address:     expectedAddress,
-			City:        stringPtr("New York"),
+			City:        nullable.StringPtr("New York"),
 			StateCode:   "NY",
 			CountryCode: "US",
 			PostalCode:  "10001",
-			PhoneNumber: stringPtr("1234567890"),
+			PhoneNumber: nullable.StringPtr("1234567890"),
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -281,7 +287,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		GetCustomer(gomock.Any()).
 		Return(&customerEntities.Customer{
 			ID:             customerID,
-			AuthorizeNetID: stringPtr(customerAuthorizeNetID),
+			AuthorizeNetID: nullable.StringPtr(customerAuthorizeNetID),
 		}, nil)
 
 	tc.mockPayment.EXPECT().
@@ -346,6 +352,240 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	<-notifyCallDone
 }
 
-func stringPtr(s string) *string {
-	return &s
+func TestProcessPaymentSucceeded_WithStripe(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "pi_123"
+		orderID := uuid.New()
+		salesforceID := "123456"
+		productID := uuid.New()
+		productVariantID := uuid.New()
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				StripePaymentIntentID: nullable.StringPtr(paymentID),
+				Status:                entities.Pending,
+				SalesforceID:          salesforceID,
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, updates map[string]interface{}, orderID string, customerID string) {
+				assert.Equal(t, orderID, orderID)
+				assert.Equal(t, customerID, customerID)
+				assert.Equal(t, entities.PaymentSuccess, updates["status"])
+			}).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().
+			GetCustomerByID(gomock.Any(), customerID.String()).
+			Return(&customerEntities.Customer{
+				ID:           customerID,
+				SalesforceID: nullable.StringPtr(salesforceID),
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByID(gomock.Any(), orderID).
+			Return([]*entities.OrderItem{
+				{
+					ProductID: productID,
+				},
+			}, nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
+				assert.Equal(t, customerID.String(), req.CustomerID)
+				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
+				close(notifyCallDone)
+			}).
+			Return(nil)
+
+		salesforceCallDone := make(chan struct{})
+		tc.mockSalesforce.EXPECT().
+			UpdateOrderStatus(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *salesforceEntities.UpdateOrderRequest) {
+				assert.Equal(t, salesforceID, req.AccountID)
+				assert.Equal(t, salesforceID, req.OrderId)
+				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
+				close(salesforceCallDone)
+			}).
+			Return(nil)
+
+		tc.mockProduct.EXPECT().
+			GetProductVariantByID(gomock.Any(), gomock.Any()).
+			Return(&productEntities.ProductVariant{
+				ID:        productVariantID,
+				ProductID: productID,
+			}, nil)
+
+		tc.mockWishlist.EXPECT().
+			BulkRemoveFromWishlist(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *wishlistEntities.BulkRemoveFromWishlistRequest) {
+				assert.Equal(t, customerID, req.CustomerID)
+				assert.Equal(t, []uuid.UUID{productID}, req.ProductIDs)
+			}).
+			Return(nil)
+
+		err := s.ProcessPaymentSucceeded(ctx, paymentID)
+
+		assert.NoError(t, err)
+		// wait for async calls to be done
+		<-notifyCallDone
+		<-salesforceCallDone
+	})
+
+	t.Run("error to get order by payment id", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "12346"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(nil, errors.New("order not found"))
+
+		err := s.ProcessPaymentSucceeded(ctx, paymentID)
+
+		assert.ErrorContains(t, err, moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID").Error())
+	})
+}
+
+func TestProcessPaymentSucceeded_WithAuthorizeNet(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "123456"
+		orderID := uuid.New()
+		salesforceID := "12346"
+		productID := uuid.New()
+		productVariantID := uuid.New()
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderAuthorizeNet)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByAuthorizeNetPaymentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				AuthorizeNetPaymentID: nullable.StringPtr(paymentID),
+				Status:                entities.Pending,
+				SalesforceID:          salesforceID,
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, updates map[string]interface{}, orderID string, customerID string) {
+				assert.Equal(t, orderID, orderID)
+				assert.Equal(t, customerID, customerID)
+				assert.Equal(t, entities.PaymentSuccess, updates["status"])
+			}).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().
+			GetCustomerByID(gomock.Any(), customerID.String()).
+			Return(&customerEntities.Customer{
+				ID:           customerID,
+				SalesforceID: nullable.StringPtr(salesforceID),
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByID(gomock.Any(), orderID).
+			Return([]*entities.OrderItem{
+				{
+					ProductID: productID,
+				},
+			}, nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
+				assert.Equal(t, customerID.String(), req.CustomerID)
+				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
+				close(notifyCallDone)
+			}).
+			Return(nil)
+
+		salesforceCallDone := make(chan struct{})
+		tc.mockSalesforce.EXPECT().
+			UpdateOrderStatus(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *salesforceEntities.UpdateOrderRequest) {
+				assert.Equal(t, salesforceID, req.AccountID)
+				assert.Equal(t, salesforceID, req.OrderId)
+				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
+				close(salesforceCallDone)
+			}).
+			Return(nil)
+
+		tc.mockProduct.EXPECT().
+			GetProductVariantByID(gomock.Any(), gomock.Any()).
+			Return(&productEntities.ProductVariant{
+				ID:        productVariantID,
+				ProductID: productID,
+			}, nil)
+
+		tc.mockWishlist.EXPECT().
+			BulkRemoveFromWishlist(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *wishlistEntities.BulkRemoveFromWishlistRequest) {
+				assert.Equal(t, customerID, req.CustomerID)
+				assert.Equal(t, []uuid.UUID{productID}, req.ProductIDs)
+			}).
+			Return(nil)
+
+		err := s.ProcessPaymentSucceeded(ctx, paymentID)
+
+		assert.NoError(t, err)
+		// wait for async calls to be done
+		<-notifyCallDone
+		<-salesforceCallDone
+	})
+
+	t.Run("error to get order by payment id", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "12346"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderAuthorizeNet)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByAuthorizeNetPaymentID(gomock.Any(), paymentID).
+			Return(nil, errors.New("order not found"))
+
+		err := s.ProcessPaymentSucceeded(ctx, paymentID)
+
+		assert.ErrorContains(t, err, moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID").Error())
+	})
 }

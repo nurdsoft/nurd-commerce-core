@@ -10,7 +10,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	entities "github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
-	providers "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 )
 
 // MockClient is a mock of Client interface.
@@ -66,16 +65,30 @@ func (mr *MockClientMockRecorder) GetCustomerByID(ctx, id interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerByID", reflect.TypeOf((*MockClient)(nil).GetCustomerByID), ctx, id)
 }
 
-// UpdateCustomerExternalID mocks base method.
-func (m *MockClient) UpdateCustomerExternalID(ctx context.Context, id, externalID string, paymentProvider providers.ProviderType) error {
+// UpdateCustomerAuthorizeNetID mocks base method.
+func (m *MockClient) UpdateCustomerAuthorizeNetID(ctx context.Context, id, externalID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCustomerExternalID", ctx, id, externalID, paymentProvider)
+	ret := m.ctrl.Call(m, "UpdateCustomerAuthorizeNetID", ctx, id, externalID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateCustomerExternalID indicates an expected call of UpdateCustomerExternalID.
-func (mr *MockClientMockRecorder) UpdateCustomerExternalID(ctx, id, externalID, paymentProvider interface{}) *gomock.Call {
+// UpdateCustomerAuthorizeNetID indicates an expected call of UpdateCustomerAuthorizeNetID.
+func (mr *MockClientMockRecorder) UpdateCustomerAuthorizeNetID(ctx, id, externalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerExternalID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerExternalID), ctx, id, externalID, paymentProvider)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerAuthorizeNetID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerAuthorizeNetID), ctx, id, externalID)
+}
+
+// UpdateCustomerStripeID mocks base method.
+func (m *MockClient) UpdateCustomerStripeID(ctx context.Context, id, externalID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCustomerStripeID", ctx, id, externalID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCustomerStripeID indicates an expected call of UpdateCustomerStripeID.
+func (mr *MockClientMockRecorder) UpdateCustomerStripeID(ctx, id, externalID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerStripeID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerStripeID), ctx, id, externalID)
 }

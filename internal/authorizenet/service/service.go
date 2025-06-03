@@ -12,7 +12,6 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	authorizenetClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/client"
 	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	"go.uber.org/zap"
 )
 
@@ -165,7 +164,7 @@ func (s *service) getProfileID(ctx context.Context, customerID string) (string, 
 		}
 		customer.AuthorizeNetID = &authProfile.ProfileID
 
-		err = s.customerClient.UpdateCustomerExternalID(ctx, customerID, authProfile.ProfileID, providers.ProviderAuthorizeNet)
+		err = s.customerClient.UpdateCustomerAuthorizeNetID(ctx, customerID, authProfile.ProfileID)
 
 		if err != nil {
 			return "", false, err

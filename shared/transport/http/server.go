@@ -3,18 +3,17 @@ package http
 
 import (
 	"context"
-	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/auth"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/logging"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/maxbytesreader"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/meta"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/metrics"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/middleware"
-	"github.com/gorilla/mux"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Server defines the HTTP server
@@ -58,11 +57,11 @@ func (s *Server) registerHandlers() {
 	next = middleware.RecoveryMiddleware(next)
 
 	// Wrap the final handler with OTEL tracing
-	next = otelhttp.NewHandler(next, "", otelhttp.WithSpanNameFormatter(
+	/* next = otelhttp.NewHandler(next, "", otelhttp.WithSpanNameFormatter(
 		func(operation string, r *http.Request) string {
 			return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 		},
-	))
+	))*/
 
 	s.server.Handler = next
 }

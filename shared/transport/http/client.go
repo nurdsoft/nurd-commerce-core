@@ -6,7 +6,6 @@ import (
 	"time"
 
 	retryGo "github.com/avast/retry-go"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/logging"
 	"github.com/nurdsoft/nurd-commerce-core/shared/transport/http/interceptors/meta"
@@ -41,7 +40,7 @@ func NewClient(opts ...Option) *http.Client {
 	next = meta.RequestIDClientRoundTripper(next)
 
 	// Wrap the RoundTripper with OTEL tracing
-	next = otelhttp.NewTransport(next)
+	// next = otelhttp.NewTransport(next)
 
 	client := &http.Client{Transport: next}
 

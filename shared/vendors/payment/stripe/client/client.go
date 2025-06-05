@@ -48,12 +48,12 @@ func (c *localClient) GetWebhookEvent(ctx context.Context, req *entities.HandleW
 }
 
 func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error) {
-	stripeReq, ok := req.(*entities.CreatePaymentIntentRequest)
+	stripeReq, ok := req.(entities.CreatePaymentIntentRequest)
 	if !ok {
 		return providers.PaymentProviderResponse{}, errors.New("invalid request type")
 	}
 
-	res, err := c.svc.CreatePaymentIntent(ctx, stripeReq)
+	res, err := c.svc.CreatePaymentIntent(ctx, &stripeReq)
 	if err != nil {
 		return providers.PaymentProviderResponse{}, err
 	}

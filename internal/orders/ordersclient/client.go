@@ -8,8 +8,8 @@ import (
 )
 
 type Client interface {
-	ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error
-	ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error
+	ProcessPaymentSucceeded(ctx context.Context, paymentID string) error
+	ProcessPaymentFailed(ctx context.Context, paymentID string) error
 	ProcessOrderStatus(ctx context.Context, req *entities.UpdateOrderRequest) error
 }
 
@@ -21,12 +21,12 @@ type localClient struct {
 	svc service.Service
 }
 
-func (c *localClient) ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error {
-	return c.svc.ProcessPaymentSucceeded(ctx, paymentIntentId)
+func (c *localClient) ProcessPaymentSucceeded(ctx context.Context, paymentID string) error {
+	return c.svc.ProcessPaymentSucceeded(ctx, paymentID)
 }
 
-func (c *localClient) ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error {
-	return c.svc.ProcessPaymentFailed(ctx, paymentIntentId)
+func (c *localClient) ProcessPaymentFailed(ctx context.Context, paymentID string) error {
+	return c.svc.ProcessPaymentFailed(ctx, paymentID)
 }
 
 func (c *localClient) ProcessOrderStatus(ctx context.Context, req *entities.UpdateOrderRequest) error {

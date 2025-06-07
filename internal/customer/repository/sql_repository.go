@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/customer/errors"
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"

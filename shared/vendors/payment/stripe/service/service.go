@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
+	stripeConfig "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/errors"
+	"github.com/shopspring/decimal"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/ephemeralkey"
@@ -26,17 +27,17 @@ type Service interface {
 	GetWebhookEvent(_ context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 }
 
-func New(config payment.Config, logger *zap.SugaredLogger) (Service, error) {
+func New(config stripeConfig.Config, logger *zap.SugaredLogger) (Service, error) {
 	return &service{config, logger}, nil
 }
 
 type service struct {
-	config payment.Config
+	config stripeConfig.Config
 	logger *zap.SugaredLogger
 }
 
 func (s *service) CreateCustomer(_ context.Context, req *entities.CreateCustomerRequest) (*entities.CreateCustomerResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	params := &stripe.CustomerParams{
 		Name:  stripe.String(req.Name),
@@ -72,7 +73,7 @@ func (s *service) CreateCustomer(_ context.Context, req *entities.CreateCustomer
 }
 
 func (s *service) GetCustomerPaymentMethods(_ context.Context, customerId *string) (*entities.GetCustomerPaymentMethodsResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	params := &stripe.CustomerListPaymentMethodsParams{
 		Customer: stripe.String(*customerId),
@@ -84,7 +85,7 @@ func (s *service) GetCustomerPaymentMethods(_ context.Context, customerId *strin
 	if iter.Err() != nil {
 		s.logger.Error("Failed to fetch customer payment methods from stripe-api:", iter.Err())
 		var stripeErr *stripe.Error
-		if errors.As(stripeErr, &stripeErr) {
+		if errors.As(iter.Err(), &stripeErr) {
 			s.logger.Error("Stripe error: ", stripeErr.Msg)
 			switch stripeErr.Type {
 			case stripe.ErrorTypeInvalidRequest:
@@ -129,7 +130,7 @@ func (s *service) GetCustomerPaymentMethods(_ context.Context, customerId *strin
 }
 
 func (s *service) GetSetupIntent(_ context.Context, customerId *string) (*entities.GetSetupIntentResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	ekParams := &stripe.EphemeralKeyParams{
 		Customer:      stripe.String(*customerId),
@@ -172,10 +173,11 @@ func (s *service) GetSetupIntent(_ context.Context, customerId *string) (*entiti
 }
 
 func (s *service) CreatePaymentIntent(_ context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
+	integerAmount := req.Amount.Mul(decimal.NewFromInt(100)).IntPart()
 	params := &stripe.PaymentIntentParams{
-		Amount:        stripe.Int64(req.Amount),
+		Amount:        stripe.Int64(integerAmount),
 		Currency:      stripe.String(req.Currency),
 		Customer:      stripe.String(*req.CustomerId),
 		PaymentMethod: stripe.String(req.PaymentMethodId),
@@ -218,7 +220,7 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 		s.logger.Error("Webhook error while parsing basic request ", err)
 		return nil, err
 	}
-	event, err := webhook.ConstructEvent(req.Payload, req.Signature, s.config.Stripe.SigningSecret)
+	event, err := webhook.ConstructEvent(req.Payload, req.Signature, s.config.SigningSecret)
 	if err != nil {
 		s.logger.Error("Webhook Stripe signature verification failed ", err)
 		return nil, err
@@ -243,7 +245,7 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 
 // GetCustomerPaymentMethodById retrieves a specific payment method by its ID.
 func (s *service) GetCustomerPaymentMethodById(_ context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	params := &stripe.CustomerRetrievePaymentMethodParams{
 		Customer: stripe.String(*customerId),

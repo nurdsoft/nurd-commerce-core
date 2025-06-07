@@ -3,12 +3,15 @@ package cmd
 
 import (
 	"database/sql"
-
 	"time"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
 
 	"github.com/nurdsoft/nurd-commerce-core/config"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
+	authorizenetModule "github.com/nurdsoft/nurd-commerce-core/internal/authorizenet"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer"
@@ -18,7 +21,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/product"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
 	stripeModule "github.com/nurdsoft/nurd-commerce-core/internal/stripe"
-	swagger "github.com/nurdsoft/nurd-commerce-core/internal/swagger"
+	"github.com/nurdsoft/nurd-commerce-core/internal/swagger"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/webhook"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist"
@@ -30,7 +33,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/module"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce"
-	stripePayment "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
 	stripeTaxes "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe"
 	"github.com/spf13/cobra"
@@ -51,7 +54,9 @@ var apiCommand = &cobra.Command{
 			transport.ModuleAPI,
 			health.Module,
 			shipping.Module,
-			stripePayment.Module,
+			stripe.Module,
+			authorizenet.Module,
+			payment.Module,
 			stripeTaxes.Module,
 			log.Module,
 			customer.ModuleHttpAPI,
@@ -70,6 +75,7 @@ var apiCommand = &cobra.Command{
 			salesforce.Module,
 			swagger.ModuleServeSwagger,
 			stripeModule.ModuleHttpAPI,
+			authorizenetModule.ModuleHttpAPI,
 			fx.NopLogger,
 			fx.StartTimeout(time.Second*60),
 		)

@@ -65,16 +65,30 @@ func (mr *MockClientMockRecorder) GetCustomerByID(ctx, id interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerByID", reflect.TypeOf((*MockClient)(nil).GetCustomerByID), ctx, id)
 }
 
-// UpdateCustomerStripeID mocks base method.
-func (m *MockClient) UpdateCustomerStripeID(ctx context.Context, id, stripeID string) error {
+// UpdateCustomerAuthorizeNetID mocks base method.
+func (m *MockClient) UpdateCustomerAuthorizeNetID(ctx context.Context, id, externalID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCustomerStripeID", ctx, id, stripeID)
+	ret := m.ctrl.Call(m, "UpdateCustomerAuthorizeNetID", ctx, id, externalID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCustomerAuthorizeNetID indicates an expected call of UpdateCustomerAuthorizeNetID.
+func (mr *MockClientMockRecorder) UpdateCustomerAuthorizeNetID(ctx, id, externalID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerAuthorizeNetID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerAuthorizeNetID), ctx, id, externalID)
+}
+
+// UpdateCustomerStripeID mocks base method.
+func (m *MockClient) UpdateCustomerStripeID(ctx context.Context, id, externalID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCustomerStripeID", ctx, id, externalID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateCustomerStripeID indicates an expected call of UpdateCustomerStripeID.
-func (mr *MockClientMockRecorder) UpdateCustomerStripeID(ctx, id, stripeID interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateCustomerStripeID(ctx, id, externalID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerStripeID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerStripeID), ctx, id, stripeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCustomerStripeID", reflect.TypeOf((*MockClient)(nil).UpdateCustomerStripeID), ctx, id, externalID)
 }

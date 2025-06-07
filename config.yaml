@@ -35,9 +35,16 @@ Shipping:
     ShipperName: ""
     ShipperNumber: ""
 Payment:
+  Provider: "authorizeNet"
   Stripe:
     Key: ""
     SigningSecret: ""
+  AuthorizeNet:
+    ApiLoginID: "fake-api-login-id"
+    TransactionKey: "fake-transaction-key"
+    LiveMode: false
+    SignatureKey: "fake-signature-key"
+    Endpoint: "https://apitest.authorize.net/xml/v1/request.api"
 Taxes:
   Stripe:
     Key: ""

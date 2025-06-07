@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"strings"
 	"time"
-
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
@@ -26,7 +25,10 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
+	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -37,8 +39,8 @@ type Service interface {
 	ListOrders(ctx context.Context, req *entities.ListOrdersRequest) (*entities.ListOrdersResponse, error)
 	GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderData, error)
 	CancelOrder(ctx context.Context, req *entities.CancelOrderRequest) error
-	ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error
-	ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error
+	ProcessPaymentSucceeded(ctx context.Context, paymentID string) error
+	ProcessPaymentFailed(ctx context.Context, paymentID string) error
 	UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequest) error
 }
 
@@ -47,7 +49,7 @@ type service struct {
 	log              *zap.SugaredLogger
 	customerClient   customerclient.Client
 	cartClient       cartclient.Client
-	stripeClient     stripeClient.Client
+	paymentClient    payment.Client
 	wishlistClient   wishlistclient.Client
 	salesforceClient salesforce.Client
 	addressClient    addressclient.Client
@@ -58,7 +60,7 @@ type service struct {
 
 func New(
 	repo repository.Repository, log *zap.SugaredLogger, customerClient customerclient.Client,
-	cartClient cartclient.Client, stripeClient stripeClient.Client,
+	cartClient cartclient.Client, paymentClient payment.Client,
 	wishlistClient wishlistclient.Client, config cfg.Config,
 	salesforceClient salesforce.Client, addressClient addressclient.Client, productClient productclient.Client,
 	webhookClient webhook.Client,
@@ -68,7 +70,7 @@ func New(
 		log:              log,
 		customerClient:   customerClient,
 		cartClient:       cartClient,
-		stripeClient:     stripeClient,
+		paymentClient:    paymentClient,
 		wishlistClient:   wishlistClient,
 		salesforceClient: salesforceClient,
 		addressClient:    addressClient,
@@ -161,16 +163,25 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		return nil, err
 	}
 
-	stripeReq := &stripeEntities.CreatePaymentIntentRequest{
-		Amount:          total.Mul(decimal.NewFromInt(100)).IntPart(),
+	paymentReq := entities.CreatePaymentRequest{
+		Amount:          total,
 		Currency:        cart.TaxCurrency,
-		CustomerId:      customer.StripeId,
+		Customer:        *customer,
 		PaymentMethodId: req.Body.StripePaymentMethodID,
+		PaymentNonce:    req.Body.PaymentNonce,
 	}
 
-	stripePaymentIntent, err := s.stripeClient.CreatePaymentIntent(ctx, stripeReq)
+	paymentResponse, err := s.createPaymentByProvider(ctx, paymentReq)
 	if err != nil {
 		return nil, err
+	}
+
+	orderStatus := entities.Pending
+	switch paymentResponse.Status {
+	case providers.PaymentStatusSuccess:
+		orderStatus = entities.PaymentSuccess
+	case providers.PaymentStatusFailed:
+		orderStatus = entities.PaymentFailed
 	}
 
 	orderRef, err := s.generateOrderRef(ctx, orderId.String())
@@ -202,10 +213,17 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		DeliveryCountryCode:           address.CountryCode,
 		DeliveryPostalCode:            address.PostalCode,
 		DeliveryPhoneNumber:           address.PhoneNumber,
-		StripePaymentIntentID:         stripePaymentIntent.Id,
-		StripePaymentMethodID:         req.Body.StripePaymentMethodID,
-		Status:                        entities.Pending,
+		Status:                        orderStatus,
 	}
+
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		order.StripePaymentIntentID = &paymentResponse.ID
+		order.StripePaymentMethodID = req.Body.StripePaymentMethodID
+	case providers.ProviderAuthorizeNet:
+		order.AuthorizeNetPaymentID = &paymentResponse.ID
+	}
+
 	// create order
 	err = s.repo.CreateOrder(ctx, cart.Id, order, orderItems)
 	if err != nil {
@@ -218,7 +236,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 				CustomerID:     customerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
-				Status:         entities.Pending.String(),
+				Status:         orderStatus.String(),
 			})
 			if err != nil {
 				s.log.Errorf("Error notifying order status change: %v", err)
@@ -377,6 +395,33 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	return &entities.CreateOrderResponse{
 		OrderReference: order.OrderReference,
 	}, nil
+}
+
+func (s *service) createPaymentByProvider(ctx context.Context, paymentReq entities.CreatePaymentRequest) (providers.PaymentProviderResponse, error) {
+	var req any
+
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		req = stripeEntities.CreatePaymentIntentRequest{
+			Amount:          paymentReq.Amount,
+			Currency:        paymentReq.Currency,
+			CustomerId:      paymentReq.Customer.StripeID,
+			PaymentMethodId: paymentReq.PaymentMethodId,
+		}
+	case providers.ProviderAuthorizeNet:
+		req = authorizenetEntities.CreatePaymentTransactionRequest{
+			Amount:       paymentReq.Amount,
+			ProfileID:    *paymentReq.Customer.AuthorizeNetID,
+			PaymentNonce: paymentReq.PaymentNonce,
+		}
+	}
+
+	res, err := s.paymentClient.CreatePayment(ctx, req)
+	if err != nil {
+		return providers.PaymentProviderResponse{}, err
+	}
+
+	return res, nil
 }
 
 // swagger:route GET /orders orders ListOrdersRequest
@@ -543,10 +588,10 @@ func (s *service) CancelOrder(ctx context.Context, req *entities.CancelOrderRequ
 	return nil
 }
 
-func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error {
-	order, err := s.repo.GetOrderByStripePaymentIntentID(ctx, paymentIntentId)
+func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string) error {
+	order, err := s.getOrderByPaymentID(ctx, paymentID)
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {
@@ -624,10 +669,10 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentIntentId s
 	return nil
 }
 
-func (s *service) ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error {
-	order, err := s.repo.GetOrderByStripePaymentIntentID(ctx, paymentIntentId)
+func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) error {
+	order, err := s.getOrderByPaymentID(ctx, paymentID)
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID")
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID")
 	}
 
 	if order.Status != entities.Pending {
@@ -680,6 +725,18 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentIntentId stri
 	}()
 
 	return nil
+}
+
+func (s *service) getOrderByPaymentID(ctx context.Context, paymentID string) (*entities.Order, error) {
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		return s.repo.GetOrderByStripePaymentIntentID(ctx, paymentID)
+	case providers.ProviderAuthorizeNet:
+		return s.repo.GetOrderByAuthorizeNetPaymentID(ctx, paymentID)
+	default:
+		// this should never happen, but just in case
+		return nil, errors.New("payment provider not supported")
+	}
 }
 
 // swagger:route PUT /orders/{order_reference} orders UpdateOrderRequest

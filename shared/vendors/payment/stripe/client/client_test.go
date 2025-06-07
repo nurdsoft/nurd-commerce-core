@@ -9,13 +9,13 @@ import (
 	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/service"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stripe/stripe-go/v81"
 )
 
 func TestClient_CreateCustomer(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	mockService := service.NewMockService(ctrl)
 	client := NewClient(mockService)
@@ -50,14 +50,13 @@ func TestClient_CreateCustomer(t *testing.T) {
 
 func TestClient_CreatePaymentIntent(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	mockService := service.NewMockService(ctrl)
 	client := NewClient(mockService)
 
 	ctx := context.Background()
 	req := &entities.CreatePaymentIntentRequest{
-		Amount:          1000,
+		Amount:          decimal.NewFromInt(1000),
 		Currency:        "usd",
 		CustomerId:      stripe.String("cus_123"),
 		PaymentMethodId: "pm_123",
@@ -66,7 +65,7 @@ func TestClient_CreatePaymentIntent(t *testing.T) {
 	t.Run("Payment intent authentication failure", func(t *testing.T) {
 		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent authentication failure"})
 
-		_, err := client.CreatePaymentIntent(ctx, req)
+		_, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
 		assert.IsType(t, &appErrors.APIError{}, err)
 		assert.Equal(t, "Payment intent authentication failure", err.Error())
@@ -75,7 +74,7 @@ func TestClient_CreatePaymentIntent(t *testing.T) {
 	t.Run("Payment intent invalid parameter", func(t *testing.T) {
 		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent invalid parameter"})
 
-		_, err := client.CreatePaymentIntent(ctx, req)
+		_, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
 		assert.IsType(t, &appErrors.APIError{}, err)
 		assert.Equal(t, "Payment intent invalid parameter", err.Error())
@@ -84,7 +83,7 @@ func TestClient_CreatePaymentIntent(t *testing.T) {
 	t.Run("Payment intent incompatible payment method", func(t *testing.T) {
 		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent incompatible payment method"})
 
-		_, err := client.CreatePaymentIntent(ctx, req)
+		_, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
 		assert.IsType(t, &appErrors.APIError{}, err)
 		assert.Equal(t, "Payment intent incompatible payment method", err.Error())

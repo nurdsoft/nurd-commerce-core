@@ -50,29 +50,29 @@ func (mr *MockClientMockRecorder) ProcessOrderStatus(ctx, req interface{}) *gomo
 }
 
 // ProcessPaymentFailed mocks base method.
-func (m *MockClient) ProcessPaymentFailed(ctx context.Context, paymentIntentId string) error {
+func (m *MockClient) ProcessPaymentFailed(ctx context.Context, paymentID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessPaymentFailed", ctx, paymentIntentId)
+	ret := m.ctrl.Call(m, "ProcessPaymentFailed", ctx, paymentID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ProcessPaymentFailed indicates an expected call of ProcessPaymentFailed.
-func (mr *MockClientMockRecorder) ProcessPaymentFailed(ctx, paymentIntentId interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ProcessPaymentFailed(ctx, paymentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentFailed", reflect.TypeOf((*MockClient)(nil).ProcessPaymentFailed), ctx, paymentIntentId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentFailed", reflect.TypeOf((*MockClient)(nil).ProcessPaymentFailed), ctx, paymentID)
 }
 
 // ProcessPaymentSucceeded mocks base method.
-func (m *MockClient) ProcessPaymentSucceeded(ctx context.Context, paymentIntentId string) error {
+func (m *MockClient) ProcessPaymentSucceeded(ctx context.Context, paymentID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessPaymentSucceeded", ctx, paymentIntentId)
+	ret := m.ctrl.Call(m, "ProcessPaymentSucceeded", ctx, paymentID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ProcessPaymentSucceeded indicates an expected call of ProcessPaymentSucceeded.
-func (mr *MockClientMockRecorder) ProcessPaymentSucceeded(ctx, paymentIntentId interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ProcessPaymentSucceeded(ctx, paymentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentSucceeded", reflect.TypeOf((*MockClient)(nil).ProcessPaymentSucceeded), ctx, paymentIntentId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentSucceeded", reflect.TypeOf((*MockClient)(nil).ProcessPaymentSucceeded), ctx, paymentID)
 }

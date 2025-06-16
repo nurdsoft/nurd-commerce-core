@@ -737,6 +737,10 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		data["fulfillment_tracking_number"] = req.Body.FulfillmentTrackingNumber
 	}
 
+	if req.Body.FulfillmentTrackingURL != nil {
+		data["fulfillment_tracking_url"] = req.Body.FulfillmentTrackingURL
+	}
+
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())
 
 	if err != nil {

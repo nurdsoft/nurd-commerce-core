@@ -701,6 +701,9 @@ definitions:
             tracking_number:
                 type: string
                 x-go-name: FulfillmentTrackingNumber
+            tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             updated_at:
                 format: date-time
                 type: string
@@ -971,6 +974,9 @@ definitions:
             fulfillment_tracking_number:
                 type: string
                 x-go-name: FulfillmentTrackingNumber
+            fulfillment_tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             status:
                 type: string
                 x-go-name: Status

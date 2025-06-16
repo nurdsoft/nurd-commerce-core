@@ -81,5 +81,6 @@ type UpdateOrderRequestBody struct {
 	FulfillmentOrderTotal     *decimal.Decimal `json:"fulfillment_order_total,omitempty"`
 	FulfillmentAmountDue      *decimal.Decimal `json:"fulfillment_amount_due,omitempty"`
 	FulfillmentTrackingNumber *string          `json:"fulfillment_tracking_number,omitempty"`
+	FulfillmentTrackingURL    *string          `json:"fulfillment_tracking_url,omitempty"`
 	FulfilmentMetadata        *json.JSON       `json:"fulfillment_metadata,omitempty"`
 }

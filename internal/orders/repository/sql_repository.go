@@ -133,6 +133,15 @@ func (r *sqlRepository) GetOrderByStripePaymentIntentID(ctx context.Context, str
 	return order, nil
 }
 
+func (r *sqlRepository) GetOrderByAuthorizeNetPaymentID(ctx context.Context, authorizeNetPaymentID string) (*entities.Order, error) {
+	order := &entities.Order{}
+	if err := r.gormDB.WithContext(ctx).Where("authorizenet_payment_id = ?", authorizeNetPaymentID).First(order).Error; err != nil {
+		return nil, err
+	}
+
+	return order, nil
+}
+
 func (r *sqlRepository) Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error {
 	tx := r.gormDB.WithContext(ctx).Model(&entities.Order{}).Where("id = ?", orderID)
 

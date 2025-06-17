@@ -63,8 +63,9 @@ type Order struct {
 	FulfillmentMetadata           json.JSON           `json:"-" gorm:"column:fulfillment_metadata"`
 	FulfillmentTrackingNumber     *string             `json:"tracking_number,omitempty" gorm:"column:fulfillment_tracking_number"`
 	SalesforceID                  string              `json:"-" gorm:"column:salesforce_id"`
-	StripePaymentIntentID         string              `json:"-" gorm:"column:stripe_payment_intent_id"`
+	StripePaymentIntentID         *string             `json:"-" gorm:"column:stripe_payment_intent_id"`
 	StripePaymentMethodID         string              `json:"stripe_payment_method_id" gorm:"column:stripe_payment_method_id"`
+	AuthorizeNetPaymentID         *string             `json:"-" gorm:"column:authorizenet_payment_id"`
 	CreatedAt                     time.Time           `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt                     time.Time           `json:"updated_at" gorm:"column:updated_at"`
 	ItemsSummary                  []*OrderItemSummary `json:"items_summary,omitempty" gorm:"-"`

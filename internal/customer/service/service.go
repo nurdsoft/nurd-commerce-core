@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
@@ -11,7 +13,6 @@ import (
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	"go.uber.org/zap"
-	"time"
 )
 
 type Service interface {
@@ -19,7 +20,8 @@ type Service interface {
 	GetCustomer(ctx context.Context) (*entities.Customer, error)
 	GetCustomerByID(ctx context.Context, id string) (*entities.Customer, error)
 	UpdateCustomer(ctx context.Context, req *entities.UpdateCustomerRequest) (*entities.Customer, error)
-	UpdateCustomerStripeID(ctx context.Context, customerID string, stripeID string) error
+	UpdateCustomerAuthorizeNetID(ctx context.Context, customerID string, externalID string) error
+	UpdateCustomerStripeID(ctx context.Context, customerID string, externalID string) error
 }
 
 type service struct {
@@ -227,11 +229,21 @@ func (s *service) createSalesforceUser(ctx context.Context, firstName, lastName,
 	return res, nil
 }
 
-func (s *service) UpdateCustomerStripeID(ctx context.Context, customerID string, stripeID string) error {
+func (s *service) UpdateCustomerAuthorizeNetID(ctx context.Context, customerID string, externalID string) error {
 	err := s.repo.Update(ctx, map[string]interface{}{
-		"stripe_id": stripeID,
+		"authorizenet_id": externalID,
 	}, customerID)
 
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateCustomerStripeID(ctx context.Context, customerID string, externalID string) error {
+	err := s.repo.Update(ctx, map[string]interface{}{
+		"stripe_id": externalID,
+	}, customerID)
 	if err != nil {
 		return err
 	}

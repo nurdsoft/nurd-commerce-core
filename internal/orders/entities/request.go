@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
@@ -20,6 +21,15 @@ type CreateOrderRequestBody struct {
 	AddressID             uuid.UUID `json:"address_id"`
 	ShippingRateID        uuid.UUID `json:"shipping_rate_id"`
 	StripePaymentMethodID string    `json:"stripe_payment_method_id,omitempty"`
+	PaymentNonce          string    `json:"payment_nonce,omitempty"`
+}
+
+type CreatePaymentRequest struct {
+	Amount          decimal.Decimal
+	Currency        string
+	Customer        entities.Customer
+	PaymentMethodId string
+	PaymentNonce    string
 }
 
 // swagger:parameters orders ListOrdersRequest

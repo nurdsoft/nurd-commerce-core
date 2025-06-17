@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant FE as Frontend
+    participant AN as Authorize.net
+    participant GetPaymentProfiles as Get Payment Profiles
+    participant CreateCustomer as Create Customer
+    participant CreateOrder as Create Order
+    participant CreateTransaction as Create Transaction
+    participant CreatePaymentProfile as Create Payment Profile 
+    participant DB as Database
+
+  FE ->>+ AN: requests Accept.js
+  AN ->>- FE: returns form 
+  FE ->>+ GetPaymentProfiles: get existing payment profiles 
+  GetPaymentProfiles -->>+ CreateCustomer: if AN customer doesn't exist
+  GetPaymentProfiles ->>- FE:  
+  FE ->>+ CreateOrder: send payment nonce
+  CreateOrder -->>+ CreateTransaction: 
+  CreateTransaction -->>- CreateOrder: tx result
+  CreateOrder -->>+ DB: store order
+  CreateOrder ->>- FE: 
+  FE -->>+ CreatePaymentProfile: optional call for future uses
+

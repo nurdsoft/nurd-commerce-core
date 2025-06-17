@@ -62,6 +62,7 @@ type Order struct {
 	FulfillmentAmountDue          *decimal.Decimal    `json:"-" gorm:"column:fulfillment_amount_due"`
 	FulfillmentMetadata           json.JSON           `json:"-" gorm:"column:fulfillment_metadata"`
 	FulfillmentTrackingNumber     *string             `json:"tracking_number,omitempty" gorm:"column:fulfillment_tracking_number"`
+	FulfillmentTrackingURL        *string             `json:"tracking_url,omitempty" gorm:"column:fulfillment_tracking_url"`
 	SalesforceID                  string              `json:"-" gorm:"column:salesforce_id"`
 	StripePaymentIntentID         *string             `json:"-" gorm:"column:stripe_payment_intent_id"`
 	StripePaymentMethodID         string              `json:"stripe_payment_method_id" gorm:"column:stripe_payment_method_id"`

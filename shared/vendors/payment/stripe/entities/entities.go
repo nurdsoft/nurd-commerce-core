@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/shopspring/decimal"
+
 type CreateCustomerRequest struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
@@ -33,7 +35,7 @@ type GetSetupIntentResponse struct {
 }
 
 type CreatePaymentIntentRequest struct {
-	Amount          int64
+	Amount          decimal.Decimal
 	Currency        string
 	CustomerId      *string
 	PaymentMethodId string

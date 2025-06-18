@@ -1024,6 +1024,9 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     UpdateCustomerRequestBody:
         properties:
+            email:
+                type: string
+                x-go-name: Email
             first_name:
                 type: string
                 x-go-name: FirstName
@@ -1530,6 +1533,33 @@ paths:
             summary: Get customer details
             tags:
                 - customers
+        patch:
+            operationId: UpdateCustomerRequest
+            parameters:
+                - description: Customer data to be updated
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/UpdateCustomerRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer updated successfully
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Customer
+            tags:
+                - customers
         post:
             operationId: CreateCustomerRequest
             parameters:
@@ -1555,33 +1585,6 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Create Customer
-            tags:
-                - customers
-        put:
-            operationId: UpdateCustomerRequest
-            parameters:
-                - description: Customer data to be updated
-                  in: body
-                  name: Data
-                  required: true
-                  schema:
-                    $ref: '#/definitions/UpdateCustomerRequestBody'
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: Customer updated successfully
-                    schema:
-                        $ref: '#/definitions/GetCustomerResponse'
-                "404":
-                    description: Not Found
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: Update Customer
             tags:
                 - customers
     /health:

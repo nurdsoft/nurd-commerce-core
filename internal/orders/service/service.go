@@ -244,7 +244,6 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		}()
 
 		go func() {
-
 			if customer.SalesforceID == nil {
 				s.log.Errorf("Customer does not have a salesforce id")
 				return

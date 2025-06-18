@@ -3,10 +3,11 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
+	"github.com/google/uuid"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	"github.com/google/uuid"
-	"net/http"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	httpError "github.com/nurdsoft/nurd-commerce-core/shared/errors/http"
@@ -64,7 +65,6 @@ func decodeGetCustomerRequest(c context.Context, _ *http.Request) (interface{}, 
 }
 
 func decodeUpdateCustomerRequest(c context.Context, r *http.Request) (interface{}, error) {
-
 	customerIDStr := sharedMeta.XCustomerID(c)
 
 	customerID, err := uuid.Parse(customerIDStr)
@@ -80,10 +80,6 @@ func decodeUpdateCustomerRequest(c context.Context, r *http.Request) (interface{
 	err = decodeBodyFromRequest(reqBody, r)
 	if err != nil {
 		return nil, err
-	}
-
-	if reqBody.FirstName == "" {
-		return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "First name is required")
 	}
 
 	return &entities.UpdateCustomerRequest{

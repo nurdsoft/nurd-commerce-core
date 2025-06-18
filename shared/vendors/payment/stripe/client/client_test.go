@@ -11,7 +11,6 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/service"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
-	"github.com/stripe/stripe-go/v81"
 )
 
 func TestClient_CreateCustomer(t *testing.T) {
@@ -55,38 +54,54 @@ func TestClient_CreatePaymentIntent(t *testing.T) {
 	client := NewClient(mockService)
 
 	ctx := context.Background()
-	req := &entities.CreatePaymentIntentRequest{
+	customerId := "cus_123"
+	// Create as a value, not a pointer
+	req := entities.CreatePaymentIntentRequest{
 		Amount:          decimal.NewFromInt(1000),
 		Currency:        "usd",
-		CustomerId:      stripe.String("cus_123"),
+		CustomerId:      &customerId,
 		PaymentMethodId: "pm_123",
 	}
 
-	t.Run("Payment intent authentication failure", func(t *testing.T) {
-		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent authentication failure"})
+	t.Run("Success", func(t *testing.T) {
+		expectedResp := &entities.CreatePaymentIntentResponse{
+			Id: "pi_123",
+		}
+		// When CreatePayment receives a value, it will pass a pointer to the service
+		mockService.EXPECT().CreatePaymentIntent(ctx, gomock.Any()).Return(expectedResp, nil)
 
-		_, err := client.CreatePayment(ctx, req)
+		resp, err := client.CreatePayment(ctx, req)
+		assert.NoError(t, err)
+		assert.Equal(t, "pi_123", resp.ID)
+	})
+
+	t.Run("Payment intent authentication failure", func(t *testing.T) {
+		apiErr := &appErrors.APIError{Message: "Payment intent authentication failure"}
+		mockService.EXPECT().CreatePaymentIntent(ctx, gomock.Any()).Return(nil, apiErr)
+
+		resp, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
-		assert.IsType(t, &appErrors.APIError{}, err)
-		assert.Equal(t, "Payment intent authentication failure", err.Error())
+		assert.Equal(t, apiErr, err)
+		assert.Empty(t, resp.ID)
 	})
 
 	t.Run("Payment intent invalid parameter", func(t *testing.T) {
-		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent invalid parameter"})
+		apiErr := &appErrors.APIError{Message: "Payment intent invalid parameter"}
+		mockService.EXPECT().CreatePaymentIntent(ctx, gomock.Any()).Return(nil, apiErr)
 
-		_, err := client.CreatePayment(ctx, req)
+		resp, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
-		assert.IsType(t, &appErrors.APIError{}, err)
-		assert.Equal(t, "Payment intent invalid parameter", err.Error())
+		assert.Equal(t, apiErr, err)
+		assert.Empty(t, resp.ID)
 	})
 
 	t.Run("Payment intent incompatible payment method", func(t *testing.T) {
-		mockService.EXPECT().CreatePaymentIntent(ctx, req).Return(nil, &appErrors.APIError{Message: "Payment intent incompatible payment method"})
+		apiErr := &appErrors.APIError{Message: "Payment intent incompatible payment method"}
+		mockService.EXPECT().CreatePaymentIntent(ctx, gomock.Any()).Return(nil, apiErr)
 
-		_, err := client.CreatePayment(ctx, req)
+		resp, err := client.CreatePayment(ctx, req)
 		assert.Error(t, err)
-		assert.IsType(t, &appErrors.APIError{}, err)
-		assert.Equal(t, "Payment intent incompatible payment method", err.Error())
+		assert.Equal(t, apiErr, err)
+		assert.Empty(t, resp.ID)
 	})
-
 }

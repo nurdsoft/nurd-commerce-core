@@ -12,6 +12,7 @@ type UpdateSFUserRequest struct {
 	FirstName string `json:"FirstName"`
 	LastName  string `json:"LastName"`
 	Phone     string `json:"Phone"`
+	Email     string `json:"PersonEmail"`
 }
 
 type CreateSFAddressRequest struct {

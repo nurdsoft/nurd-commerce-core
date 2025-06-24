@@ -169,6 +169,9 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: AddressID
+            payment_nonce:
+                type: string
+                x-go-name: PaymentNonce
             shipping_rate_id:
                 format: uuid
                 type: string
@@ -187,6 +190,26 @@ definitions:
                 x-go-name: OrderReference
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    CreatePaymentProfileRequest:
+        properties:
+            card_number:
+                type: string
+                x-go-name: CardNumber
+            expiration_date:
+                type: string
+                x-go-name: ExpirationDate
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
+    CreatePaymentProfileResponse:
+        properties:
+            payment_profile_id:
+                type: string
+                x-go-name: PaymentProfileID
+            profile_id:
+                type: string
+                x-go-name: ProfileID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     CreateProductRequestBody:
         properties:
             attributes:
@@ -271,6 +294,16 @@ definitions:
         type: object
         x-go-name: Response
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/transport/http
+    FraudItem:
+        properties:
+            fraudAction:
+                type: string
+                x-go-name: FraudAction
+            fraudFilter:
+                type: string
+                x-go-name: FraudFilter
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     GetAddressResponse:
         properties:
             address:
@@ -391,6 +424,15 @@ definitions:
                 x-go-name: PaymentMethods
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetPaymentProfileResponse:
+        properties:
+            payment_profiles:
+                items:
+                    $ref: '#/definitions/PaymentProfile'
+                type: array
+                x-go-name: PaymentProfiles
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     GetProductResponse:
         properties:
             attributes:
@@ -701,6 +743,9 @@ definitions:
             tracking_number:
                 type: string
                 x-go-name: FulfillmentTrackingNumber
+            tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             updated_at:
                 format: date-time
                 type: string
@@ -807,6 +852,32 @@ definitions:
     OrderStatus:
         type: string
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    Payload:
+        properties:
+            authAmount:
+                format: double
+                type: number
+                x-go-name: AuthAmount
+            avsResponse:
+                type: string
+                x-go-name: AvsResponse
+            entityName:
+                type: string
+                x-go-name: EntityName
+            fraudList:
+                items:
+                    $ref: '#/definitions/FraudItem'
+                type: array
+                x-go-name: FraudList
+            id:
+                type: string
+                x-go-name: ID
+            responseCode:
+                format: int64
+                type: integer
+                x-go-name: ResponseCode
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     PaymentMethod:
         properties:
             brand:
@@ -841,6 +912,22 @@ definitions:
                 x-go-name: Wallet
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    PaymentProfile:
+        properties:
+            card_number:
+                type: string
+                x-go-name: CardNumber
+            card_type:
+                type: string
+                x-go-name: CardType
+            expiration_date:
+                type: string
+                x-go-name: ExpirationDate
+            id:
+                type: string
+                x-go-name: ID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     Product:
         properties:
             data:
@@ -937,6 +1024,9 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     UpdateCustomerRequestBody:
         properties:
+            email:
+                type: string
+                x-go-name: Email
             first_name:
                 type: string
                 x-go-name: FirstName
@@ -971,6 +1061,9 @@ definitions:
             fulfillment_tracking_number:
                 type: string
                 x-go-name: FulfillmentTrackingNumber
+            fulfillment_tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             status:
                 type: string
                 x-go-name: Status
@@ -1002,6 +1095,24 @@ definitions:
                 x-go-name: StateCode
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    WebhookRequest:
+        properties:
+            eventDate:
+                type: string
+                x-go-name: EventDate
+            eventType:
+                type: string
+                x-go-name: EventType
+            notificationId:
+                type: string
+                x-go-name: NotificationID
+            payload:
+                $ref: '#/definitions/Payload'
+            webhookId:
+                type: string
+                x-go-name: WebhookID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     WishlistItem:
         properties:
             created_at:
@@ -1159,6 +1270,88 @@ paths:
             summary: Update Address
             tags:
                 - addresses
+    /authorizenet/payment-profiles:
+        get:
+            description: '### Get all payment profiles of the customer'
+            operationId: GetPaymentProfiles
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment profiles retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentProfileResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Profiles
+            tags:
+                - authorizenet
+        post:
+            description: '### Create a payment profile'
+            operationId: CreatePaymentProfileRequest
+            parameters:
+                - description: The payment profile to create
+                  in: body
+                  name: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/CreatePaymentProfileRequest'
+                  x-go-name: Body
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer payment profile created successfully
+                    schema:
+                        $ref: '#/definitions/CreatePaymentProfileResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Payment Profile
+            tags:
+                - authorizenet
+    /authorizenet/webhook:
+        post:
+            description: |-
+                Authorize.net Webhook
+                ### Handle events from Authorize.net
+            operationId: WebhookRequest
+            parameters:
+                - description: The webhook event data
+                  in: body
+                  name: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/WebhookRequest'
+                  x-go-name: Body
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Event handled successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            tags:
+                - authorizenet
     /cart/items:
         delete:
             description: '### Clear the list of items in the cart'
@@ -1340,6 +1533,33 @@ paths:
             summary: Get customer details
             tags:
                 - customers
+        patch:
+            operationId: UpdateCustomerRequest
+            parameters:
+                - description: Customer data to be updated
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/UpdateCustomerRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer updated successfully
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Customer
+            tags:
+                - customers
         post:
             operationId: CreateCustomerRequest
             parameters:
@@ -1365,33 +1585,6 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Create Customer
-            tags:
-                - customers
-        put:
-            operationId: UpdateCustomerRequest
-            parameters:
-                - description: Customer data to be updated
-                  in: body
-                  name: Data
-                  required: true
-                  schema:
-                    $ref: '#/definitions/UpdateCustomerRequestBody'
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: Customer updated successfully
-                    schema:
-                        $ref: '#/definitions/GetCustomerResponse'
-                "404":
-                    description: Not Found
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: Update Customer
             tags:
                 - customers
     /health:

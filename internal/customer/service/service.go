@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
@@ -11,7 +13,6 @@ import (
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	"go.uber.org/zap"
-	"time"
 )
 
 type Service interface {
@@ -19,7 +20,8 @@ type Service interface {
 	GetCustomer(ctx context.Context) (*entities.Customer, error)
 	GetCustomerByID(ctx context.Context, id string) (*entities.Customer, error)
 	UpdateCustomer(ctx context.Context, req *entities.UpdateCustomerRequest) (*entities.Customer, error)
-	UpdateCustomerStripeID(ctx context.Context, customerID string, stripeID string) error
+	UpdateCustomerAuthorizeNetID(ctx context.Context, customerID string, externalID string) error
+	UpdateCustomerStripeID(ctx context.Context, customerID string, externalID string) error
 }
 
 type service struct {
@@ -123,7 +125,7 @@ func (s *service) GetCustomer(ctx context.Context) (*entities.Customer, error) {
 	return customer, nil
 }
 
-// swagger:route PUT /customer customers UpdateCustomerRequest
+// swagger:route PATCH /customer customers UpdateCustomerRequest
 //
 // # Update Customer
 //
@@ -142,11 +144,22 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	err := s.repo.Update(ctx, map[string]interface{}{
-		"first_name":   req.Data.FirstName,
-		"last_name":    req.Data.LastName,
-		"phone_number": req.Data.PhoneNumber,
-	}, customerID)
+	dataToUpdate := make(map[string]interface{})
+
+	if req.Data.FirstName != nil {
+		dataToUpdate["first_name"] = *req.Data.FirstName
+	}
+	if req.Data.LastName != nil {
+		dataToUpdate["last_name"] = *req.Data.LastName
+	}
+	if req.Data.PhoneNumber != nil {
+		dataToUpdate["phone_number"] = *req.Data.PhoneNumber
+	}
+	if req.Data.Email != nil {
+		dataToUpdate["email"] = *req.Data.Email
+	}
+
+	err := s.repo.Update(ctx, dataToUpdate, customerID)
 	if err != nil {
 		return nil, err
 	}
@@ -156,14 +169,17 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 		return nil, err
 	}
 
-	go func() {
+	go func(reqData *entities.UpdateCustomerRequestBody, customer *entities.Customer) {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		var lastName, phone string
+		var firstName, lastName, phone, email string
 
-		if req.Data.LastName != nil && *req.Data.LastName != "" {
+		if req.Data.LastName != nil {
 			lastName = *req.Data.LastName
+		} else if customer.LastName != nil && *customer.LastName != "" {
+			// if last name is not provided, use the existing one
+			lastName = *customer.LastName
 		} else {
 			// zero width space, salesforce does not accept empty strings
 			lastName = "\u200b"
@@ -171,11 +187,25 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 
 		if req.Data.PhoneNumber != nil {
 			phone = *req.Data.PhoneNumber
+		} else if customer.PhoneNumber != nil {
+			phone = *customer.PhoneNumber
+		}
+
+		if req.Data.FirstName != nil {
+			firstName = *req.Data.FirstName
+		} else if customer.FirstName != "" {
+			firstName = customer.FirstName
+		}
+
+		if req.Data.Email != nil {
+			email = *req.Data.Email
+		} else if customer.Email != "" {
+			email = customer.Email
 		}
 
 		if customer.SalesforceID == nil {
 			s.log.Info("Customer does not have a salesforce id, creating one")
-			_, err := s.createSalesforceUser(bgCtx, req.Data.FirstName, lastName, customer.Email, customerID)
+			_, err := s.createSalesforceUser(bgCtx, firstName, lastName, email, customerID)
 			if err != nil {
 				s.log.Error("Error creating salesforce user account")
 				return
@@ -183,9 +213,10 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 		} else {
 			err = s.salesforceClient.UpdateUserAccount(bgCtx, &salesforceEntities.UpdateSFUserRequest{
 				ID:        *customer.SalesforceID,
-				FirstName: req.Data.FirstName,
+				FirstName: firstName,
 				LastName:  lastName,
 				Phone:     phone,
+				Email:     email,
 			})
 			if err != nil {
 				s.log.Error("Error updating salesforce user account")
@@ -194,7 +225,7 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 		}
 
 		s.log.Info("User details updated successfully")
-	}()
+	}(req.Data, customer)
 
 	return customer, nil
 }
@@ -227,11 +258,21 @@ func (s *service) createSalesforceUser(ctx context.Context, firstName, lastName,
 	return res, nil
 }
 
-func (s *service) UpdateCustomerStripeID(ctx context.Context, customerID string, stripeID string) error {
+func (s *service) UpdateCustomerAuthorizeNetID(ctx context.Context, customerID string, externalID string) error {
 	err := s.repo.Update(ctx, map[string]interface{}{
-		"stripe_id": stripeID,
+		"authorizenet_id": externalID,
 	}, customerID)
 
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateCustomerStripeID(ctx context.Context, customerID string, externalID string) error {
+	err := s.repo.Update(ctx, map[string]interface{}{
+		"stripe_id": externalID,
+	}, customerID)
 	if err != nil {
 		return err
 	}

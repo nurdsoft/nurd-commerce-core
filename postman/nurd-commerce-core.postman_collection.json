@@ -1,0 +1,221 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Nurd Commerce Core",
+		"description": "Collection for testing Nurd Commerce Core API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Order Creation Flow",
+			"description": "Complete flow for creating an order",
+			"item": [
+				{
+					"name": "1. Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Product\",\n    \"description\": \"A test product for order creation\",\n    \"image_url\": \"https://example.com/image.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/product",
+							"host": ["{{base_url}}"],
+							"path": ["product"]
+						},
+						"description": "Create a new product"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create Product Variant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sku\": \"TEST-SKU-001\",\n    \"name\": \"Test Product Variant\",\n    \"description\": \"A test product variant\",\n    \"image_url\": \"https://example.com/variant-image.jpg\",\n    \"price\": \"29.99\",\n    \"currency\": \"USD\",\n    \"length\": \"10\",\n    \"width\": \"5\",\n    \"height\": \"2\",\n    \"weight\": \"1\",\n    \"attributes\": {\n        \"color\": \"red\",\n        \"size\": \"medium\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/product/{{product_id}}/variant",
+							"host": ["{{base_url}}"],
+							"path": ["product", "{{product_id}}", "variant"]
+						},
+						"description": "Create a variant for the product"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Shipping Address",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"full_name\": \"John Doe\",\n    \"address\": \"123 Main St\",\n    \"apartment\": \"Apt 4B\",\n    \"city\": \"New York\",\n    \"state_code\": \"NY\",\n    \"postal_code\": \"10001\",\n    \"country_code\": \"US\",\n    \"phone_number\": \"1234567890\",\n    \"is_default\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/address",
+							"host": ["{{base_url}}"],
+							"path": ["address"]
+						},
+						"description": "Create a shipping address"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Add Item to Cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"sku\": \"TEST-SKU-001\",\n    \"quantity\": 2,\n    \"data\": {\n        \"name\": \"Test Product Variant\",\n        \"description\": \"A test product variant\",\n        \"image_url\": \"https://example.com/variant-image.jpg\",\n        \"price\": \"29.99\",\n        \"currency\": \"USD\",\n        \"length\": \"10\",\n        \"width\": \"5\",\n        \"height\": \"2\",\n        \"weight\": \"1\",\n        \"attributes\": {\n            \"color\": \"red\",\n            \"size\": \"medium\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "items"]
+						},
+						"description": "Add an item to the cart"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Shipping Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"address_id\": \"{{address_id}}\",\n    \"warehouse_address\": {\n        \"city\": \"La Vergne\",\n        \"state\": \"TN\",\n        \"zip\": \"37086\",\n        \"country\": \"US\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/shipping-rate",
+							"host": ["{{base_url}}"],
+							"path": ["cart", "shipping-rate"]
+						},
+						"description": "Get available shipping rates"
+					},
+					"response": []
+				},
+				{
+					"name": "6. Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Customer-ID",
+								"value": "{{customer_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"address_id\": \"{{address_id}}\",\n    \"shipping_rate_id\": \"{{shipping_rate_id}}\",\n    \"stripe_payment_method_id\": \"pm_test_1234567890\",\n    \"payment_nonce\": \"fake-valid-nonce\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/orders",
+							"host": ["{{base_url}}"],
+							"path": ["orders"]
+						},
+						"description": "Create a new order"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "your-customer-id-here",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "address_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "shipping_rate_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

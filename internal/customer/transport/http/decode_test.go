@@ -3,13 +3,14 @@ package http
 import (
 	"bytes"
 	"context"
-	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
+	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
+
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +52,6 @@ func Test_decodeCreateCustomerRequest(t *testing.T) {
 
 func Test_decodeUpdateCustomerRequest(t *testing.T) {
 	validBody := `{"email": "updated@example.com", "first_name": "Bob"}`
-	missingFirstName := `{"email": "updated@example.com"}`
 	validUUID := uuid.New().String()
 	invalidUUID := "not-a-valid-uuid"
 	tests := []struct {
@@ -62,7 +62,6 @@ func Test_decodeUpdateCustomerRequest(t *testing.T) {
 		errMsg     string
 	}{
 		{"Valid request", validBody, validUUID, false, ""},
-		{"Missing first name", missingFirstName, validUUID, true, "First name is required"},
 		{"Missing UUID", validBody, "", true, "Customer ID is not valid"},
 		{"Invalid UUID format", validBody, invalidUUID, true, "Customer ID is not valid"},
 	}

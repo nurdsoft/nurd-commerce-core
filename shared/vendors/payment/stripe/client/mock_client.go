@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	providers "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
 	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 )
 
@@ -50,19 +51,34 @@ func (mr *MockClientMockRecorder) CreateCustomer(ctx, req interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCustomer", reflect.TypeOf((*MockClient)(nil).CreateCustomer), ctx, req)
 }
 
-// CreatePaymentIntent mocks base method.
-func (m *MockClient) CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error) {
+// CreatePayment mocks base method.
+func (m *MockClient) CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePaymentIntent", ctx, req)
-	ret0, _ := ret[0].(*entities.CreatePaymentIntentResponse)
+	ret := m.ctrl.Call(m, "CreatePayment", ctx, req)
+	ret0, _ := ret[0].(providers.PaymentProviderResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreatePaymentIntent indicates an expected call of CreatePaymentIntent.
-func (mr *MockClientMockRecorder) CreatePaymentIntent(ctx, req interface{}) *gomock.Call {
+// CreatePayment indicates an expected call of CreatePayment.
+func (mr *MockClientMockRecorder) CreatePayment(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePaymentIntent", reflect.TypeOf((*MockClient)(nil).CreatePaymentIntent), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePayment", reflect.TypeOf((*MockClient)(nil).CreatePayment), ctx, req)
+}
+
+// GetCustomerPaymentMethodById mocks base method.
+func (m *MockClient) GetCustomerPaymentMethodById(arg0 context.Context, customerId, paymentMethodId *string) (*entities.GetCustomerPaymentMethodResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCustomerPaymentMethodById", arg0, customerId, paymentMethodId)
+	ret0, _ := ret[0].(*entities.GetCustomerPaymentMethodResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCustomerPaymentMethodById indicates an expected call of GetCustomerPaymentMethodById.
+func (mr *MockClientMockRecorder) GetCustomerPaymentMethodById(arg0, customerId, paymentMethodId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerPaymentMethodById", reflect.TypeOf((*MockClient)(nil).GetCustomerPaymentMethodById), arg0, customerId, paymentMethodId)
 }
 
 // GetCustomerPaymentMethods mocks base method.
@@ -78,6 +94,20 @@ func (m *MockClient) GetCustomerPaymentMethods(ctx context.Context, customerId *
 func (mr *MockClientMockRecorder) GetCustomerPaymentMethods(ctx, customerId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomerPaymentMethods", reflect.TypeOf((*MockClient)(nil).GetCustomerPaymentMethods), ctx, customerId)
+}
+
+// GetProvider mocks base method.
+func (m *MockClient) GetProvider() providers.ProviderType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProvider")
+	ret0, _ := ret[0].(providers.ProviderType)
+	return ret0
+}
+
+// GetProvider indicates an expected call of GetProvider.
+func (mr *MockClientMockRecorder) GetProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvider", reflect.TypeOf((*MockClient)(nil).GetProvider))
 }
 
 // GetSetupIntent mocks base method.

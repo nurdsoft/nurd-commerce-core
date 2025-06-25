@@ -19,14 +19,14 @@ type ModuleParams struct {
 // NewModule
 // nolint:gocritic
 func NewModule(p ModuleParams) (client.Client, error) {
-	svc, err := service.New(p.Config, p.Logger)
+	svc, err := service.New(p.Config.Stripe, p.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	client := client.NewClient(svc)
+	stripeClient := client.NewClient(svc)
 
-	return client, nil
+	return stripeClient, nil
 }
 
 var (

@@ -2,45 +2,41 @@ package service
 
 import (
 	"context"
+
+	"strings"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/ordersclient"
-
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities"
-	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
+	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type Service interface {
-	GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodResponse, error)
+	GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodsResponse, error)
 	GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentResponse, error)
 	HandleStripeWebhook(ctx context.Context, req *entities.StripeWebhookRequest) error
+	GetPaymentMethod(ctx context.Context, req *entities.StripeGetPaymentMethodRequest) (*entities.GetPaymentMethodResponse, error)
 }
 
 type service struct {
-	log              *zap.SugaredLogger
-	config           cfg.Config
-	salesforceClient salesforce.Client
-	stripeClient     stripe.Client
-	ordersClient     ordersclient.Client
-	customerClient   customerclient.Client
+	log            *zap.SugaredLogger
+	stripeClient   stripeClient.Client
+	ordersClient   ordersclient.Client
+	customerClient customerclient.Client
 }
 
 func New(
 	logger *zap.SugaredLogger,
-	config cfg.Config,
-	stripeClient stripe.Client,
+	stripeClient stripeClient.Client,
 	ordersClient ordersclient.Client,
 	customerClient customerclient.Client,
 ) Service {
 	return &service{
 		log:            logger,
-		config:         config,
 		stripeClient:   stripeClient,
 		ordersClient:   ordersClient,
 		customerClient: customerClient,
@@ -57,10 +53,10 @@ func New(
 //
 // Responses:
 //
-//	200: GetPaymentMethodResponse Payment methods retrieved successfully
+//	200: GetPaymentMethodsResponse Payment methods retrieved successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodResponse, error) {
+func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMethodsResponse, error) {
 	customerID := sharedMeta.XCustomerID(ctx)
 
 	if customerID == "" {
@@ -73,7 +69,7 @@ func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMe
 	}
 
 	if recentlyCreated {
-		resp := &entities.GetPaymentMethodResponse{
+		resp := &entities.GetPaymentMethodsResponse{
 			PaymentMethods: []entities.PaymentMethod{},
 		}
 		return resp, nil
@@ -99,7 +95,7 @@ func (s *service) GetPaymentMethods(ctx context.Context) (*entities.GetPaymentMe
 			Created:      pm.Created,
 		})
 	}
-	resp := &entities.GetPaymentMethodResponse{
+	resp := &entities.GetPaymentMethodsResponse{
 		PaymentMethods: paymentMethods,
 	}
 
@@ -147,6 +143,51 @@ func (s *service) GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentR
 	return resp, nil
 }
 
+// swagger:route GET /stripe/payment-method/{payment_method_id} stripe GetPaymentMethodsRequest
+//
+// # Get Customer Payment Method
+// ### Get a specific payment method of the customer
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: GetPaymentMethodResponse Payment method retrieved successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) GetPaymentMethod(ctx context.Context, req *entities.StripeGetPaymentMethodRequest) (*entities.GetPaymentMethodResponse, error) {
+	customerID := sharedMeta.XCustomerID(ctx)
+	if customerID == "" {
+		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+	stripeId, _, err := s.getCustomerStripeID(ctx, customerID)
+	if err != nil {
+		return nil, err
+	}
+	if req.PaymentMethodId == "" {
+		return nil, moduleErrors.NewAPIError("PAYMENT_METHOD_ID_REQUIRED")
+	}
+	paymentMethod, err := s.stripeClient.GetCustomerPaymentMethodById(ctx, stripeId, &req.PaymentMethodId)
+	if err != nil {
+		return nil, err
+	}
+	resp := &entities.GetPaymentMethodResponse{
+		PaymentMethod: entities.PaymentMethod{
+			Id:           paymentMethod.PaymentMethod.Id,
+			Brand:        paymentMethod.PaymentMethod.Brand,
+			DisplayBrand: paymentMethod.PaymentMethod.DisplayBrand,
+			Country:      paymentMethod.PaymentMethod.Country,
+			Last4:        paymentMethod.PaymentMethod.Last4,
+			ExpiryMonth:  paymentMethod.PaymentMethod.ExpiryMonth,
+			ExpiryYear:   paymentMethod.PaymentMethod.ExpiryYear,
+			Wallet:       paymentMethod.PaymentMethod.Wallet,
+			Created:      paymentMethod.PaymentMethod.Created,
+		},
+	}
+	return resp, nil
+}
+
 // Helper function to get the customer's stripe id or create it if it doesn't exist
 // Returns the stripe id, a boolean indicating if the stripe id was created and an error
 func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*string, bool, error) {
@@ -155,7 +196,7 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		return nil, false, err
 	}
 
-	if customer.StripeId == nil {
+	if customer.StripeID == nil {
 		var fullName strings.Builder
 		fullName.WriteString(customer.FirstName)
 		if customer.LastName != nil {
@@ -171,16 +212,16 @@ func (s *service) getCustomerStripeID(ctx context.Context, customerID string) (*
 		if err != nil {
 			return nil, false, err
 		}
-		customer.StripeId = &stripeCustomer.Id
+		customer.StripeID = &stripeCustomer.Id
 
 		err = s.customerClient.UpdateCustomerStripeID(ctx, customerID, stripeCustomer.Id)
 
 		if err != nil {
 			return nil, false, err
 		}
-		return customer.StripeId, true, nil
+		return customer.StripeID, true, nil
 	}
-	return customer.StripeId, false, nil
+	return customer.StripeID, false, nil
 }
 
 // swagger:route POST /stripe/webhook stripe StripeWebhookRequest

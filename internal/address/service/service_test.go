@@ -17,7 +17,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	sfEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
-	shipengineClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shippingClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 )
 
 var (
@@ -33,27 +33,27 @@ func Test_service_AddAddress(t *testing.T) {
 	setup := func() (
 		*service, context.Context,
 		*repository.MockRepository,
-		*shipengineClient.MockClient,
+		*shippingClient.MockClient,
 		*salesforce.MockClient,
 	) {
 		mockRepo := repository.NewMockRepository(ctrl)
-		mockShipengineClient := shipengineClient.NewMockClient(ctrl)
+		mockShippingClient := shippingClient.NewMockClient(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
 		userUUID := uuid.New()
 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
 		svc := &service{
 			repo:             mockRepo,
 			log:              zap.NewExample().Sugar(),
-			shipengineClient: mockShipengineClient,
+			shippingClient:   mockShippingClient,
 			salesforceClient: mockSfClient,
 			customerClient:   customerclient.NewMockClient(ctrl),
 		}
-		return svc, ctx, mockRepo, mockShipengineClient, mockSfClient
+		return svc, ctx, mockRepo, mockShippingClient, mockSfClient
 	}
 
 	// TODO: Fix and enable
 	// t.Run("Valid request with an address", func(t *testing.T) {
-	// 	svc, ctx, mockRepo, mockShipengineClient, mockSfClient := setup()
+	// 	svc, ctx, mockRepo, mockShippingClient, mockSfClient := setup()
 	// 	req := &entities.AddAddressRequest{
 	// 		Address: &entities.AddressRequestBody{
 	// 			FullName:    "John Doe",
@@ -81,7 +81,7 @@ func Test_service_AddAddress(t *testing.T) {
 
 	// 	mockRepo.EXPECT().
 	// 		CreateAddress(ctx, gomock.Any()).Return(expectedAddress, nil).Times(1)
-	// 	mockShipengineClient.EXPECT().
+	// 	mockShippingClient.EXPECT().
 	// 		GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 
 	// 	// Should this be here since this test function is testing AddAddress?
@@ -97,7 +97,7 @@ func Test_service_AddAddress(t *testing.T) {
 	// })
 
 	t.Run("Valid request with an invalid address", func(t *testing.T) {
-		svc, ctx, _, mockShipengineClient, _ := setup()
+		svc, ctx, _, mockShippingClient, _ := setup()
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
 				FullName:    "John Doe",
@@ -111,7 +111,7 @@ func Test_service_AddAddress(t *testing.T) {
 			},
 		}
 
-		mockShipengineClient.EXPECT().GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
+		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
 		_, err := svc.AddAddress(ctx, req)
 
 		assert.Error(t, err)
@@ -219,11 +219,11 @@ func Test_service_UpdateAddress(t *testing.T) {
 	setup := func() (
 		*service, context.Context,
 		*repository.MockRepository,
-		*shipengineClient.MockClient,
+		*shippingClient.MockClient,
 		*salesforce.MockClient,
 	) {
 		mockRepo := repository.NewMockRepository(ctrl)
-		mockShipengineClient := shipengineClient.NewMockClient(ctrl)
+		mockShippingClient := shippingClient.NewMockClient(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
 
 		userUUID := uuid.New()
@@ -232,15 +232,15 @@ func Test_service_UpdateAddress(t *testing.T) {
 		svc := &service{
 			repo:             mockRepo,
 			log:              zap.NewExample().Sugar(),
-			shipengineClient: mockShipengineClient,
+			shippingClient:   mockShippingClient,
 			salesforceClient: mockSfClient,
 			customerClient:   customerclient.NewMockClient(ctrl),
 		}
-		return svc, ctx, mockRepo, mockShipengineClient, mockSfClient
+		return svc, ctx, mockRepo, mockShippingClient, mockSfClient
 	}
 
 	t.Run("Valid request", func(t *testing.T) {
-		svc, ctx, mockRepo, mockShipengineClient, mockSfClient := setup()
+		svc, ctx, mockRepo, mockShipingClient, mockSfClient := setup()
 		addressID := uuid.New()
 		req := &entities.UpdateAddressRequest{
 			AddressID: addressID,
@@ -270,7 +270,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 		}
 
 		mockRepo.EXPECT().UpdateAddress(ctx, expectedAddress).Return(&entities.Address{}, nil).Times(1)
-		mockShipengineClient.EXPECT().GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
+		mockShipingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, nil).Times(1)
 
 		// sfID := "demo-sf-user-id"
 		// mockRepo.EXPECT().FindByUUID(gomock.Any(), meta.XCustomerID(ctx)).Return(&entities.User{
@@ -313,7 +313,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 	})
 
 	t.Run("Valid request with an invalid address", func(t *testing.T) {
-		svc, ctx, _, mockShipengineClient, _ := setup()
+		svc, ctx, _, mockShippingClient, _ := setup()
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
 				FullName:    "John Doe",
@@ -327,7 +327,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 			},
 		}
 
-		mockShipengineClient.EXPECT().GetRatesEstimate(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
+		mockShippingClient.EXPECT().ValidateAddress(ctx, gomock.Any()).Return(nil, &appErrors.APIError{Message: "Invalid address"}).Times(1)
 		_, err := svc.AddAddress(ctx, req)
 
 		assert.Error(t, err)

@@ -115,6 +115,9 @@ definitions:
             amount:
                 type: string
                 x-go-name: Amount
+            business_days_in_transit:
+                type: string
+                x-go-name: BusinessDaysInTransit
             carrier_code:
                 type: string
                 x-go-name: CarrierCode
@@ -166,6 +169,9 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: AddressID
+            payment_nonce:
+                type: string
+                x-go-name: PaymentNonce
             shipping_rate_id:
                 format: uuid
                 type: string
@@ -184,6 +190,26 @@ definitions:
                 x-go-name: OrderReference
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    CreatePaymentProfileRequest:
+        properties:
+            card_number:
+                type: string
+                x-go-name: CardNumber
+            expiration_date:
+                type: string
+                x-go-name: ExpirationDate
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
+    CreatePaymentProfileResponse:
+        properties:
+            payment_profile_id:
+                type: string
+                x-go-name: PaymentProfileID
+            profile_id:
+                type: string
+                x-go-name: ProfileID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     CreateProductRequestBody:
         properties:
             attributes:
@@ -268,6 +294,16 @@ definitions:
         type: object
         x-go-name: Response
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/transport/http
+    FraudItem:
+        properties:
+            fraudAction:
+                type: string
+                x-go-name: FraudAction
+            fraudFilter:
+                type: string
+                x-go-name: FraudFilter
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     GetAddressResponse:
         properties:
             address:
@@ -375,6 +411,12 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     GetPaymentMethodResponse:
         properties:
+            payment_method:
+                $ref: '#/definitions/PaymentMethod'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetPaymentMethodsResponse:
+        properties:
             payment_methods:
                 items:
                     $ref: '#/definitions/PaymentMethod'
@@ -382,6 +424,15 @@ definitions:
                 x-go-name: PaymentMethods
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    GetPaymentProfileResponse:
+        properties:
+            payment_profiles:
+                items:
+                    $ref: '#/definitions/PaymentProfile'
+                type: array
+                x-go-name: PaymentProfiles
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     GetProductResponse:
         properties:
             attributes:
@@ -541,6 +592,27 @@ definitions:
                 x-go-name: Total
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    GetWishlistProductTimestampsRequestBody:
+        properties:
+            product_ids:
+                items:
+                    format: uuid
+                    type: string
+                type: array
+                x-go-name: ProductIDs
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
+    GetWishlistProductTimestampsResponse:
+        properties:
+            timestamps:
+                additionalProperties:
+                    format: date-time
+                    type: string
+                description: Map of product ID to wishlist timestamp
+                type: object
+                x-go-name: Timestamps
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
     GetWishlistResponse:
         properties:
             items:
@@ -624,9 +696,17 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: ID
+            items_summary:
+                items:
+                    $ref: '#/definitions/OrderItemSummary'
+                type: array
+                x-go-name: ItemsSummary
             order_reference:
                 type: string
                 x-go-name: OrderReference
+            shipping_business_days_in_transit:
+                type: string
+                x-go-name: ShippingBusinessDaysInTransit
             shipping_carrier_code:
                 type: string
                 x-go-name: ShippingCarrierCode
@@ -648,6 +728,9 @@ definitions:
                 x-go-name: ShippingServiceType
             status:
                 $ref: '#/definitions/OrderStatus'
+            stripe_payment_method_id:
+                type: string
+                x-go-name: StripePaymentMethodID
             subtotal:
                 type: string
                 x-go-name: Subtotal
@@ -657,6 +740,12 @@ definitions:
             total:
                 type: string
                 x-go-name: Total
+            tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
+            tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             updated_at:
                 format: date-time
                 type: string
@@ -725,9 +814,70 @@ definitions:
                 x-go-name: Width
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItemSummary:
+        description: OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
+        properties:
+            attributes:
+                $ref: '#/definitions/JSON'
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            image_url:
+                type: string
+                x-go-name: ImageURL
+            name:
+                type: string
+                x-go-name: Name
+            price:
+                type: string
+                x-go-name: Price
+            product_id:
+                format: uuid
+                type: string
+                x-go-name: ProductID
+            product_variant_id:
+                format: uuid
+                type: string
+                x-go-name: ProductVariantID
+            quantity:
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                type: string
+                x-go-name: SKU
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderStatus:
         type: string
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    Payload:
+        properties:
+            authAmount:
+                format: double
+                type: number
+                x-go-name: AuthAmount
+            avsResponse:
+                type: string
+                x-go-name: AvsResponse
+            entityName:
+                type: string
+                x-go-name: EntityName
+            fraudList:
+                items:
+                    $ref: '#/definitions/FraudItem'
+                type: array
+                x-go-name: FraudList
+            id:
+                type: string
+                x-go-name: ID
+            responseCode:
+                format: int64
+                type: integer
+                x-go-name: ResponseCode
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     PaymentMethod:
         properties:
             brand:
@@ -762,6 +912,22 @@ definitions:
                 x-go-name: Wallet
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    PaymentProfile:
+        properties:
+            card_number:
+                type: string
+                x-go-name: CardNumber
+            card_type:
+                type: string
+                x-go-name: CardType
+            expiration_date:
+                type: string
+                x-go-name: ExpirationDate
+            id:
+                type: string
+                x-go-name: ID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     Product:
         properties:
             data:
@@ -858,6 +1024,9 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     UpdateCustomerRequestBody:
         properties:
+            email:
+                type: string
+                x-go-name: Email
             first_name:
                 type: string
                 x-go-name: FirstName
@@ -880,6 +1049,8 @@ definitions:
             fulfillment_message:
                 type: string
                 x-go-name: FulfillmentMessage
+            fulfillment_metadata:
+                $ref: '#/definitions/JSON'
             fulfillment_order_total:
                 type: string
                 x-go-name: FulfillmentOrderTotal
@@ -887,6 +1058,12 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: FulfillmentShipmentDate
+            fulfillment_tracking_number:
+                type: string
+                x-go-name: FulfillmentTrackingNumber
+            fulfillment_tracking_url:
+                type: string
+                x-go-name: FulfillmentTrackingURL
             status:
                 type: string
                 x-go-name: Status
@@ -918,6 +1095,24 @@ definitions:
                 x-go-name: StateCode
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    WebhookRequest:
+        properties:
+            eventDate:
+                type: string
+                x-go-name: EventDate
+            eventType:
+                type: string
+                x-go-name: EventType
+            notificationId:
+                type: string
+                x-go-name: NotificationID
+            payload:
+                $ref: '#/definitions/Payload'
+            webhookId:
+                type: string
+                x-go-name: WebhookID
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     WishlistItem:
         properties:
             created_at:
@@ -1075,6 +1270,88 @@ paths:
             summary: Update Address
             tags:
                 - addresses
+    /authorizenet/payment-profiles:
+        get:
+            description: '### Get all payment profiles of the customer'
+            operationId: GetPaymentProfiles
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment profiles retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentProfileResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Profiles
+            tags:
+                - authorizenet
+        post:
+            description: '### Create a payment profile'
+            operationId: CreatePaymentProfileRequest
+            parameters:
+                - description: The payment profile to create
+                  in: body
+                  name: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/CreatePaymentProfileRequest'
+                  x-go-name: Body
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer payment profile created successfully
+                    schema:
+                        $ref: '#/definitions/CreatePaymentProfileResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Payment Profile
+            tags:
+                - authorizenet
+    /authorizenet/webhook:
+        post:
+            description: |-
+                Authorize.net Webhook
+                ### Handle events from Authorize.net
+            operationId: WebhookRequest
+            parameters:
+                - description: The webhook event data
+                  in: body
+                  name: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/WebhookRequest'
+                  x-go-name: Body
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Event handled successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            tags:
+                - authorizenet
     /cart/items:
         delete:
             description: '### Clear the list of items in the cart'
@@ -1256,6 +1533,33 @@ paths:
             summary: Get customer details
             tags:
                 - customers
+        patch:
+            operationId: UpdateCustomerRequest
+            parameters:
+                - description: Customer data to be updated
+                  in: body
+                  name: Data
+                  required: true
+                  schema:
+                    $ref: '#/definitions/UpdateCustomerRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Customer updated successfully
+                    schema:
+                        $ref: '#/definitions/GetCustomerResponse'
+                "404":
+                    description: Not Found
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Update Customer
+            tags:
+                - customers
         post:
             operationId: CreateCustomerRequest
             parameters:
@@ -1283,33 +1587,6 @@ paths:
             summary: Create Customer
             tags:
                 - customers
-        put:
-            operationId: UpdateCustomerRequest
-            parameters:
-                - description: Customer data to be updated
-                  in: body
-                  name: Data
-                  required: true
-                  schema:
-                    $ref: '#/definitions/UpdateCustomerRequestBody'
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: Customer updated successfully
-                    schema:
-                        $ref: '#/definitions/GetCustomerResponse'
-                "404":
-                    description: Not Found
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: Update Customer
-            tags:
-                - customers
     /health:
         get:
             description: Check if the service is healthy
@@ -1329,6 +1606,7 @@ paths:
             operationId: ListOrdersRequest
             parameters:
                 - description: Limit of orders to return
+                  example: 10
                   format: int64
                   in: query
                   name: limit
@@ -1336,10 +1614,18 @@ paths:
                   type: integer
                   x-go-name: Limit
                 - description: Cursor to paginate orders
+                  example: MjAyNS0wNS0yNlQxNjo0Mjo1MSswNTozMA==
                   in: query
                   name: cursor
                   type: string
                   x-go-name: Cursor
+                - description: |-
+                    Boolean to indicate whether order items should be included in the response.
+                    If true, the response will include an additional `items_summary` field in the response for each order item.
+                  in: query
+                  name: include_items
+                  type: boolean
+                  x-go-name: IncludeItems
             produces:
                 - application/json
             responses:
@@ -1605,6 +1891,36 @@ paths:
             summary: Get Product Variant
             tags:
                 - products
+    /stripe/payment-method/{payment_method_id}:
+        get:
+            description: '### Get a specific payment method of the customer'
+            operationId: GetPaymentMethodsRequest
+            parameters:
+                - description: Payment Method ID
+                  example: pm_1J2Y3Z4A5B6C7D8E9F0G
+                  in: path
+                  name: payment_method_id
+                  required: true
+                  type: string
+                  x-go-name: PaymentMethodId
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Payment method retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetPaymentMethodResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Customer Payment Method
+            tags:
+                - stripe
     /stripe/payment-methods:
         get:
             description: '### Get all payment methods of the customer'
@@ -1615,7 +1931,7 @@ paths:
                 "200":
                     description: Payment methods retrieved successfully
                     schema:
-                        $ref: '#/definitions/GetPaymentMethodResponse'
+                        $ref: '#/definitions/GetPaymentMethodsResponse'
                 "400":
                     description: Bad Request
                     schema:
@@ -1814,6 +2130,34 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get More from Wishlist
+            tags:
+                - wishlist
+    /wishlist/timestamps:
+        post:
+            description: '### Retrieve the timestamps when products were added to the customer''s wishlist'
+            operationId: GetWishlistProductTimestampsRequest
+            parameters:
+                - description: Products to get timestamps for
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/GetWishlistProductTimestampsRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Timestamps retrieved successfully
+                    schema:
+                        $ref: '#/definitions/GetWishlistProductTimestampsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Get Wishlist Product Timestamps
             tags:
                 - wishlist
 produces:

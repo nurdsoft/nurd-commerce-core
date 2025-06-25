@@ -7,7 +7,7 @@ import (
 	sharedDecimal "github.com/nurdsoft/nurd-commerce-core/shared/decimal"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
-	shipengineEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/entities"
+	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
 	"time"
 
@@ -23,7 +23,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	shipengine "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/shipengine/client"
+	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ type Service interface {
 type service struct {
 	repo             repository.Repository
 	log              *zap.SugaredLogger
-	shipengineClient shipengine.Client
+	shippingClient   shipping.Client
 	stripeClient     stripe.Client
 	cache            cache.Cache
 	productClient    productclient.Client
@@ -54,7 +54,7 @@ type service struct {
 func New(
 	repo repository.Repository,
 	log *zap.SugaredLogger,
-	shipengineClient shipengine.Client,
+	shippingClient shipping.Client,
 	stripeClient stripe.Client,
 	cache cache.Cache,
 	productClient productclient.Client,
@@ -64,7 +64,7 @@ func New(
 	return &service{
 		repo:             repo,
 		log:              log,
-		shipengineClient: shipengineClient,
+		shippingClient:   shippingClient,
 		stripeClient:     stripeClient,
 		cache:            cache,
 		productClient:    productClient,
@@ -591,7 +591,7 @@ func (s *service) GetShippingRate(ctx context.Context, req *entities.GetShipping
 
 	for _, item := range getActiveCarItems.Items {
 		// TODO revise package calculation
-		if item.Length == nil || item.Width == nil || item.Height == nil || item.Weight == nil {
+		if item.Length != nil || item.Width != nil || item.Height != nil || item.Weight != nil {
 			for i := 0; i < item.Quantity; i++ {
 				if item.Length != nil {
 					lengths = append(lengths, *item.Length)
@@ -629,81 +629,56 @@ func (s *service) GetShippingRate(ctx context.Context, req *entities.GetShipping
 	totalHeight = sharedDecimal.SumDecimals(allHeights...)
 	totalWeight = sharedDecimal.SumDecimals(allWeights...)
 
-	toAddress := shipengineEntities.ShippingAddress{
-		State:   address.StateCode,
-		Zip:     address.PostalCode,
-		Country: address.CountryCode,
+	toAddress := shippingEntities.Address{
+		StateCode:   address.StateCode,
+		PostalCode:  address.PostalCode,
+		CountryCode: address.CountryCode,
 	}
 
 	if address.City != nil {
 		toAddress.City = *address.City
 	}
 
-	shipengineEstimates, err := s.shipengineClient.GetRatesEstimate(ctx,
-		// From address
-		shipengineEntities.ShippingAddress{
-			City:    req.Body.WarehouseAddress.City,
-			State:   req.Body.WarehouseAddress.StateCode,
-			Zip:     req.Body.WarehouseAddress.PostalCode,
-			Country: req.Body.WarehouseAddress.CountryCode,
-		},
-		// To address
-		// Assuming all items are being shipped to the same address as a single package
-		toAddress,
-		// Package dimensions
-		shipengineEntities.Dimensions{
-			Length: maxLength,
-			Width:  maxWidth,
-			Height: totalHeight,
-			Weight: totalWeight,
+	shippingEstimates, err := s.shippingClient.GetShippingRates(ctx,
+		shippingEntities.Shipment{
+			Origin: shippingEntities.Address{
+				City:        req.Body.WarehouseAddress.City,
+				StateCode:   req.Body.WarehouseAddress.StateCode,
+				PostalCode:  req.Body.WarehouseAddress.PostalCode,
+				CountryCode: req.Body.WarehouseAddress.CountryCode,
+			},
+			Destination: toAddress,
+			Dimensions: shippingEntities.Dimensions{
+				Length: maxLength,
+				Width:  maxWidth,
+				Height: totalHeight,
+				Weight: totalWeight,
+			},
 		})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(shipengineEstimates) == 0 {
+	if len(shippingEstimates) == 0 {
 		return nil, moduleErrors.NewAPIError("CART_NO_SHIPPING_RATES_FOUND")
 	}
 
-	allRates := make(map[string][]shipengineEntities.EstimateRatesResponse)
-	bestRatesPerCarrier := make(map[string]shipengineEntities.EstimateRatesResponse)
-
-	// group rates by carried id. Looks like "se-1140635"
-	for _, estimate := range shipengineEstimates {
-		if estimate.EstimatedDeliveryDate.Valid {
-			allRates[estimate.CarrierID] = append(allRates[estimate.CarrierID], estimate)
-		}
-	}
-
-	// for each carrier, find the best rate i.e lowest shipping amount
-	for carrierID, rates := range allRates {
-		var bestRate shipengineEntities.EstimateRatesResponse
-
-		for _, rate := range rates {
-			if rate.ShippingAmount.Amount > 0 {
-				if bestRate.ShippingAmount.Amount == 0 || rate.ShippingAmount.Amount < bestRate.ShippingAmount.Amount {
-					bestRate = rate
-				}
-			}
-		}
-		bestRatesPerCarrier[carrierID] = bestRate
-	}
-
-	var shippingRates []entities.CartShippingRate
-
-	for _, bestRate := range bestRatesPerCarrier {
-		shippingRates = append(shippingRates, entities.CartShippingRate{
+	shippingRates := make([]entities.CartShippingRate, len(shippingEstimates))
+	for i, estimate := range shippingEstimates {
+		shippingRates[i] = entities.CartShippingRate{
 			Id:                    uuid.New(),
 			CartID:                cartId,
 			AddressID:             req.Body.AddressID,
-			Amount:                decimal.NewFromFloat(bestRate.ShippingAmount.Amount),
-			Currency:              bestRate.ShippingAmount.Currency,
-			CarrierName:           bestRate.CarrierFriendlyName,
-			CarrierCode:           bestRate.CarrierCode,
-			ServiceType:           bestRate.ServiceType,
-			ServiceCode:           bestRate.ServiceCode,
-			EstimatedDeliveryDate: bestRate.EstimatedDeliveryDate.Time,
-		})
+			CarrierName:           estimate.CarrierName,
+			CarrierCode:           estimate.CarrierCode,
+			ServiceType:           estimate.ServiceType,
+			ServiceCode:           estimate.ServiceCode,
+			EstimatedDeliveryDate: estimate.EstimatedDeliveryDate,
+			BusinessDaysInTransit: estimate.BusinessDaysInTransit,
+			Amount:                estimate.Amount,
+			Currency:              estimate.Currency,
+			CreatedAt:             time.Now(),
+		}
 	}
 
 	// save the shipping rates to the database

@@ -400,7 +400,7 @@ func (s *service) newSession(ctx context.Context) (*SFSession, error) {
 
 // getAccessToken retrieves a new access token from salesforce
 func (s *service) getAccessToken(ctx context.Context) (*entities.Oauth2Response, error) {
-	httpClient := client.New(s.config.Salesforce.ApiHost, s.httpClient)
+	httpClient := client.New(s.config.Salesforce.ApiHost, s.httpClient, s.log)
 
 	res := &entities.Oauth2Response{}
 

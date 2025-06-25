@@ -22,20 +22,29 @@ DB:
     Password: 123
     SSLMode: "disable"
 Shipping:
+  Provider: "Shipengine"
   Shipengine:
     Host: ""
     Token: ""
     CarrierIds: ""
+  UPS:
+    SecurityHost: ""
+    APIHost: ""
+    ClientID: ""
+    ClientSecret: ""
+    ShipperName: ""
+    ShipperNumber: ""
 Payment:
+  Provider: "authorizeNet"
   Stripe:
     Key: ""
     SigningSecret: ""
   AuthorizeNet:
-      ApiLoginID: "59Zm7ceWKG9"
-      TransactionKey: "35R34Zj46K6tCbnS"
-      LiveMode: false
-      SignatureKey: "E2B3923FA315903316B550F8FBE2687053386F029C034306FCF74DABCF47AF73C15C1C868A841EC9FD7815A6830CD30CF54EEBDC0C15F9CA7F6059840E7BBDCF"
-      Endpoint: "https://apitest.authorize.net/xml/v1/request.api"
+    ApiLoginID: "fake-api-login-id"
+    TransactionKey: "fake-transaction-key"
+    LiveMode: false
+    SignatureKey: "fake-signature-key"
+    Endpoint: "https://apitest.authorize.net/xml/v1/request.api"
 Taxes:
   Stripe:
     Key: ""

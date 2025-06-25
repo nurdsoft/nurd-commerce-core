@@ -2,14 +2,16 @@ package endpoints
 
 import (
 	"context"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities"
 
-	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
 	"github.com/go-kit/kit/endpoint"
+	"github.com/nurdsoft/nurd-commerce-core/internal/stripe/service"
 )
 
 type Endpoints struct {
 	StripeGetPaymentMethodsEndpoint endpoint.Endpoint
+	StripeGetPaymentMethodEndpoint  endpoint.Endpoint
 	StripeGetSetupIntentEndpoint    endpoint.Endpoint
 	StripeWebhookEndpoint           endpoint.Endpoint
 }
@@ -17,6 +19,7 @@ type Endpoints struct {
 func New(svc service.Service) *Endpoints {
 	return &Endpoints{
 		StripeGetPaymentMethodsEndpoint: makeStripeGetPaymentMethods(svc),
+		StripeGetPaymentMethodEndpoint:  makeStripeGetPaymentMethod(svc),
 		StripeGetSetupIntentEndpoint:    makeStripeGetSetupIntent(svc),
 		StripeWebhookEndpoint:           makeStripeWebhookEndpoint(svc),
 	}
@@ -25,6 +28,13 @@ func New(svc service.Service) *Endpoints {
 func makeStripeGetPaymentMethods(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return svc.GetPaymentMethods(ctx)
+	}
+}
+
+func makeStripeGetPaymentMethod(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.StripeGetPaymentMethodRequest)
+		return svc.GetPaymentMethod(ctx, req)
 	}
 }
 

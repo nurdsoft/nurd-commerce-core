@@ -1,12 +1,12 @@
 package http
 
 import (
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/endpoints"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/encode"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
-	goKitEndpoint "github.com/go-kit/kit/endpoint"
-	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 )
 
 // RegisterTransport for http.
@@ -53,8 +53,7 @@ func registerGetCustomer(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 }
 
 func registerUpdateCustomer(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
-
-	method := "PUT"
+	method := "PATCH"
 	path := "/customer"
 
 	handler := goKitHTTPTransport.NewServer(

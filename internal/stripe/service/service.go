@@ -275,9 +275,7 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 
 // swagger:route POST /stripe/refund/{payment_intent_id} stripe StripeRefundRequest
 //
-// # Initiate Refund
-//
-// ## Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
+// ### Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
 //
 // Produces:
 //   - application/json

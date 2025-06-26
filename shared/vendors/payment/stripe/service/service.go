@@ -287,13 +287,14 @@ func (s *service) Refund(_ context.Context, req *entities.RefundRequest) (*entit
 
 	params := &stripe.RefundParams{
 		PaymentIntent: stripe.String(req.PaymentIntentId),
+		// Default reason for refund, Other accepted values can be 'duplicate' and 'fraudulent' (not applicable)
+		Reason: stripe.String("requested_by_customer"),
 	}
 
 	if req.Amount.GreaterThan(decimal.Zero) {
 		// Convert the amount to the smallest currency unit (e.g., cents for USD)
 		integerAmount := req.Amount.Mul(decimal.NewFromInt(100)).IntPart()
 		params.Amount = stripe.Int64(integerAmount)
-		s.logger.Info("Refunding payment intent with amount:", integerAmount)
 	} else {
 		s.logger.Info("Refunding full payment intent without amount specified")
 	}

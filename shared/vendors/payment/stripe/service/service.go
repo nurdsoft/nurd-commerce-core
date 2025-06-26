@@ -13,6 +13,7 @@ import (
 	"github.com/stripe/stripe-go/v81/customer"
 	"github.com/stripe/stripe-go/v81/ephemeralkey"
 	"github.com/stripe/stripe-go/v81/paymentintent"
+	"github.com/stripe/stripe-go/v81/refund"
 	"github.com/stripe/stripe-go/v81/setupintent"
 	"github.com/stripe/stripe-go/v81/webhook"
 	"go.uber.org/zap"
@@ -25,6 +26,7 @@ type Service interface {
 	GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error)
 	CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error)
 	GetWebhookEvent(_ context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
+	Refund(_ context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error)
 }
 
 func New(config stripeConfig.Config, logger *zap.SugaredLogger) (Service, error) {
@@ -213,7 +215,6 @@ func (s *service) CreatePaymentIntent(_ context.Context, req *entities.CreatePay
 }
 
 func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error) {
-
 	event := stripe.Event{}
 
 	if err := json.Unmarshal(req.Payload, &event); err != nil {
@@ -279,4 +280,46 @@ func (s *service) GetCustomerPaymentMethodById(_ context.Context, customerId, pa
 	}
 
 	return resp, nil
+}
+
+func (s *service) Refund(_ context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error) {
+	stripe.Key = s.config.Key
+
+	params := &stripe.RefundParams{
+		PaymentIntent: stripe.String(req.PaymentIntentId),
+	}
+
+	if req.Amount.GreaterThan(decimal.Zero) {
+		// Convert the amount to the smallest currency unit (e.g., cents for USD)
+		integerAmount := req.Amount.Mul(decimal.NewFromInt(100)).IntPart()
+		params.Amount = stripe.Int64(integerAmount)
+		s.logger.Info("Refunding payment intent with amount:", integerAmount)
+	} else {
+		s.logger.Info("Refunding full payment intent without amount specified")
+	}
+
+	res, err := refund.New(params)
+	if err != nil {
+		s.logger.Error("Failed to refund payment intent from stripe-api:", err)
+		var stripeErr *stripe.Error
+		if errors.As(err, &stripeErr) {
+			switch stripeErr.Type {
+			case stripe.ErrorTypeInvalidRequest:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			case stripe.ErrorTypeAPI:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			}
+		}
+		return nil, moduleErrors.NewAPIError("STRIPE_UNABLE_TO_REFUND_PAYMENT_INTENT")
+	}
+
+	amount := decimal.NewFromInt(res.Amount).Div(decimal.NewFromInt(100))
+
+	return &entities.RefundResponse{
+		Id:       res.ID,
+		Amount:   amount,
+		Currency: string(res.Currency),
+		Status:   string(res.Status),
+		Reason:   string(res.Reason),
+	}, nil
 }

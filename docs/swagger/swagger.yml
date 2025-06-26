@@ -199,6 +199,7 @@ definitions:
                 type: string
                 x-go-name: ExpirationDate
         type: object
+        x-go-name: CreatePaymentProfileRequestBody
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     CreatePaymentProfileResponse:
         properties:
@@ -1005,6 +1006,23 @@ definitions:
                 x-go-name: SetupIntent
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    StripeRefundRequestBody:
+        properties:
+            amount:
+                type: string
+                x-go-name: Amount
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    StripeRefundResponse:
+        properties:
+            id:
+                type: string
+                x-go-name: Id
+            status:
+                type: string
+                x-go-name: Status
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
     UpdateCartItemRequestBody:
         properties:
             data:
@@ -1112,6 +1130,7 @@ definitions:
                 type: string
                 x-go-name: WebhookID
         type: object
+        x-go-name: WebhookRequestBody
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     WishlistItem:
         properties:
@@ -1941,6 +1960,41 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Customer Payment Methods
+            tags:
+                - stripe
+    /stripe/refund/{payment_intent_id}:
+        post:
+            description: '## Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount'
+            operationId: StripeRefundRequest
+            parameters:
+                - description: Payment Intent ID
+                  example: pi_1J2Y3Z4A5B6C7D8E9F0G
+                  in: path
+                  name: payment_intent_id
+                  required: true
+                  type: string
+                  x-go-name: PaymentIntentId
+                - description: Body
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/StripeRefundRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Refund initiated successfully
+                    schema:
+                        $ref: '#/definitions/StripeRefundResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Initiate Refund
             tags:
                 - stripe
     /stripe/setup-intent:

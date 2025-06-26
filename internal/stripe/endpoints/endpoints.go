@@ -14,6 +14,7 @@ type Endpoints struct {
 	StripeGetPaymentMethodEndpoint  endpoint.Endpoint
 	StripeGetSetupIntentEndpoint    endpoint.Endpoint
 	StripeWebhookEndpoint           endpoint.Endpoint
+	StripeRefundEndpoint            endpoint.Endpoint
 }
 
 func New(svc service.Service) *Endpoints {
@@ -22,6 +23,7 @@ func New(svc service.Service) *Endpoints {
 		StripeGetPaymentMethodEndpoint:  makeStripeGetPaymentMethod(svc),
 		StripeGetSetupIntentEndpoint:    makeStripeGetSetupIntent(svc),
 		StripeWebhookEndpoint:           makeStripeWebhookEndpoint(svc),
+		StripeRefundEndpoint:            makeStripeRefundEndpoint(svc),
 	}
 }
 
@@ -52,5 +54,12 @@ func makeStripeWebhookEndpoint(svc service.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return map[string]string{"status": "success"}, nil
+	}
+}
+
+func makeStripeRefundEndpoint(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.StripeRefundRequest)
+		return svc.InitiateRefund(ctx, req)
 	}
 }

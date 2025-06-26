@@ -23,14 +23,14 @@ type loggingRoundTripper struct {
 
 //nolint:funlen
 func (h *loggingRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	host, method := r.URL.Hostname(), r.Method
+	host, path, method := r.URL.Hostname(), r.URL.Path, r.Method
 	startTime := time.Now()
 	ctx := r.Context()
 
 	ctxLogger := h.logger.With(
 		"component", "client",
 		"http_host", host,
-		"http_path", r.URL.Path,
+		"http_path", path,
 		"http_raw_query", r.URL.RawQuery,
 		"http_method", method,
 		"request_id", meta.RequestID(ctx),

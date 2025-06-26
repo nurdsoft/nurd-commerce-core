@@ -39,10 +39,10 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service, method := r.URL.Path, r.Method
+	path, method := r.URL.Path, r.Method
 	contentType := r.Header.Get("Content-Type")
 
-	if paths.IsIgnoredPath(service) {
+	if paths.IsIgnoredPath(path) {
 		h.next.ServeHTTP(w, r)
 		return
 	}
@@ -53,8 +53,9 @@ func (h *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctxLogger := h.logger.With(
 		"component", "server",
-		"http_service", service,
+		"http_path", path,
 		"http_method", method,
+		"http_raw_query", r.URL.RawQuery,
 		"request_id", meta.RequestID(ctx),
 		"user_agent", meta.UserAgent(ctx),
 		"user_agent_origin", meta.UserAgentOrigin(ctx),

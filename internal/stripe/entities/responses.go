@@ -35,3 +35,9 @@ type SetupIntent struct {
 type GetPaymentMethodResponse struct {
 	PaymentMethod PaymentMethod `json:"payment_method"`
 }
+
+// swagger:model StripeRefundResponse
+type StripeRefundResponse struct {
+	Id     string `json:"id"`
+	Status string `json:"status"`
+}

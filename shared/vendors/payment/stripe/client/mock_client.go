@@ -139,3 +139,18 @@ func (mr *MockClientMockRecorder) GetWebhookEvent(ctx, req interface{}) *gomock.
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWebhookEvent", reflect.TypeOf((*MockClient)(nil).GetWebhookEvent), ctx, req)
 }
+
+// Refund mocks base method.
+func (m *MockClient) Refund(arg0 context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refund", arg0, req)
+	ret0, _ := ret[0].(*entities.RefundResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Refund indicates an expected call of Refund.
+func (mr *MockClientMockRecorder) Refund(arg0, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refund", reflect.TypeOf((*MockClient)(nil).Refund), arg0, req)
+}

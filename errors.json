@@ -120,9 +120,9 @@
     "message": "Order is already cancelled."
   },
   {
-    "error_code": "ORDER_NOT_FOUND_BY_PAYMENT_INTENT_ID",
+    "error_code": "ORDER_NOT_FOUND_BY_PAYMENT_ID",
     "status_code": 404,
-    "message": "Order not found by payment intent ID."
+    "message": "Order not found by payment ID."
   },
   {
     "error_code": "ORDER_IS_NOT_PENDING",
@@ -143,6 +143,11 @@
     "error_code": "STRIPE_SIGNATURE_VERIFICATION_FAILED",
     "status_code": 400,
     "message": "Stripe webhook signature verification failed"
+  },
+  {
+    "error_code": "STRIPE_INVALID_REFUND_AMOUNT",
+    "status_code": 400,
+    "message": "Invalid refund amount specified"
   },
   {
     "error_code": "WISHLIST_ITEM_NOT_FOUND",

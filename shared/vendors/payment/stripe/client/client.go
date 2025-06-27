@@ -17,6 +17,7 @@ type Client interface {
 	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 	GetProvider() providers.ProviderType
+	Refund(_ context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error)
 }
 
 func NewClient(svc service.Service) Client {
@@ -62,6 +63,18 @@ func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.Pay
 		ID:     res.Id,
 		Status: providers.PaymentStatusPending,
 	}, nil
+}
+
+func (c *localClient) Refund(ctx context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error) {
+	if req == nil {
+		return nil, errors.New("refund request cannot be nil")
+	}
+
+	if req.PaymentIntentId == "" {
+		return nil, errors.New("payment intent ID is required for refund")
+	}
+
+	return c.svc.Refund(ctx, req)
 }
 
 func (c *localClient) GetProvider() providers.ProviderType {

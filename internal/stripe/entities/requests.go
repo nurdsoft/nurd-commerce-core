@@ -23,3 +23,21 @@ type StripeGetPaymentMethodRequest struct {
 	// example: pm_1J2Y3Z4A5B6C7D8E9F0G
 	PaymentMethodId string `json:"payment_method_id"`
 }
+
+// swagger:parameters stripe StripeRefundRequest
+type StripeRefundRequest struct {
+	// Payment Intent ID
+	//
+	// required: true
+	// in:path
+	// example: pi_1J2Y3Z4A5B6C7D8E9F0G
+	PaymentIntentId string `json:"payment_intent_id"`
+	// Body
+	//
+	// in:body
+	Body *StripeRefundRequestBody
+}
+
+type StripeRefundRequestBody struct {
+	Amount string `json:"amount"`
+}

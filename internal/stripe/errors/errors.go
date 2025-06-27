@@ -12,6 +12,7 @@ var moduleErrors = map[string]struct {
 	Message    string
 }{
 	"STRIPE_SIGNATURE_VERIFICATION_FAILED": {StatusCode: http.StatusBadRequest, Message: "Stripe webhook signature verification failed"},
+	"STRIPE_INVALID_REFUND_AMOUNT":         {StatusCode: http.StatusBadRequest, Message: "Invalid refund amount specified"},
 }
 
 func NewAPIError(errorCode string, customMessage ...string) *errors.APIError {

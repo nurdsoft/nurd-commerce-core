@@ -58,3 +58,22 @@ type HandleWebhookEventResponse struct {
 type GetCustomerPaymentMethodResponse struct {
 	PaymentMethod PaymentMethod `json:"payment_methods"`
 }
+
+type RefundRequest struct {
+	PaymentIntentId string          `json:"payment_intent_id"`
+	Amount          decimal.Decimal `json:"amount"`
+}
+
+type RefundResponse struct {
+	// Id of the refund
+	Id string
+	// Amount refunded
+	Amount decimal.Decimal
+	// Currency of the refund
+	Currency string
+	// Status of the refund. This can be `pending`, `requires_action`, `succeeded`, `failed`, or `canceled`.
+	// Learn more about [failed refunds](https://stripe.com/docs/refunds#failed-refunds).
+	Status string
+	Reason string
+	// TODO Add destination details if needed
+}

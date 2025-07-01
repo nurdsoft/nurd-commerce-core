@@ -98,5 +98,6 @@ type UpdateOrderRequestBody struct {
 
 type Item struct {
 	ID     uuid.UUID        `json:"id"`
+	Sku    string           `json:"sku"`
 	Status *OrderItemStatus `json:"status,omitempty"`
 }

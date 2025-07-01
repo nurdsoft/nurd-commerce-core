@@ -643,6 +643,9 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: ID
+            sku:
+                type: string
+                x-go-name: Sku
             status:
                 $ref: '#/definitions/OrderItemStatus'
         type: object

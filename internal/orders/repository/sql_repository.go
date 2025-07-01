@@ -161,25 +161,39 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 
 		// Update each order item individually
 		for _, itemData := range itemsData {
-			itemID, ok := itemData["id"].(string)
-			if !ok {
+			itemID, hasID := itemData["id"].(string)
+			itemSKU, hasSKU := itemData["sku"].(string)
+
+			// Validate that at least one identifier is provided
+			if (!hasID || itemID == "") && (!hasSKU || itemSKU == "") {
 				tx.Rollback()
-				return moduleErrors.NewAPIError("INVALID_ITEM_ID")
+				return moduleErrors.NewAPIError("INVALID_ITEM_IDENTIFIER")
 			}
 
-			// Remove ID from update data
+			// Remove ID and SKU from update data
 			updateData := make(map[string]interface{})
 			for k, v := range itemData {
-				if k != "id" {
+				if k != "id" && k != "sku" {
 					updateData[k] = v
 				}
 			}
 
 			if len(updateData) > 0 {
-				result := tx.Model(&entities.OrderItem{}).
-					Where("id = ? AND order_id = ?", itemID, orderID).
-					Updates(updateData)
+				query := tx.Model(&entities.OrderItem{}).Where("order_id = ?", orderID)
 
+				// Build WHERE clause based on available identifiers
+				if hasID && itemID != "" && hasSKU && itemSKU != "" {
+					// Both ID and SKU provided
+					query = query.Where("(id = ? OR sku = ?)", itemID, itemSKU)
+				} else if hasID && itemID != "" {
+					// Only ID provided
+					query = query.Where("id = ?", itemID)
+				} else if hasSKU && itemSKU != "" {
+					// Only SKU provided
+					query = query.Where("sku = ?", itemSKU)
+				}
+
+				result := query.Updates(updateData)
 				if result.Error != nil {
 					tx.Rollback()
 					return result.Error

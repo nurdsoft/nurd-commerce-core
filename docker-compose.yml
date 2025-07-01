@@ -1,4 +1,14 @@
 services:
+
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=commerce-core
+      - POSTGRES_USER=db
+      - POSTGRES_PASSWORD=123
+    ports:
+      - '5453:5432'
+
   db:
     image: postgres:16-alpine
     environment:

@@ -9,6 +9,22 @@ on:
 jobs:
   tests-and-build:
     runs-on: ubuntu-latest
+   
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: commerce-core
+          POSTGRES_USER: db
+          POSTGRES_PASSWORD: 123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5453:5432
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,9 +33,16 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.24.2'
-          
+                    
       - name: Run tests
         run: go test -v ./...
+        env:
+          # Set environment variables for integration tests
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5453
+          POSTGRES_DB: commerce-core
+          POSTGRES_USER: db
+          POSTGRES_PASSWORD: 123
         
       - name: Run build
         run: go build -o go_build_nurd-commerce . 

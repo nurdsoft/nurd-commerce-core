@@ -13,7 +13,7 @@ CREATE TYPE order_item_status AS ENUM (
 );
 
 ALTER TABLE order_items
-ADD COLUMN IF NOT EXISTS status order_item_status NOT NULL DEFAULT 'pending';
+ADD COLUMN IF NOT EXISTS status order_item_status NULL;
 -- +migrate Down
 ALTER TABLE order_items
 DROP COLUMN IF EXISTS status;

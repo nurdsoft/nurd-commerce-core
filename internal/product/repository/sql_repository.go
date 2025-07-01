@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
@@ -109,4 +110,81 @@ func (r *sqlRepository) FindVariantByID(_ context.Context, id string) (*entities
 	}
 
 	return variant, nil
+}
+
+func (r *sqlRepository) ListVariants(ctx context.Context, req *entities.ListProductVariantsRequest) (*entities.ListProductVariantsResponse, error) {
+	var variants []entities.ProductVariant
+	var total int64
+
+	query := r.gormDB.WithContext(ctx).Model(&entities.ProductVariant{})
+
+	// Apply search and filters
+	if req.Search != nil && *req.Search != "" {
+		searchTerm := "%" + *req.Search + "%"
+		query = query.Where("name ILIKE ? OR description ILIKE ?", searchTerm, searchTerm)
+	}
+
+	if req.MinPrice != nil {
+		query = query.Where("price >= ?", req.MinPrice)
+	}
+	if req.MaxPrice != nil {
+		query = query.Where("price <= ?", req.MaxPrice)
+	}
+
+	if len(req.Attributes) > 0 {
+		for key, value := range req.Attributes {
+			query = query.Where("attributes->>? = ?", key, value)
+		}
+	}
+
+	// Get total count
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply sorting
+	sortBy := "created_at"
+	if req.SortBy != nil && *req.SortBy != "" {
+		sortBy = *req.SortBy
+	}
+	sortOrder := "desc"
+	if req.SortOrder != nil && *req.SortOrder != "" {
+		sortOrder = *req.SortOrder
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	offset := (page - 1) * pageSize
+
+	err = query.Order(sortBy + " " + sortOrder).
+		Offset(offset).
+		Limit(pageSize).
+		Find(&variants).Error
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+
+	return &entities.ListProductVariantsResponse{
+		Data: variants,
+		Pagination: entities.PaginationMeta{
+			Page:       page,
+			PageSize:   pageSize,
+			Total:      int(total),
+			TotalPages: totalPages,
+		},
+	}, nil
 }

@@ -3,9 +3,9 @@ package endpoints
 import (
 	"context"
 
+	"github.com/go-kit/kit/endpoint"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/service"
-	"github.com/go-kit/kit/endpoint"
 )
 
 type Endpoints struct {
@@ -13,6 +13,7 @@ type Endpoints struct {
 	GetProductEndpoint           endpoint.Endpoint
 	CreateProductVariantEndpoint endpoint.Endpoint
 	GetProductVariantEndpoint    endpoint.Endpoint
+	ListProductVariantsEndpoint  endpoint.Endpoint
 }
 
 func New(svc service.Service) *Endpoints {
@@ -21,6 +22,7 @@ func New(svc service.Service) *Endpoints {
 		GetProductEndpoint:           makeGetProduct(svc),
 		CreateProductVariantEndpoint: makeCreateProductVariant(svc),
 		GetProductVariantEndpoint:    makeGetProductVariant(svc),
+		ListProductVariantsEndpoint:  makeListProductVariants(svc),
 	}
 }
 
@@ -53,5 +55,13 @@ func makeGetProductVariant(svc service.Service) endpoint.Endpoint {
 		req := request.(*entities.GetProductVariantRequest) //nolint:errcheck
 
 		return svc.GetProductVariant(ctx, req)
+	}
+}
+
+func makeListProductVariants(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.ListProductVariantsRequest) //nolint:errcheck
+
+		return svc.ListProductVariants(ctx, req)
 	}
 }

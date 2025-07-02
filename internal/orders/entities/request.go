@@ -93,4 +93,11 @@ type UpdateOrderRequestBody struct {
 	FulfillmentTrackingNumber *string          `json:"fulfillment_tracking_number,omitempty"`
 	FulfillmentTrackingURL    *string          `json:"fulfillment_tracking_url,omitempty"`
 	FulfilmentMetadata        *json.JSON       `json:"fulfillment_metadata,omitempty"`
+	Items                     []*Item          `json:"items,omitempty"`
+}
+
+type Item struct {
+	ID     uuid.UUID        `json:"id"`
+	Sku    string           `json:"sku"`
+	Status *OrderItemStatus `json:"status,omitempty"`
 }

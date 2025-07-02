@@ -112,6 +112,7 @@ func (r *sqlRepository) ListOrders(ctx context.Context, customerID uuid.UUID, li
 				Quantity:         item.Quantity,
 				Price:            item.Price,
 				Attributes:       item.Attributes,
+				Status:           item.Status,
 			}
 
 			// Add summary to its parent order
@@ -143,12 +144,72 @@ func (r *sqlRepository) GetOrderByAuthorizeNetPaymentID(ctx context.Context, aut
 }
 
 func (r *sqlRepository) Update(ctx context.Context, details map[string]interface{}, orderID string, customerID string) error {
-	tx := r.gormDB.WithContext(ctx).Model(&entities.Order{}).Where("id = ?", orderID)
+	tx := r.gormDB.Begin().WithContext(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Update order items first if "items" key exists
+	if items, ok := details["items"]; ok {
+		itemsData, ok := items.([]map[string]interface{})
+		if !ok {
+			tx.Rollback()
+			return moduleErrors.NewAPIError("INVALID_ITEMS_DATA_FORMAT")
+		}
+
+		// Update each order item individually
+		for _, itemData := range itemsData {
+			itemID, hasID := itemData["id"].(string)
+			itemSKU, hasSKU := itemData["sku"].(string)
+
+			// Validate that at least one identifier is provided
+			if (!hasID || itemID == "") && (!hasSKU || itemSKU == "") {
+				tx.Rollback()
+				return moduleErrors.NewAPIError("INVALID_ITEM_IDENTIFIER")
+			}
+
+			// Remove ID and SKU from update data
+			updateData := make(map[string]interface{})
+			for k, v := range itemData {
+				if k != "id" && k != "sku" {
+					updateData[k] = v
+				}
+			}
+
+			if len(updateData) > 0 {
+				query := tx.Model(&entities.OrderItem{}).Where("order_id = ?", orderID)
+
+				// Build WHERE clause based on available identifiers
+				if hasID && itemID != "" && hasSKU && itemSKU != "" {
+					// Both ID and SKU provided
+					query = query.Where("(id = ? OR sku = ?)", itemID, itemSKU)
+				} else if hasID && itemID != "" {
+					// Only ID provided
+					query = query.Where("id = ?", itemID)
+				} else if hasSKU && itemSKU != "" {
+					// Only SKU provided
+					query = query.Where("sku = ?", itemSKU)
+				}
+
+				result := query.Updates(updateData)
+				if result.Error != nil {
+					tx.Rollback()
+					return result.Error
+				}
+			}
+		}
+
+		// Remove from generic update to avoid conflict
+		delete(details, "items")
+	}
 
 	// Handle fulfillment_metadata append using Postgres || operator
 	if newMetaRaw, ok := details["fulfillment_metadata"]; ok {
 		newMetaBytes, err := json.Marshal(newMetaRaw)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
@@ -156,36 +217,39 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 		mergedPatch := sharedJSON.JSON(newMetaBytes)
 
 		// Normalize 'null'::jsonb to '{}' inline using CASE
-		tx = tx.Update("fulfillment_metadata", gorm.Expr(`
+		result := tx.Model(&entities.Order{}).Where("id = ?", orderID).Update("fulfillment_metadata", gorm.Expr(`
 			CASE
 				WHEN fulfillment_metadata IS NULL OR fulfillment_metadata = 'null'::jsonb THEN '{}'::jsonb
 				ELSE fulfillment_metadata
 			END || ?
 		`, mergedPatch))
 
+		if result.Error != nil {
+			tx.Rollback()
+			return result.Error
+		}
+
 		// Remove from generic update to avoid conflict
 		delete(details, "fulfillment_metadata")
 	}
 
-	// Update other fields if any
+	// Update other order fields if any
 	if len(details) > 0 {
-		tx = tx.Updates(details)
+		result := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(details)
+		if result.Error != nil {
+			tx.Rollback()
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			tx.Rollback()
+			return moduleErrors.NewAPIError("ORDER_NOT_FOUND")
+		}
 	}
 
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	if tx.RowsAffected == 0 {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND")
-	}
-
-	// Fetch related order items
-	var orderItems []*entities.OrderItem
-	if err := r.gormDB.WithContext(ctx).
-		Where("order_id = ?", orderID).
-		Find(&orderItems).Error; err != nil {
-		return moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return err
 	}
 
 	return nil

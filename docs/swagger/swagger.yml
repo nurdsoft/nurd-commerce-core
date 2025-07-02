@@ -637,6 +637,19 @@ definitions:
         type: object
         x-go-name: Response
         x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/health/service
+    Item:
+        properties:
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            sku:
+                type: string
+                x-go-name: Sku
+            status:
+                $ref: '#/definitions/OrderItemStatus'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     JSON:
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/json
@@ -803,6 +816,8 @@ definitions:
             sku:
                 type: string
                 x-go-name: SKU
+            status:
+                $ref: '#/definitions/OrderItemStatus'
             updated_at:
                 format: date-time
                 type: string
@@ -814,6 +829,9 @@ definitions:
                 type: string
                 x-go-name: Width
         type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItemStatus:
+        type: string
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderItemSummary:
         description: OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
@@ -848,6 +866,8 @@ definitions:
             sku:
                 type: string
                 x-go-name: SKU
+            status:
+                $ref: '#/definitions/OrderItemStatus'
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderStatus:
@@ -1082,6 +1102,11 @@ definitions:
             fulfillment_tracking_url:
                 type: string
                 x-go-name: FulfillmentTrackingURL
+            items:
+                items:
+                    $ref: '#/definitions/Item'
+                type: array
+                x-go-name: Items
             status:
                 type: string
                 x-go-name: Status

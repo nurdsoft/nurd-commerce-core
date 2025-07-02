@@ -16,7 +16,8 @@ import (
 
 type RequestBodyType interface {
 	entities.CreateOrderRequestBody |
-		entities.UpdateOrderRequestBody
+		entities.UpdateOrderRequestBody |
+		entities.RefundOrderRequestBody
 }
 
 func decodeBodyFromRequest[T RequestBodyType](req *T, r *http.Request) error {
@@ -109,6 +110,25 @@ func decodeUpdateOrderRequest(_ context.Context, r *http.Request) (interface{}, 
 	}
 
 	return &entities.UpdateOrderRequest{
+		OrderReference: orderReference,
+		Body:           reqBody,
+	}, nil
+}
+
+func decodeRefundOrderRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	params := mux.Vars(r)
+	orderReference := params["order_reference"]
+	if orderReference == "" {
+		return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "invalid order_reference")
+	}
+
+	reqBody := &entities.RefundOrderRequestBody{}
+	err := decodeBodyFromRequest(reqBody, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.RefundOrderRequest{
 		OrderReference: orderReference,
 		Body:           reqBody,
 	}, nil

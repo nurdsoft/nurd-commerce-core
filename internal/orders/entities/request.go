@@ -101,3 +101,28 @@ type Item struct {
 	Sku    string           `json:"sku"`
 	Status *OrderItemStatus `json:"status,omitempty"`
 }
+
+type RefundOrderRequest struct {
+	// Order reference
+	//
+	// required:true
+	// in:path
+	OrderReference string `json:"order_reference"`
+	// Body of the request
+	//
+	// in:body
+	Body *RefundOrderRequestBody
+}
+
+type RefundOrderRequestBody struct {
+	Items []*RefundItem `json:"items"`
+}
+
+type RefundItem struct {
+	// Unique identifier for the item to refund
+	Sku string `json:"sku"`
+	// Boolean to indicate whether to initiate a refund for this item
+	InitiateRefund bool `json:"initiate_refund"`
+	// Quantity of the item to refund
+	Quantity int `json:"quantity"`
+}

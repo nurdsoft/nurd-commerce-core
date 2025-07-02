@@ -3,9 +3,9 @@ package endpoints
 import (
 	"context"
 
+	"github.com/go-kit/kit/endpoint"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/service"
-	"github.com/go-kit/kit/endpoint"
 )
 
 type Endpoints struct {
@@ -14,6 +14,7 @@ type Endpoints struct {
 	GetOrderEndpoint    endpoint.Endpoint
 	CancelOrderEndpoint endpoint.Endpoint
 	UpdateOrderEndpoint endpoint.Endpoint
+	RefundOrderEndpoint endpoint.Endpoint
 }
 
 func New(svc service.Service) *Endpoints {
@@ -23,6 +24,7 @@ func New(svc service.Service) *Endpoints {
 		GetOrderEndpoint:    makeGetOrderEndpoint(svc),
 		CancelOrderEndpoint: makeCancelOrderEndpoint(svc),
 		UpdateOrderEndpoint: makeUpdateOrderEndpoint(svc),
+		RefundOrderEndpoint: makeRefundOrderEndpoint(svc),
 	}
 }
 
@@ -58,5 +60,12 @@ func makeUpdateOrderEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*entities.UpdateOrderRequest)
 		return nil, svc.UpdateOrder(ctx, req)
+	}
+}
+
+func makeRefundOrderEndpoint(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.RefundOrderRequest)
+		return nil, svc.RefundOrder(ctx, req)
 	}
 }

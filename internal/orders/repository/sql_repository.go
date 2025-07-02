@@ -315,3 +315,31 @@ func (r *sqlRepository) GetOrderByReference(ctx context.Context, orderReference 
 
 	return order, nil
 }
+
+func (r *sqlRepository) UpdateOrderWithOrderItems(ctx context.Context, orderID uuid.UUID, orderData map[string]interface{}, orderItemsData map[string]interface{}) error {
+	tx := r.gormDB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Update order status
+	if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(orderData).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update order items with refund data
+	for itemID, data := range orderItemsData {
+		if err := tx.Model(&entities.OrderItem{}).
+			Where("id = ?", itemID).
+			Where("order_id = ?", orderID).
+			Updates(data).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
+}

@@ -25,6 +25,7 @@ const (
 	ItemReturnRequested   OrderItemStatus = "return_requested"
 	ItemReturned          OrderItemStatus = "returned"
 	ItemRefunded          OrderItemStatus = "refunded"
+	ItemInitiatedRefund   OrderItemStatus = "initiated_refund"
 )
 
 // OrderItem represents an item in an order

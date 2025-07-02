@@ -1814,6 +1814,28 @@ paths:
             summary: Update Order
             tags:
                 - orders
+    /orders/{order_reference}/refund:
+        post:
+            description: '### Refund order items by SKU & Quantity'
+            operationId: RefundOrderRequest
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Order refunded successfully
+                    schema:
+                        $ref: '#/definitions/DefaultResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Refund Order
+            tags:
+                - orders
     /product:
         post:
             operationId: CreateProductRequest
@@ -1985,40 +2007,6 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Customer Payment Methods
-            tags:
-                - stripe
-    /stripe/refund/{payment_intent_id}:
-        post:
-            operationId: StripeRefundRequest
-            parameters:
-                - description: Payment Intent ID
-                  example: pi_1J2Y3Z4A5B6C7D8E9F0G
-                  in: path
-                  name: payment_intent_id
-                  required: true
-                  type: string
-                  x-go-name: PaymentIntentId
-                - description: Body
-                  in: body
-                  name: Body
-                  schema:
-                    $ref: '#/definitions/StripeRefundRequestBody'
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: Refund initiated successfully
-                    schema:
-                        $ref: '#/definitions/StripeRefundResponse'
-                "400":
-                    description: Bad Request
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
             tags:
                 - stripe
     /stripe/setup-intent:

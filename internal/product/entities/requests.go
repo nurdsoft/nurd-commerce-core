@@ -95,11 +95,11 @@ type GetProductsRequest struct {
 
 // swagger:parameters products ListProductVariantsRequest
 type ListProductVariantsRequest struct {
-	// Page number for pagination (default: 1)
+	// Page number for pagination. Default: 1
 	//
 	// in:query
 	Page int `json:"page"`
-	// Page size for pagination (default: 10, max: 100)
+	// Page size for pagination. Default: 10, max: 100
 	//
 	// in:query
 	PageSize int `json:"page_size"`
@@ -125,7 +125,7 @@ type ListProductVariantsRequest struct {
 	SortOrder *string `json:"sort_order"`
 	// JSON attributes filter (optional) - format: attributes[key]=value
 	//
-	// in:query
+	// swagger:ignore
 	Attributes map[string]string `json:"attributes"`
 }
 

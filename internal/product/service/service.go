@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
@@ -17,6 +18,7 @@ type Service interface {
 	CreateProductVariant(ctx context.Context, req *entities.CreateProductVariantRequest) (*entities.ProductVariant, error)
 	GetProductVariant(ctx context.Context, req *entities.GetProductVariantRequest) (*entities.ProductVariant, error)
 	GetProductVariantByID(ctx context.Context, variantID string) (*entities.ProductVariant, error)
+	ListProductVariants(ctx context.Context, req *entities.ListProductVariantsRequest) (*entities.ListProductVariantsResponse, error)
 }
 
 type service struct {
@@ -198,4 +200,25 @@ func (s *service) GetProductsByIDs(ctx context.Context, ids []string) ([]entitie
 		return nil, err
 	}
 	return products, nil
+}
+
+// swagger:route GET /product/variants products ListProductVariantsRequest
+//
+// # List Product Variants
+// ### Get a paginated list of product variants with optional filtering
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: ListProductVariantsResponse
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) ListProductVariants(ctx context.Context, req *entities.ListProductVariantsRequest) (*entities.ListProductVariantsResponse, error) {
+	response, err := s.repo.ListVariants(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }

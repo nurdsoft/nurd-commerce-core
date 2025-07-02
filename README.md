@@ -141,3 +141,23 @@ mockgen -source=internal/... -destination=internal/mocks/mock.go -package=packag
 
 > [!TIP]
 > Keep the mocks updated by running `make mocks`.
+
+## Integration Tests
+
+This project includes integration tests that use a real PostgreSQL database to test database operations and queries. 
+
+## Running Integration Tests Locally
+```bash
+make test-integration
+```
+
+## Database Configuration
+
+The integration tests use a separate test database with the following configuration:
+- **Host**: localhost
+- **Port**: 5453 (separate from the main app database on 5452)
+- **Database**: commerce-core
+- **User**: db
+- **Password**: 123
+
+This ensures that integration tests don't interfere with your local development database.

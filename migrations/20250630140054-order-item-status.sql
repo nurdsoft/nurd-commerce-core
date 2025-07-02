@@ -9,7 +9,7 @@ CREATE TYPE order_item_status AS ENUM (
     'cancelled',
     'return_requested',
     'returned',
-    'refunded'
+    'refunded',
     'initiated_refund'
 );
 

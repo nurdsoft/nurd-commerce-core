@@ -102,6 +102,7 @@ type Item struct {
 	Status *OrderItemStatus `json:"status,omitempty"`
 }
 
+// swagger:parameters orders RefundOrderRequest
 type RefundOrderRequest struct {
 	// Order reference
 	//
@@ -121,8 +122,6 @@ type RefundOrderRequestBody struct {
 type RefundItem struct {
 	// Unique identifier for the item to refund
 	Sku string `json:"sku"`
-	// Boolean to indicate whether to initiate a refund for this item
-	InitiateRefund bool `json:"initiate_refund"`
 	// Quantity of the item to refund
 	Quantity int `json:"quantity"`
 }

@@ -42,7 +42,7 @@ type Service interface {
 	ProcessPaymentSucceeded(ctx context.Context, paymentID string) error
 	ProcessPaymentFailed(ctx context.Context, paymentID string) error
 	UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequest) error
-	RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) error
+	RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error)
 }
 
 type service struct {
@@ -853,7 +853,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 
 // swagger:route POST /orders/{order_reference}/refund orders RefundOrderRequest
 //
-// # Refund Order
+// # Initiate an Order Refund
 // ### Refund order items by SKU & Quantity
 //
 // Produces:
@@ -861,25 +861,25 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 //
 // Responses:
 //
-//	200: DefaultResponse Order refunded successfully
+//	200: RefundOrderResponse Order refund initiated successfully
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
-func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) error {
+func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error) {
 	order, err := s.repo.GetOrderByReference(ctx, req.OrderReference)
 	if err != nil {
-		return moduleErrors.NewAPIError("ORDER_NOT_FOUND")
+		return nil, moduleErrors.NewAPIError("ORDER_NOT_FOUND")
 	}
 
 	// TODO: Improve by adding a FSM for Order State Machine
 	if order.Status != entities.PaymentSuccess && order.Status != entities.Refunded {
-		return moduleErrors.NewAPIError("ORDER_ERROR_REFUNDING", "Order is not eligible for refund")
+		return nil, moduleErrors.NewAPIError("ORDER_ERROR_REFUNDING", "Order is not eligible for refund")
 	}
 
 	// get order items
 	orderItems, err := s.repo.GetOrderItemsByID(ctx, order.ID)
 	if err != nil {
 		s.log.Errorf("Error fetching order items: %v", err)
-		return moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
+		return nil, moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
 	}
 
 	// iterate over order items and request body items to check if they match by sku
@@ -888,15 +888,22 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	var refundableItemsCount, orderItemsCount int
 	orderItemsRefundData := make(map[string]interface{})
 	orderRefundData := make(map[string]interface{})
+	refundableItems := make([]*entities.RefundableItem, 0)
 
 	for _, item := range req.Body.Items {
-		if item.Sku != "" && item.InitiateRefund {
+		if item.Sku != "" {
 			for _, orderItem := range orderItems {
 				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity && (orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund) {
 					refundableAmount = refundableAmount.Add(orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 					orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
 						"status": entities.ItemInitiatedRefund.String(),
 					}
+					refundableItems = append(refundableItems, &entities.RefundableItem{
+						ItemId:   orderItem.ID.String(),
+						Sku:      orderItem.SKU,
+						Quantity: item.Quantity,
+						Price:    orderItem.Price,
+					})
 					break
 				}
 			}
@@ -904,15 +911,15 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	}
 
 	if refundableAmount.IsZero() {
-		return moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "No refundable items found or amount is zero")
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "No refundable items found or amount is zero")
 	}
 
 	if refundableAmount.GreaterThan(order.Total) {
-		return moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Refundable amount exceeds order total")
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Refundable amount exceeds order total")
 	}
 
 	for _, item := range req.Body.Items {
-		if item.Sku != "" && item.InitiateRefund {
+		if item.Sku != "" {
 			refundableItemsCount += item.Quantity
 		}
 	}
@@ -933,7 +940,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 		})
 		if err != nil {
 			s.log.Errorf("Error processing refund via Stripe: %v", err)
-			return moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Error processing refund via Stripe")
+			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Error processing refund via Stripe")
 		}
 		s.log.Info(refundResponse.ID, refundResponse.Status)
 		// iterate over orderItemsRefundData and set the stripe refund id
@@ -951,8 +958,15 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 			orderRefundData["stripe_refund_total"] = stripeTotalRefund
 		}
 
+		// TODO: check logic
+		for _, item := range refundableItems {
+			if item.ItemId != "" {
+				item.RefundInitiated = true
+			}
+		}
+
 	default:
-		return moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Payment provider not supported for refunds")
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Payment provider not supported for refunds")
 	}
 
 	// update order items with refund data
@@ -975,7 +989,10 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 		}
 	}()
 
-	return nil
+	return &entities.RefundOrderResponse{
+		TotalRefundableAmount: refundableAmount,
+		RefundableItems:       refundableItems,
+	}, nil
 }
 
 // generateOrderRef generates a unique order reference based on the order ID.

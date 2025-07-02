@@ -66,6 +66,6 @@ func makeUpdateOrderEndpoint(svc service.Service) endpoint.Endpoint {
 func makeRefundOrderEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*entities.RefundOrderRequest)
-		return nil, svc.RefundOrder(ctx, req)
+		return svc.RefundOrder(ctx, req)
 	}
 }

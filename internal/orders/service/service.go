@@ -871,8 +871,10 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	}
 
 	// TODO: Improve by adding a FSM for Order State Machine
-	if order.Status != entities.PaymentSuccess && order.Status != entities.Refunded {
-		return nil, moduleErrors.NewAPIError("ORDER_ERROR_REFUNDING", "Order is not eligible for refund")
+
+	// disable multiple refunds for the same order
+	if order.Status == entities.Refunded {
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Order is not eligible for refund")
 	}
 
 	// get order items
@@ -893,10 +895,17 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	for _, item := range req.Body.Items {
 		if item.Sku != "" {
 			for _, orderItem := range orderItems {
-				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity && (orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund) {
+				if orderItem.Status == entities.ItemRefunded || orderItem.Status == entities.ItemInitiatedRefund {
+					// Skip items that are already refunded or in the process of being refunded
+					s.log.Infof("Skipping item %s with current status %s for any refund", orderItem.ID, orderItem.Status)
+					continue
+				}
+
+				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity {
 					refundableAmount = refundableAmount.Add(orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 					orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
-						"status": entities.ItemInitiatedRefund.String(),
+						"status":               entities.ItemInitiatedRefund.String(),
+						"stripe_refund_amount": orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity))).InexactFloat64(),
 					}
 					refundableItems = append(refundableItems, &entities.RefundableItem{
 						ItemId:   orderItem.ID.String(),
@@ -934,7 +943,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 
 	switch s.paymentClient.GetProvider() {
 	case providers.ProviderStripe:
-		refundResponse, err := s.paymentClient.Refund(ctx, stripeEntities.RefundRequest{
+		refundResponse, err := s.paymentClient.Refund(ctx, &stripeEntities.RefundRequest{
 			PaymentIntentId: *order.StripePaymentIntentID,
 			Amount:          refundableAmount,
 		})
@@ -942,29 +951,38 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 			s.log.Errorf("Error processing refund via Stripe: %v", err)
 			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Error processing refund via Stripe")
 		}
-		s.log.Info(refundResponse.ID, refundResponse.Status)
+
+		if refundResponse.Status != stripeEntities.StripeRefundSucceeded && refundResponse.Status != stripeEntities.StripeRefundPending {
+			s.log.Errorf("Stripe refund failed with status: %s and ID: %s", refundResponse.Status, refundResponse.ID)
+			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Stripe refund failed")
+		}
 		// iterate over orderItemsRefundData and set the stripe refund id
 		for orderItemID, data := range orderItemsRefundData {
 			data.(map[string]interface{})["stripe_refund_id"] = refundResponse.ID
 			data.(map[string]interface{})["stripe_refund_created_at"] = time.Now().UTC()
 			orderItemsRefundData[orderItemID] = data
 		}
+		var stripeTotalRefund decimal.Decimal
 
 		if shouldChangeOrderStatus {
 			// TODO change to initiated refund
 			orderRefundData["status"] = entities.Refunded
 			// update order refund total for the whole order
-			stripeTotalRefund := order.StripeRefundTotal.Add(refundableAmount)
+			if order.StripeRefundTotal != nil {
+				stripeTotalRefund = order.StripeRefundTotal.Add(refundableAmount)
+			} else {
+				stripeTotalRefund = refundableAmount
+			}
 			orderRefundData["stripe_refund_total"] = stripeTotalRefund
 		}
 
-		// TODO: check logic
+		// Stripe doesn't care about individual item refunds, it just processes the amount given
+		// so its safe to mark all refundable items as refunded, assuming the above call succeeded
 		for _, item := range refundableItems {
 			if item.ItemId != "" {
 				item.RefundInitiated = true
 			}
 		}
-
 	default:
 		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Payment provider not supported for refunds")
 	}

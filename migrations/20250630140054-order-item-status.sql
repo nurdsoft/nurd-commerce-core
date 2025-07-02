@@ -10,6 +10,7 @@ CREATE TYPE order_item_status AS ENUM (
     'return_requested',
     'returned',
     'refunded'
+    'initiated_refund'
 );
 
 ALTER TABLE order_items

@@ -887,10 +887,17 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	// iterate over order items and request body items to check if they match by sku
 	var refundableAmount decimal.Decimal
 	var shouldChangeOrderStatus bool
-	var refundableItemsCount, orderItemsCount int
+	var totalRefundableQuantity, totalOrderQuantity int
 	orderItemsRefundData := make(map[string]interface{})
 	orderRefundData := make(map[string]interface{})
 	refundableItems := make([]*entities.RefundableItem, 0)
+
+	// Calculate total order quantity (excluding already refunded items)
+	for _, orderItem := range orderItems {
+		if orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund {
+			totalOrderQuantity += orderItem.Quantity
+		}
+	}
 
 	for _, item := range req.Body.Items {
 		if item.Sku != "" {
@@ -902,10 +909,14 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 				}
 
 				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity {
-					refundableAmount = refundableAmount.Add(orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
+					totalItemCost := orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity)))
+					refundableAmount = refundableAmount.Add(totalItemCost)
+					// quantity of items that are valid for refund
+					totalRefundableQuantity += item.Quantity
+
 					orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
 						"status":               entities.ItemInitiatedRefund.String(),
-						"stripe_refund_amount": orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity))).InexactFloat64(),
+						"stripe_refund_amount": totalItemCost.InexactFloat64(),
 					}
 					refundableItems = append(refundableItems, &entities.RefundableItem{
 						ItemId:   orderItem.ID.String(),
@@ -927,17 +938,8 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Refundable amount exceeds order total")
 	}
 
-	for _, item := range req.Body.Items {
-		if item.Sku != "" {
-			refundableItemsCount += item.Quantity
-		}
-	}
-
-	for _, orderItem := range orderItems {
-		orderItemsCount += orderItem.Quantity
-	}
-
-	if orderItemsCount == refundableItemsCount {
+	// Check if we're refunding all available order items
+	if totalRefundableQuantity == totalOrderQuantity {
 		shouldChangeOrderStatus = true
 	}
 
@@ -965,7 +967,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 		var stripeTotalRefund decimal.Decimal
 
 		if shouldChangeOrderStatus {
-			// TODO change to initiated refund
+			// TODO change to initiated refund when webhook is implemented
 			orderRefundData["status"] = entities.Refunded
 			// update order refund total for the whole order
 			if order.StripeRefundTotal != nil {

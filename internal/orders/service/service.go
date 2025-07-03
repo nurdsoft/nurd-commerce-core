@@ -892,11 +892,9 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	orderRefundData := make(map[string]interface{})
 	refundableItems := make([]*entities.RefundableItem, 0)
 
-	// Calculate total order quantity (excluding already refunded items)
+	// Calculate total order quantity
 	for _, orderItem := range orderItems {
-		if orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund {
-			totalOrderQuantity += orderItem.Quantity
-		}
+		totalOrderQuantity += orderItem.Quantity
 	}
 
 	for _, item := range req.Body.Items {

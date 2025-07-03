@@ -324,22 +324,37 @@ func (r *sqlRepository) UpdateOrderWithOrderItems(ctx context.Context, orderID u
 		}
 	}()
 
-	// Update order status
-	if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(orderData).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Update order items with refund data
-	for itemID, data := range orderItemsData {
-		if err := tx.Model(&entities.OrderItem{}).
-			Where("id = ?", itemID).
-			Where("order_id = ?", orderID).
-			Updates(data).Error; err != nil {
+	if orderData != nil {
+		// Update order status
+		if err := tx.Model(&entities.Order{}).Where("id = ?", orderID).Updates(orderData).Error; err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
 
+	if len(orderItemsData) > 0 {
+		// Update order items with refund data
+		for itemID, data := range orderItemsData {
+			if err := tx.Model(&entities.OrderItem{}).
+				Where("id = ?", itemID).
+				Where("order_id = ?", orderID).
+				Updates(data).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
 	return tx.Commit().Error
+}
+
+func (r *sqlRepository) GetOrderItemsByStripeRefundID(ctx context.Context, stripeRefundID string) ([]*entities.OrderItem, error) {
+	var orderItems []*entities.OrderItem
+	if err := r.gormDB.WithContext(ctx).
+		Where("stripe_refund_id = ?", stripeRefundID).
+		Find(&orderItems).Error; err != nil {
+		return nil, err
+	}
+
+	return orderItems, nil
 }

@@ -27,6 +27,7 @@ type Service interface {
 	CreatePaymentIntent(ctx context.Context, req *entities.CreatePaymentIntentRequest) (*entities.CreatePaymentIntentResponse, error)
 	GetWebhookEvent(_ context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 	Refund(_ context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error)
+	GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error)
 }
 
 func New(config stripeConfig.Config, logger *zap.SugaredLogger) (Service, error) {
@@ -227,7 +228,8 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 		return nil, err
 	}
 
-	if event.Type == "payment_intent.succeeded" || event.Type == "payment_intent.payment_failed" {
+	switch event.Type {
+	case "payment_intent.succeeded", "payment_intent.payment_failed":
 		var paymentIntent stripe.PaymentIntent
 		err = json.Unmarshal(event.Data.Raw, &paymentIntent)
 		if err != nil {
@@ -238,7 +240,29 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 			ObjectId: paymentIntent.ID,
 			Type:     string(event.Type),
 		}, nil
-	} else {
+	case "charge.refunded":
+		var charge stripe.Charge
+		err = json.Unmarshal(event.Data.Raw, &charge)
+		if err != nil {
+			s.logger.Error("Webhook error while parsing refund charge ", err)
+			return nil, err
+		}
+		return &entities.HandleWebhookEventResponse{
+			ObjectId: charge.ID,
+			Type:     string(event.Type),
+		}, nil
+	case "refund.updated":
+		var refund stripe.Refund
+		err = json.Unmarshal(event.Data.Raw, &refund)
+		if err != nil {
+			s.logger.Error("Webhook error while parsing refund ", err)
+			return nil, err
+		}
+		return &entities.HandleWebhookEventResponse{
+			ObjectId: refund.ID,
+			Type:     string(event.Type),
+		}, nil
+	default:
 		s.logger.Warnf("Unhandled event type: %s", event.Type)
 		return &entities.HandleWebhookEventResponse{}, nil
 	}
@@ -323,4 +347,32 @@ func (s *service) Refund(_ context.Context, req *entities.RefundRequest) (*entit
 		Status:   string(res.Status),
 		Reason:   string(res.Reason),
 	}, nil
+}
+
+func (s *service) GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error) {
+	stripe.Key = s.config.Key
+
+	refund, err := refund.Get(refundId, nil)
+	if err != nil {
+		s.logger.Error("Failed to retrieve refund from stripe-api:", err)
+		var stripeErr *stripe.Error
+		if errors.As(err, &stripeErr) {
+			switch stripeErr.Type {
+			case stripe.ErrorTypeInvalidRequest:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			case stripe.ErrorTypeAPI:
+				return nil, moduleErrors.NewAPIError("STRIPE_ERROR", stripeErr.Msg)
+			}
+		}
+		return nil, moduleErrors.NewAPIError("STRIPE_UNABLE_TO_RETRIEVE_REFUND")
+	}
+
+	resp := &entities.RefundResponse{
+		Id:       refund.ID,
+		Amount:   decimal.NewFromInt(refund.Amount).Div(decimal.NewFromInt(100)),
+		Currency: string(refund.Currency),
+		Status:   string(refund.Status),
+	}
+
+	return resp, nil
 }

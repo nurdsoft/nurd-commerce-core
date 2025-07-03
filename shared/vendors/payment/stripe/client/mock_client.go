@@ -110,6 +110,21 @@ func (mr *MockClientMockRecorder) GetProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvider", reflect.TypeOf((*MockClient)(nil).GetProvider))
 }
 
+// GetRefund mocks base method.
+func (m *MockClient) GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRefund", ctx, refundId)
+	ret0, _ := ret[0].(*entities.RefundResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRefund indicates an expected call of GetRefund.
+func (mr *MockClientMockRecorder) GetRefund(ctx, refundId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefund", reflect.TypeOf((*MockClient)(nil).GetRefund), ctx, refundId)
+}
+
 // GetSetupIntent mocks base method.
 func (m *MockClient) GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error) {
 	m.ctrl.T.Helper()

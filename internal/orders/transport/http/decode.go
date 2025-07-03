@@ -128,6 +128,14 @@ func decodeRefundOrderRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, err
 	}
 
+	// Validate that all Order Item SKUs are not empty
+	for _, item := range reqBody.Items {
+		// Change logic when both order_item id and sku are not supposed to be empty (atleast one should be present)
+		if item.Sku == "" {
+			return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "order_item sku cannot be empty")
+		}
+	}
+
 	return &entities.RefundOrderRequest{
 		OrderReference: orderReference,
 		Body:           reqBody,

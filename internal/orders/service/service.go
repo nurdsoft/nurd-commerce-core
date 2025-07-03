@@ -891,21 +891,20 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	orderItemsRefundData := make(map[string]interface{})
 	orderRefundData := make(map[string]interface{})
 	refundableItems := make([]*entities.RefundableItem, 0)
+	refundableOrderItems := make([]*entities.OrderItem, 0)
 
-	// Calculate total order quantity
 	for _, orderItem := range orderItems {
+		// Calculate total order quantity
 		totalOrderQuantity += orderItem.Quantity
+		// filter order items that can be refunded
+		if orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund {
+			refundableOrderItems = append(refundableOrderItems, orderItem)
+		}
 	}
 
 	for _, item := range req.Body.Items {
 		if item.Sku != "" {
-			for _, orderItem := range orderItems {
-				if orderItem.Status == entities.ItemRefunded || orderItem.Status == entities.ItemInitiatedRefund {
-					// Skip items that are already refunded or in the process of being refunded
-					s.log.Infof("Skipping item %s with current status %s for any refund", orderItem.ID, orderItem.Status)
-					continue
-				}
-
+			for _, orderItem := range refundableOrderItems {
 				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity {
 					totalItemCost := orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity)))
 					refundableAmount = refundableAmount.Add(totalItemCost)

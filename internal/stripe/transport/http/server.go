@@ -19,6 +19,7 @@ func RegisterTransport(
 	registerStripeGetPaymentMethod(server, ep.StripeGetPaymentMethodEndpoint, svcTransportClient)
 	registerStripeGetSetupIntent(server, ep.StripeGetSetupIntentEndpoint, svcTransportClient)
 	registerStripeWebhook(server, ep.StripeWebhookEndpoint, svcTransportClient)
+	registerStripeRefund(server, ep.StripeRefundEndpoint, svcTransportClient)
 }
 
 func registerStripeGetPaymentMethods(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -76,6 +77,22 @@ func registerStripeWebhook(server *httpTransport.Server, ep goKitEndpoint.Endpoi
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeStripeWebhookRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerStripeRefund(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "POST"
+	path := "/stripe/refund/{payment_intent_id}"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeStripeRefundRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

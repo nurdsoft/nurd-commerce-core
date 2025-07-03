@@ -199,6 +199,7 @@ definitions:
                 type: string
                 x-go-name: ExpirationDate
         type: object
+        x-go-name: CreatePaymentProfileRequestBody
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     CreatePaymentProfileResponse:
         properties:
@@ -636,6 +637,19 @@ definitions:
         type: object
         x-go-name: Response
         x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/health/service
+    Item:
+        properties:
+            id:
+                format: uuid
+                type: string
+                x-go-name: ID
+            sku:
+                type: string
+                x-go-name: Sku
+            status:
+                $ref: '#/definitions/OrderItemStatus'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     JSON:
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/shared/json
@@ -651,6 +665,17 @@ definitions:
                 x-go-name: Orders
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    ListProductVariantsResponse:
+        properties:
+            data:
+                items:
+                    $ref: '#/definitions/GetProductVariantResponse'
+                type: array
+                x-go-name: Data
+            pagination:
+                $ref: '#/definitions/PaginationMeta'
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
     Order:
         properties:
             cart_id:
@@ -802,6 +827,8 @@ definitions:
             sku:
                 type: string
                 x-go-name: SKU
+            status:
+                $ref: '#/definitions/OrderItemStatus'
             updated_at:
                 format: date-time
                 type: string
@@ -813,6 +840,9 @@ definitions:
                 type: string
                 x-go-name: Width
         type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    OrderItemStatus:
+        type: string
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderItemSummary:
         description: OrderItemSummary represents a summary of an order item (less detailed than OrderItem)
@@ -847,11 +877,33 @@ definitions:
             sku:
                 type: string
                 x-go-name: SKU
+            status:
+                $ref: '#/definitions/OrderItemStatus'
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     OrderStatus:
         type: string
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    PaginationMeta:
+        properties:
+            page:
+                format: int64
+                type: integer
+                x-go-name: Page
+            page_size:
+                format: int64
+                type: integer
+                x-go-name: PageSize
+            total:
+                format: int64
+                type: integer
+                x-go-name: Total
+            total_pages:
+                format: int64
+                type: integer
+                x-go-name: TotalPages
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/product/entities
     Payload:
         properties:
             authAmount:
@@ -1005,6 +1057,23 @@ definitions:
                 x-go-name: SetupIntent
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    StripeRefundRequestBody:
+        properties:
+            amount:
+                type: string
+                x-go-name: Amount
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
+    StripeRefundResponse:
+        properties:
+            id:
+                type: string
+                x-go-name: Id
+            status:
+                type: string
+                x-go-name: Status
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/stripe/entities
     UpdateCartItemRequestBody:
         properties:
             data:
@@ -1064,6 +1133,11 @@ definitions:
             fulfillment_tracking_url:
                 type: string
                 x-go-name: FulfillmentTrackingURL
+            items:
+                items:
+                    $ref: '#/definitions/Item'
+                type: array
+                x-go-name: Items
             status:
                 type: string
                 x-go-name: Status
@@ -1112,6 +1186,7 @@ definitions:
                 type: string
                 x-go-name: WebhookID
         type: object
+        x-go-name: WebhookRequestBody
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/authorizenet/entities
     WishlistItem:
         properties:
@@ -1798,6 +1873,66 @@ paths:
             summary: Create Product
             tags:
                 - products
+    /product-variants:
+        get:
+            description: '### Get a paginated list of product variants with optional filtering'
+            operationId: ListProductVariantsRequest
+            parameters:
+                - default: 1
+                  format: int64
+                  in: query
+                  name: page
+                  type: integer
+                  x-go-name: Page
+                - default: 10
+                  format: int64
+                  in: query
+                  name: page_size
+                  type: integer
+                  x-go-name: PageSize
+                - description: Search term for name/description (optional)
+                  in: query
+                  name: search
+                  type: string
+                  x-go-name: Search
+                - description: Minimum price filter (optional)
+                  in: query
+                  name: min_price
+                  type: string
+                  x-go-name: MinPrice
+                - description: Maximum price filter (optional)
+                  in: query
+                  name: max_price
+                  type: string
+                  x-go-name: MaxPrice
+                - default: created_at
+                  in: query
+                  name: sort_by
+                  type: string
+                  x-go-name: SortBy
+                - default: desc
+                  in: query
+                  name: sort_order
+                  type: string
+                  x-go-name: SortOrder
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ListProductVariantsResponse
+                    schema:
+                        $ref: '#/definitions/ListProductVariantsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: List Product Variants
+            tags:
+                - products
     /product/{product_id}:
         get:
             operationId: GetProductRequest
@@ -1941,6 +2076,40 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Customer Payment Methods
+            tags:
+                - stripe
+    /stripe/refund/{payment_intent_id}:
+        post:
+            operationId: StripeRefundRequest
+            parameters:
+                - description: Payment Intent ID
+                  example: pi_1J2Y3Z4A5B6C7D8E9F0G
+                  in: path
+                  name: payment_intent_id
+                  required: true
+                  type: string
+                  x-go-name: PaymentIntentId
+                - description: Body
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/StripeRefundRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Refund initiated successfully
+                    schema:
+                        $ref: '#/definitions/StripeRefundResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
             tags:
                 - stripe
     /stripe/setup-intent:

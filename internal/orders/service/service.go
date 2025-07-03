@@ -797,6 +797,31 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		data["fulfillment_tracking_url"] = req.Body.FulfillmentTrackingURL
 	}
 
+	if len(req.Body.Items) > 0 {
+		itemsData := make([]map[string]interface{}, 0, len(req.Body.Items))
+		for _, item := range req.Body.Items {
+			itemData := map[string]interface{}{}
+
+			// Add ID if provided
+			if item.ID != uuid.Nil {
+				itemData["id"] = item.ID.String()
+			}
+
+			// Add SKU if provided (keep original key for identification)
+			if item.Sku != "" {
+				itemData["sku"] = item.Sku
+			}
+
+			// Add status if provided
+			if item.Status != nil {
+				itemData["status"] = item.Status
+			}
+
+			itemsData = append(itemsData, itemData)
+		}
+		data["items"] = itemsData
+	}
+
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())
 
 	if err != nil {

@@ -16,7 +16,8 @@ DATA_MIGRATION_FILE = $(shell date +"data-migrations/%Y%m%d%H%M%S-$(name).sql")
 	start-env start-app start-monitoring start-all \
 	stop-env stop-app \
 	build-docker build-container \
-	connect-db create-volume security-check
+	connect-db create-volume security-check \
+	start-test-db stop-test-db test-integration
 
 clean:
 	rm -rf $(NAME)
@@ -157,5 +158,19 @@ update-er: ## Update ER diagram based on local postgres db
 
 help: ## Display available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+start-test-db: ## Start the test database for integration tests
+	docker-compose up -d test-db
+
+stop-test-db: ## Stop the test database
+	docker-compose stop test-db
+
+test-integration: start-test-db ## Run integration tests with test database
+	@echo "Running integration tests..."
+	@until docker-compose exec -T test-db pg_isready -U db; do \
+		echo "Waiting for test database..."; \
+		sleep 2; \
+	done
+	go test -v ./internal/product/repository/...
 
 .DEFAULT_GOAL := help

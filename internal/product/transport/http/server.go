@@ -1,12 +1,12 @@
 package http
 
 import (
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/endpoints"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/encode"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
-	goKitEndpoint "github.com/go-kit/kit/endpoint"
-	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 )
 
 // RegisterTransport for http.
@@ -19,6 +19,7 @@ func RegisterTransport(
 	registerGetProduct(server, ep.GetProductEndpoint, svcTransportClient)
 	registerCreateProductVariant(server, ep.CreateProductVariantEndpoint, svcTransportClient)
 	registerGetProductVariant(server, ep.GetProductVariantEndpoint, svcTransportClient)
+	registerListProductVariants(server, ep.ListProductVariantsEndpoint, svcTransportClient)
 }
 
 func registerCreateProduct(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -53,7 +54,6 @@ func registerGetProduct(server *httpTransport.Server, ep goKitEndpoint.Endpoint,
 	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
-
 func registerCreateProductVariant(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
 	method := "POST"
 	path := "/product/{product_id}/variant"
@@ -77,6 +77,22 @@ func registerGetProductVariant(server *httpTransport.Server, ep goKitEndpoint.En
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeGetProductVariantRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerListProductVariants(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "GET"
+	path := "/product-variants"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeListProductVariantsRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

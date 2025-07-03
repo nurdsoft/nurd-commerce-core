@@ -9,6 +9,24 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type OrderItemStatus string
+
+func (o OrderItemStatus) String() string {
+	return string(o)
+}
+
+const (
+	ItemPending           OrderItemStatus = "pending"
+	ItemProcessing        OrderItemStatus = "processing"
+	ItemShipped           OrderItemStatus = "shipped"
+	ItemFulfillmentFailed OrderItemStatus = "fulfillment_failed"
+	ItemDelivered         OrderItemStatus = "delivered"
+	ItemCancelled         OrderItemStatus = "cancelled"
+	ItemReturnRequested   OrderItemStatus = "return_requested"
+	ItemReturned          OrderItemStatus = "returned"
+	ItemRefunded          OrderItemStatus = "refunded"
+)
+
 // OrderItem represents an item in an order
 type OrderItem struct {
 	ID               uuid.UUID        `json:"id" gorm:"column:id;default:gen_random_uuid()"`
@@ -29,6 +47,7 @@ type OrderItem struct {
 	CreatedAt        time.Time        `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt        time.Time        `json:"updated_at" gorm:"column:updated_at"`
 	SalesforceID     string           `json:"-" gorm:"column:salesforce_id"`
+	Status           OrderItemStatus  `json:"status" db:"status"`
 }
 
 func (m *OrderItem) TableName() string {
@@ -46,4 +65,5 @@ type OrderItemSummary struct {
 	Quantity         int             `json:"quantity" gorm:"column:quantity"`
 	Price            decimal.Decimal `json:"price" gorm:"column:price"`
 	Attributes       *json.JSON      `json:"attributes" db:"attributes"`
+	Status           OrderItemStatus `json:"status" db:"status"`
 }

@@ -589,3 +589,276 @@ func TestProcessPaymentSucceeded_WithAuthorizeNet(t *testing.T) {
 		assert.ErrorContains(t, err, moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID").Error())
 	})
 }
+
+func TestUpdateOrder(t *testing.T) {
+	t.Run("success with status change", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD123456"
+		newStatus := "shipped"
+		trackingNumber := "TRK123456"
+		trackingURL := "https://tracking.example.com/TRK123456"
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Do(func(_ context.Context, data map[string]interface{}, orderID, customerID string) {
+				status, ok := data["status"].(*string)
+				assert.True(t, ok)
+				assert.Equal(t, newStatus, *status)
+			}).
+			Return(nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
+				assert.Equal(t, customerID.String(), req.CustomerID)
+				assert.Equal(t, orderID.String(), req.OrderID)
+				assert.Equal(t, orderRef, req.OrderReference)
+				assert.Equal(t, newStatus, req.Status)
+				close(notifyCallDone)
+			}).
+			Return(nil)
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				Status:                    &newStatus,
+				FulfillmentTrackingNumber: &trackingNumber,
+				FulfillmentTrackingURL:    &trackingURL,
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.NoError(t, err)
+		// wait for async notify call to be done
+		<-notifyCallDone
+	})
+
+	t.Run("success without status change", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD123456"
+		trackingNumber := "TRK123456"
+		shipmentDate := time.Now()
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Do(func(_ context.Context, data map[string]interface{}, orderID, customerID string) {
+				// status should not be in the update data
+				_, hasStatus := data["status"]
+				assert.False(t, hasStatus)
+			}).
+			Return(nil)
+
+		// No webhook notification should be called since status didn't change
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Times(0)
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				FulfillmentTrackingNumber: &trackingNumber,
+				FulfillmentShipmentDate:   &shipmentDate,
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("success with order items update", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD123456"
+		itemID := uuid.New()
+		itemStatus := entities.OrderItemStatus("shipped")
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Do(func(_ context.Context, data map[string]interface{}, orderID, customerID string) {
+				items, ok := data["items"].([]map[string]interface{})
+				assert.True(t, ok)
+				assert.Len(t, items, 1)
+				assert.Equal(t, itemID.String(), items[0]["id"])
+
+				status, ok := items[0]["status"].(*entities.OrderItemStatus)
+				assert.True(t, ok)
+				assert.Equal(t, itemStatus, *status)
+			}).
+			Return(nil)
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				Items: []*entities.Item{
+					{
+						ID:     itemID,
+						Status: &itemStatus,
+					},
+				},
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("error getting order by reference", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderRef := "ORD123456"
+		ctx := context.Background()
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(nil, errors.New("order not found"))
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				Status: nullable.StringPtr("shipped"),
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "order not found")
+	})
+
+	t.Run("error updating order", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD123456"
+		newStatus := "shipped"
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Return(errors.New("database error"))
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				Status: &newStatus,
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "database error")
+	})
+
+	t.Run("success with same status - no notification", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD123456"
+		currentStatus := entities.PaymentSuccess.String()
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByReference(gomock.Any(), orderRef).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Return(nil)
+
+		// No webhook notification should be called since status is the same
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Times(0)
+
+		req := &entities.UpdateOrderRequest{
+			OrderReference: orderRef,
+			Body: &entities.UpdateOrderRequestBody{
+				Status: &currentStatus,
+			},
+		}
+
+		err := s.UpdateOrder(ctx, req)
+
+		assert.NoError(t, err)
+	})
+}

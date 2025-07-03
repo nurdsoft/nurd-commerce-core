@@ -1,8 +1,8 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -91,4 +91,54 @@ type GetProductsRequest struct {
 	//
 	// in:path
 	ProductIDs []uuid.UUID `json:"product_ids"`
+}
+
+// swagger:parameters products ListProductVariantsRequest
+type ListProductVariantsRequest struct {
+	// Page number for pagination. Default: 1
+	//
+	// in:query
+	Page int `json:"page"`
+	// Page size for pagination. Default: 10, max: 100
+	//
+	// in:query
+	PageSize int `json:"page_size"`
+	// Search term for name/description (optional)
+	//
+	// in:query
+	Search *string `json:"search"`
+	// Minimum price filter (optional)
+	//
+	// in:query
+	MinPrice *decimal.Decimal `json:"min_price"`
+	// Maximum price filter (optional)
+	//
+	// in:query
+	MaxPrice *decimal.Decimal `json:"max_price"`
+	// Sort field (optional, default: created_at)
+	//
+	// in:query
+	SortBy *string `json:"sort_by"`
+	// Sort direction (optional, default: desc)
+	//
+	// in:query
+	SortOrder *string `json:"sort_order"`
+	// JSON attributes filter (optional) - format: attributes[key]=value
+	//
+	// swagger:ignore
+	Attributes map[string]string `json:"attributes"`
+}
+
+// swagger:model ListProductVariantsResponse
+type ListProductVariantsResponse struct {
+	Data       []ProductVariant `json:"data"`
+	Pagination PaginationMeta   `json:"pagination"`
+}
+
+// swagger:model PaginationMeta
+type PaginationMeta struct {
+	Page       int `json:"page"`
+	PageSize   int `json:"page_size"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
 }

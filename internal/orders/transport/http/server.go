@@ -1,12 +1,12 @@
 package http
 
 import (
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/endpoints"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/encode"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
-	goKitEndpoint "github.com/go-kit/kit/endpoint"
-	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 )
 
 func RegisterTransport(
@@ -19,6 +19,7 @@ func RegisterTransport(
 	registerGetOrder(server, ep.GetOrderEndpoint, atc)
 	registerCancelOrder(server, ep.CancelOrderEndpoint, atc)
 	registerUpdateOrder(server, ep.UpdateOrderEndpoint, atc)
+	registerRefundOrder(server, ep.RefundOrderEndpoint, atc)
 }
 
 func registerCreateOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -88,6 +89,21 @@ func registerUpdateOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeUpdateOrderRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+}
+
+func registerRefundOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "POST"
+	path := "/orders/{order_reference}/refund"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeRefundOrderRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

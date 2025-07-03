@@ -20,3 +20,8 @@ type PaymentProviderResponse struct {
 	ID     string
 	Status PaymentStatus
 }
+
+type RefundResponse struct {
+	ID     string
+	Status string
+}

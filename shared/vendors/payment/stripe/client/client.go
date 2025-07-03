@@ -17,7 +17,7 @@ type Client interface {
 	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 	GetProvider() providers.ProviderType
-	Refund(_ context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error)
+	Refund(ctx context.Context, req any) (*providers.RefundResponse, error)
 }
 
 func NewClient(svc service.Service) Client {
@@ -65,16 +65,25 @@ func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.Pay
 	}, nil
 }
 
-func (c *localClient) Refund(ctx context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error) {
-	if req == nil {
-		return nil, errors.New("refund request cannot be nil")
+func (c *localClient) Refund(ctx context.Context, req any) (*providers.RefundResponse, error) {
+	stripeReq, ok := req.(*entities.RefundRequest)
+	if !ok {
+		return nil, errors.New("invalid request type for refund")
 	}
 
-	if req.PaymentIntentId == "" {
+	if stripeReq.PaymentIntentId == "" {
 		return nil, errors.New("payment intent ID is required for refund")
 	}
 
-	return c.svc.Refund(ctx, req)
+	res, err := c.svc.Refund(ctx, stripeReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &providers.RefundResponse{
+		ID:     res.Id,
+		Status: res.Status,
+	}, nil
 }
 
 func (c *localClient) GetProvider() providers.ProviderType {

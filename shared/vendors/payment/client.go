@@ -9,4 +9,5 @@ import (
 type Client interface {
 	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
 	GetProvider() providers.ProviderType
+	Refund(ctx context.Context, req any) (*providers.RefundResponse, error)
 }

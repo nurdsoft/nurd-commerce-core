@@ -109,3 +109,18 @@ func (mr *MockClientMockRecorder) GetProvider() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvider", reflect.TypeOf((*MockClient)(nil).GetProvider))
 }
+
+// Refund mocks base method.
+func (m *MockClient) Refund(ctx context.Context, req any) (*providers.RefundResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refund", ctx, req)
+	ret0, _ := ret[0].(*providers.RefundResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Refund indicates an expected call of Refund.
+func (mr *MockClientMockRecorder) Refund(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refund", reflect.TypeOf((*MockClient)(nil).Refund), ctx, req)
+}

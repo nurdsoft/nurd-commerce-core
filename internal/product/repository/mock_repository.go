@@ -125,6 +125,21 @@ func (mr *MockRepositoryMockRecorder) FindVariantBySKU(ctx, sku interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindVariantBySKU", reflect.TypeOf((*MockRepository)(nil).FindVariantBySKU), ctx, sku)
 }
 
+// ListVariants mocks base method.
+func (m *MockRepository) ListVariants(ctx context.Context, req *entities.ListProductVariantsRequest) (*entities.ListProductVariantsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListVariants", ctx, req)
+	ret0, _ := ret[0].(*entities.ListProductVariantsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListVariants indicates an expected call of ListVariants.
+func (mr *MockRepositoryMockRecorder) ListVariants(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVariants", reflect.TypeOf((*MockRepository)(nil).ListVariants), ctx, req)
+}
+
 // Update mocks base method.
 func (m *MockRepository) Update(ctx context.Context, details map[string]interface{}, id string) error {
 	m.ctrl.T.Helper()

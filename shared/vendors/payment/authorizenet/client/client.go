@@ -15,6 +15,7 @@ type Client interface {
 	GetCustomerPaymentMethods(ctx context.Context, req entities.GetPaymentProfilesRequest) (entities.GetPaymentProfilesResponse, error)
 	CreatePayment(ctx context.Context, req any) (providers.PaymentProviderResponse, error)
 	GetProvider() providers.ProviderType
+	Refund(ctx context.Context, req any) (*providers.RefundResponse, error)
 }
 
 func NewClient(svc service.Service) Client {
@@ -52,6 +53,11 @@ func (c *localClient) CreatePayment(ctx context.Context, req any) (providers.Pay
 		ID:     res.ID,
 		Status: mapAuthorizeNetStatusToPaymentStatus(res.Status),
 	}, nil
+}
+
+func (c *localClient) Refund(ctx context.Context, req any) (*providers.RefundResponse, error) {
+	// return not implemented error for now
+	return &providers.RefundResponse{}, errors.New("refund not implemented for AuthorizeNet")
 }
 
 func mapAuthorizeNetStatusToPaymentStatus(status string) providers.PaymentStatus {

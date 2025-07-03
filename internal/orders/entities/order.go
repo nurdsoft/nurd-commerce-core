@@ -70,6 +70,7 @@ type Order struct {
 	CreatedAt                     time.Time           `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt                     time.Time           `json:"updated_at" gorm:"column:updated_at"`
 	ItemsSummary                  []*OrderItemSummary `json:"items_summary,omitempty" gorm:"-"`
+	StripeRefundTotal             *decimal.Decimal    `json:"-" gorm:"column:stripe_refund_total"`
 }
 
 func (m *Order) TableName() string {

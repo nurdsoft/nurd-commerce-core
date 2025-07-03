@@ -240,17 +240,6 @@ func (s *service) GetWebhookEvent(_ context.Context, req *entities.HandleWebhook
 			ObjectId: paymentIntent.ID,
 			Type:     string(event.Type),
 		}, nil
-	case "charge.refunded":
-		var charge stripe.Charge
-		err = json.Unmarshal(event.Data.Raw, &charge)
-		if err != nil {
-			s.logger.Error("Webhook error while parsing refund charge ", err)
-			return nil, err
-		}
-		return &entities.HandleWebhookEventResponse{
-			ObjectId: charge.ID,
-			Type:     string(event.Type),
-		}, nil
 	case "refund.updated":
 		var refund stripe.Refund
 		err = json.Unmarshal(event.Data.Raw, &refund)

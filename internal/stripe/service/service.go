@@ -272,7 +272,14 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 			s.log.Errorf("Error getting refund: %v", err)
 			return nil
 		}
-		s.log.Infof("Refund details: %+v", refund)
+
+		if refund.Status == stripeEntities.StripeRefundSucceeded {
+			err = s.ordersClient.ProcessRefundSucceeded(ctx, event.ObjectId, refund.Amount)
+			if err != nil {
+				s.log.Errorf("Error processing refund succeeded: %v", err)
+				return nil
+			}
+		}
 	default:
 		s.log.Warnf("Unhandled event type: %s", event.Type)
 		return nil

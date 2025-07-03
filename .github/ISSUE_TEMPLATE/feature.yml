@@ -1,0 +1,32 @@
+name: ✨ Feature Request
+description: Create a feature request issue
+labels: ["feature", "enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature in detail
+      description: Brief description about the feature, use cases, and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: Current behavior
+      description: Describe the current behavior of the system, challenges, and limitations
+    validations:
+      required: false
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: Describe the expected behavior of the system, how you think it should work
+    validations:
+      required: false
+  - type: textarea
+    id: comments
+    attributes:
+      label: Any comments
+      description: Share any other information/resources that you think is necessary
+    validations:
+      required: false

@@ -21,6 +21,7 @@ type Repository interface {
 	GetOrderByStripePaymentIntentID(ctx context.Context, stripePaymentIntentID string) (*entities.Order, error)
 	GetOrderByAuthorizeNetPaymentID(ctx context.Context, authorizeNetPaymentID string) (*entities.Order, error)
 	UpdateOrderWithOrderItems(ctx context.Context, orderID uuid.UUID, orderData map[string]interface{}, orderItemsData map[string]interface{}) error
+	GetOrderItemsByStripeRefundID(ctx context.Context, stripeRefundID string) ([]*entities.OrderItem, error)
 }
 
 func New(_ *sql.DB, gormDB *gorm.DB) Repository {

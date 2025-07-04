@@ -18,6 +18,7 @@ type Client interface {
 	GetWebhookEvent(ctx context.Context, req *entities.HandleWebhookEventRequest) (*entities.HandleWebhookEventResponse, error)
 	GetProvider() providers.ProviderType
 	Refund(ctx context.Context, req any) (*providers.RefundResponse, error)
+	GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error)
 }
 
 func NewClient(svc service.Service) Client {
@@ -88,4 +89,8 @@ func (c *localClient) Refund(ctx context.Context, req any) (*providers.RefundRes
 
 func (c *localClient) GetProvider() providers.ProviderType {
 	return providers.ProviderStripe
+}
+
+func (c *localClient) GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error) {
+	return c.svc.GetRefund(ctx, refundId)
 }

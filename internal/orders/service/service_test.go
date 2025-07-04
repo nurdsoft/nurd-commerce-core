@@ -1039,8 +1039,6 @@ func TestRefundOrder(t *testing.T) {
 		tc.mockRepo.EXPECT().
 			UpdateOrderWithOrderItems(gomock.Any(), orderID, gomock.Any(), gomock.Any()).
 			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
-				// Order should be marked as fully refunded since we're refunding all items
-				assert.Equal(t, entities.Refunded, orderData["status"])
 				assert.Equal(t, expectedRefundAmount, orderData["stripe_refund_total"])
 			}).
 			Return(nil)
@@ -1578,158 +1576,371 @@ func TestRefundOrder(t *testing.T) {
 		<-notifyCallDone
 	})
 
-	t.Run("full refund changes order status", func(t *testing.T) {
+}
+
+func TestProcessRefundSucceeded(t *testing.T) {
+	t.Run("success with stripe refund - partial refund", func(t *testing.T) {
 		tc := setupTestController(t)
 		s := newServiceUnderTest(tc)
 
 		orderID := uuid.New()
 		customerID := uuid.New()
-		orderRef := "ORD123456"
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
 		orderItemID1 := uuid.New()
 		orderItemID2 := uuid.New()
-		paymentIntentID := "pi_123"
-		refundID := "re_123"
-		itemSKU1 := "SKU123"
-		itemSKU2 := "SKU456"
-		itemPrice := decimal.NewFromInt(50)
-		totalRefundAmount := decimal.NewFromInt(150) // 3 items * 50 each
 
 		ctx := context.Background()
 
 		existingOrder := &entities.Order{
-			ID:                    orderID,
-			CustomerID:            customerID,
-			OrderReference:        orderRef,
-			Status:                entities.PaymentSuccess,
-			Total:                 decimal.NewFromInt(150),
-			StripePaymentIntentID: &paymentIntentID,
+			ID:         orderID,
+			CustomerID: customerID,
+			Status:     entities.PaymentSuccess,
 		}
 
-		// Total items: 3 (item1: 1, item2: 2), refunding all 3 items
 		orderItems := []*entities.OrderItem{
 			{
-				ID:       orderItemID1,
-				OrderID:  orderID,
-				SKU:      itemSKU1,
-				Price:    itemPrice,
-				Quantity: 1,
-				Status:   entities.ItemProcessing,
+				ID:             orderItemID1,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
 			},
 			{
-				ID:       orderItemID2,
-				OrderID:  orderID,
-				SKU:      itemSKU2,
-				Price:    itemPrice,
-				Quantity: 2,
-				Status:   entities.ItemProcessing,
+				ID:             orderItemID2,
+				OrderID:        orderID,
+				Status:         entities.ItemDelivered,
+				StripeRefundID: "",
 			},
 		}
 
 		tc.mockRepo.EXPECT().
-			GetOrderByReference(gomock.Any(), orderRef).
-			Return(existingOrder, nil)
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
 
 		tc.mockRepo.EXPECT().
-			GetOrderItemsByID(gomock.Any(), orderID).
-			Return(orderItems, nil)
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
 
 		tc.mockPayment.EXPECT().
 			GetProvider().
 			Return(providers.ProviderStripe)
 
-		tc.mockPayment.EXPECT().
-			Refund(gomock.Any(), gomock.Any()).
-			Do(func(_ context.Context, req *stripeEntities.RefundRequest) {
-				assert.Equal(t, paymentIntentID, req.PaymentIntentId)
-				assert.Equal(t, totalRefundAmount, req.Amount)
+		tc.mockRepo.EXPECT().
+			UpdateOrderWithOrderItems(gomock.Any(), orderID, gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
+				// Order should NOT be marked as refunded since not all items are refunded
+				_, hasStatus := orderData["status"]
+				assert.False(t, hasStatus, "Order status should not change for partial refund")
+
+				// Check item refund data
+				itemData, exists := itemsData[orderItemID1.String()]
+				assert.True(t, exists)
+
+				itemMap := itemData.(map[string]interface{})
+				assert.Equal(t, entities.ItemRefunded, itemMap["status"])
+				assert.Equal(t, refundAmount.InexactFloat64(), itemMap["stripe_refund_amount"])
 			}).
-			Return(&providers.RefundResponse{
-				ID:     refundID,
-				Status: stripeEntities.StripeRefundSucceeded,
-			}, nil)
+			Return(nil)
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("success with stripe refund - full refund", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(100)
+		orderItemID1 := uuid.New()
+		orderItemID2 := uuid.New()
+		existingRefundTotal := decimal.NewFromInt(50)
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:                orderID,
+			CustomerID:        customerID,
+			Status:            entities.PaymentSuccess,
+			StripeRefundTotal: &existingRefundTotal,
+		}
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:             orderItemID1,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
+			},
+			{
+				ID:             orderItemID2,
+				OrderID:        orderID,
+				Status:         entities.ItemRefunded, // Already refunded
+				StripeRefundID: "re_456",
+			},
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
 
 		tc.mockRepo.EXPECT().
 			UpdateOrderWithOrderItems(gomock.Any(), orderID, gomock.Any(), gomock.Any()).
 			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
-				// Order SHOULD be marked as fully refunded since we're refunding all 3 items
+				// Order SHOULD be marked as refunded since all items are now refunded
 				status, hasStatus := orderData["status"]
 				assert.True(t, hasStatus, "Order status should change for full refund")
 				assert.Equal(t, entities.Refunded, status)
 
-				// Check stripe refund total
-				stripeRefundTotal, hasRefundTotal := orderData["stripe_refund_total"]
-				assert.True(t, hasRefundTotal)
-				assert.Equal(t, totalRefundAmount, stripeRefundTotal)
+				// Check updated refund total
+				expectedTotal := existingRefundTotal.Add(refundAmount)
+				assert.Equal(t, expectedTotal, orderData["stripe_refund_total"])
 
-				// Check both items are marked for refund
-				assert.Len(t, itemsData, 2)
+				// Check item refund data
+				itemData, exists := itemsData[orderItemID1.String()]
+				assert.True(t, exists)
 
-				// Check item1 refund data
-				itemData1, exists1 := itemsData[orderItemID1.String()]
-				assert.True(t, exists1)
-				itemMap1, ok1 := itemData1.(map[string]interface{})
-				assert.True(t, ok1)
-				assert.Equal(t, entities.ItemInitiatedRefund.String(), itemMap1["status"])
-				assert.Equal(t, refundID, itemMap1["stripe_refund_id"])
-
-				// Check item2 refund data
-				itemData2, exists2 := itemsData[orderItemID2.String()]
-				assert.True(t, exists2)
-				itemMap2, ok2 := itemData2.(map[string]interface{})
-				assert.True(t, ok2)
-				assert.Equal(t, entities.ItemInitiatedRefund.String(), itemMap2["status"])
-				assert.Equal(t, refundID, itemMap2["stripe_refund_id"])
+				itemMap := itemData.(map[string]interface{})
+				assert.Equal(t, entities.ItemRefunded, itemMap["status"])
+				assert.Equal(t, refundAmount.InexactFloat64(), itemMap["stripe_refund_amount"])
 			}).
 			Return(nil)
 
-		notifyCallDone := make(chan struct{})
-		tc.mockWebhook.EXPECT().
-			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
-			Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
-				assert.Equal(t, customerID.String(), req.CustomerID)
-				assert.Equal(t, orderID.String(), req.OrderID)
-				assert.Equal(t, orderRef, req.OrderReference)
-				assert.Equal(t, entities.Refunded.String(), req.Status)
-				close(notifyCallDone)
-			}).
-			Return(nil)
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
 
-		req := &entities.RefundOrderRequest{
-			OrderReference: orderRef,
-			Body: &entities.RefundOrderRequestBody{
-				Items: []*entities.RefundItem{
-					{
-						Sku:      itemSKU1,
-						Quantity: 1,
-					},
-					{
-						Sku:      itemSKU2,
-						Quantity: 2,
-					},
-				},
+		assert.NoError(t, err)
+	})
+
+	t.Run("error - no order items found for refund ID", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
+
+		ctx := context.Background()
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return([]*entities.OrderItem{}, nil)
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.NoError(t, err) // Should not return error but log and return nil
+	})
+
+	t.Run("error - failed to fetch order items by refund ID", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
+
+		ctx := context.Background()
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(nil, errors.New("database error"))
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_ITEMS_NOT_FOUND_BY_REFUND_ID").Error())
+	})
+
+	t.Run("error - failed to fetch order by ID", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
+		orderItemID := uuid.New()
+
+		ctx := context.Background()
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:             orderItemID,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
 			},
 		}
 
-		resp, err := s.RefundOrder(ctx, req)
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(nil, errors.New("order not found"))
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_ID").Error())
+	})
+
+	t.Run("order already in refunded state", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
+		orderItemID := uuid.New()
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:         orderID,
+			CustomerID: customerID,
+			Status:     entities.Refunded, // Already refunded
+		}
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:             orderItemID,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
+			},
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.NoError(t, err) // Should not return error but log and return nil
+	})
+
+	t.Run("success with new refund total when no existing refund", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(100)
+		orderItemID := uuid.New()
+
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:                orderID,
+			CustomerID:        customerID,
+			Status:            entities.PaymentSuccess,
+			StripeRefundTotal: nil, // No existing refund
+		}
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:             orderItemID,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
+			},
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			UpdateOrderWithOrderItems(gomock.Any(), orderID, gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
+				// Order should be marked as refunded since all items are now refunded
+				status, hasStatus := orderData["status"]
+				assert.True(t, hasStatus)
+				assert.Equal(t, entities.Refunded, status)
+
+				// Check new refund total
+				assert.Equal(t, refundAmount, orderData["stripe_refund_total"])
+
+				// Check item refund data
+				itemData, exists := itemsData[orderItemID.String()]
+				assert.True(t, exists)
+
+				itemMap := itemData.(map[string]interface{})
+				assert.Equal(t, entities.ItemRefunded, itemMap["status"])
+				assert.Equal(t, refundAmount.InexactFloat64(), itemMap["stripe_refund_amount"])
+			}).
+			Return(nil)
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
 
 		assert.NoError(t, err)
-		assert.NotNil(t, resp)
-		assert.Equal(t, totalRefundAmount, resp.TotalRefundableAmount)
-		assert.Len(t, resp.RefundableItems, 2)
+	})
 
-		// Check first refundable item
-		assert.Equal(t, orderItemID1.String(), resp.RefundableItems[0].ItemId)
-		assert.Equal(t, itemSKU1, resp.RefundableItems[0].Sku)
-		assert.Equal(t, 1, resp.RefundableItems[0].Quantity)
-		assert.True(t, resp.RefundableItems[0].RefundInitiated)
+	t.Run("unsupported payment provider", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
 
-		// Check second refundable item
-		assert.Equal(t, orderItemID2.String(), resp.RefundableItems[1].ItemId)
-		assert.Equal(t, itemSKU2, resp.RefundableItems[1].Sku)
-		assert.Equal(t, 2, resp.RefundableItems[1].Quantity)
-		assert.True(t, resp.RefundableItems[1].RefundInitiated)
+		orderID := uuid.New()
+		customerID := uuid.New()
+		refundID := "re_123"
+		refundAmount := decimal.NewFromInt(50)
+		orderItemID := uuid.New()
 
-		// wait for async notify call to be done
-		<-notifyCallDone
+		ctx := context.Background()
+
+		existingOrder := &entities.Order{
+			ID:         orderID,
+			CustomerID: customerID,
+			Status:     entities.PaymentSuccess,
+		}
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:             orderItemID,
+				OrderID:        orderID,
+				Status:         entities.ItemInitiatedRefund,
+				StripeRefundID: refundID,
+			},
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByStripeRefundID(gomock.Any(), refundID).
+			Return(orderItems, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		randomProvider := providers.ProviderType("random_provider")
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(randomProvider)
+
+		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
+
+		assert.NoError(t, err) // Should not return error but log the unsupported provider
 	})
 }

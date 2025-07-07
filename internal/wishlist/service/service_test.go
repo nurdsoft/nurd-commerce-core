@@ -328,10 +328,11 @@ func Test_service_GetWishlist(t *testing.T) {
 				ProductID: uuid.New(),
 			},
 		}
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), req.Limit, "").Return(wishlist, "", nil).Times(1)
+		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), req.Limit, "").Return(wishlist, "", int64(10), nil).Times(1)
 		resp, err := svc.GetWishlist(ctx, req)
 		assert.NoError(t, err)
 		assert.Equal(t, wishlist, resp.Items)
+		assert.Equal(t, int64(10), resp.Total)
 	})
 
 	t.Run("No customer ID in context", func(t *testing.T) {
@@ -351,7 +352,7 @@ func Test_service_GetWishlist(t *testing.T) {
 		}
 
 		expectedErr := errors.New("database error")
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), req.Limit, req.Cursor).Return(nil, "", expectedErr).Times(1)
+		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), req.Limit, req.Cursor).Return(nil, "", int64(0), expectedErr).Times(1)
 
 		resp, err := svc.GetWishlist(ctx, req)
 
@@ -373,7 +374,7 @@ func Test_service_GetWishlist(t *testing.T) {
 		expectedNextCursor := "next-page-token"
 
 		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), req.Limit, req.Cursor).
-			Return(wishlist, expectedNextCursor, nil).Times(1)
+			Return(wishlist, expectedNextCursor, int64(10), nil).Times(1)
 
 		resp, err := svc.GetWishlist(ctx, req)
 
@@ -467,7 +468,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 				CustomerID: customerUUID,
 				ProductID:  uuid.New(),
 			},
-		}, "", nil).Times(1)
+		}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 		assert.NoError(t, err)
@@ -498,7 +499,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 				CustomerID: customerUUID,
 				ProductID:  uuid.New(),
 			},
-		}, "", nil).Times(1)
+		}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -516,7 +517,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		}, nil).Times(1)
 
 		expectedErr := errors.New("repository error")
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return(nil, "", expectedErr).Times(1)
+		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return(nil, "", int64(0), expectedErr).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -534,7 +535,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		}, nil).Times(1)
 
 		// Return empty wishlist
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{}, "", nil).Times(1)
+		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -576,7 +577,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 				ProductID:  wishlistOnlyProductID,
 				CreatedAt:  creationTime,
 			},
-		}, "", nil).Times(1)
+		}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -618,7 +619,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 				ProductID:  product2ID,
 				CreatedAt:  newerTime, // Newer item
 			},
-		}, "", nil).Times(1)
+		}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 

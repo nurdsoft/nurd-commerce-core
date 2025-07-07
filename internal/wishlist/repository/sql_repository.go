@@ -56,7 +56,13 @@ func (r *sqlRepository) DeleteFromWishlist(ctx context.Context, customerID strin
 	return nil
 }
 
-func (r *sqlRepository) GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, error) {
+func (r *sqlRepository) GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, int64, error) {
+	var total int64
+	if err := r.gormDB.WithContext(ctx).Model(&entities.WishlistItem{}).
+		Where("customer_id = ?", customerID).Count(&total).Error; err != nil {
+		return nil, "", 0, err
+	}
+
 	var wishlistItems []*entities.WishlistItem
 	query := r.gormDB.WithContext(ctx).Where("customer_id = ?", customerID).Order("created_at DESC")
 
@@ -67,13 +73,13 @@ func (r *sqlRepository) GetWishlist(ctx context.Context, customerID string, limi
 	if cursor != "" {
 		decodedCursor, err := base64.StdEncoding.DecodeString(cursor)
 		if err != nil {
-			return nil, "", err
+			return nil, "", 0, err
 		}
 		query = query.Where("created_at < ?", string(decodedCursor))
 	}
 
 	if err := query.Find(&wishlistItems).Error; err != nil {
-		return nil, "", err
+		return nil, "", 0, err
 	}
 
 	var nextCursor string
@@ -87,7 +93,7 @@ func (r *sqlRepository) GetWishlist(ctx context.Context, customerID string, limi
 		nextCursor = ""
 	}
 
-	return wishlistItems, nextCursor, nil
+	return wishlistItems, nextCursor, total, nil
 }
 
 func (r *sqlRepository) BulkRemoveFromWishlist(ctx context.Context, customerID uuid.UUID, productIDs []uuid.UUID) error {

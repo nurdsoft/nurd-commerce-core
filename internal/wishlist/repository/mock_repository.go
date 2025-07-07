@@ -66,13 +66,14 @@ func (mr *MockRepositoryMockRecorder) DeleteFromWishlist(ctx, customerID, produc
 }
 
 // GetWishlist mocks base method.
-func (m *MockRepository) GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, error) {
+func (m *MockRepository) GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWishlist", ctx, customerID, limit, cursor)
 	ret0, _ := ret[0].([]*entities.WishlistItem)
 	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret2, _ := ret[2].(int64)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // GetWishlist indicates an expected call of GetWishlist.

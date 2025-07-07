@@ -14,7 +14,7 @@ import (
 type Repository interface {
 	UpdateWishlist(ctx context.Context, customerID string, productIDs []uuid.UUID) error
 	DeleteFromWishlist(ctx context.Context, customerID string, productID uuid.UUID) error
-	GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, error)
+	GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, int64, error)
 	BulkRemoveFromWishlist(ctx context.Context, customerID uuid.UUID, productIDs []uuid.UUID) error
 	GetWishlistProductTimestamps(customerID string, productIDs []uuid.UUID) (map[string]time.Time, error)
 }

@@ -149,7 +149,7 @@ func (s *service) GetWishlist(ctx context.Context, req *entities.GetWishlistRequ
 	}
 	var items []*entities.WishlistItem
 
-	items, nextCursor, err := s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
+	items, nextCursor, total, err := s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +157,7 @@ func (s *service) GetWishlist(ctx context.Context, req *entities.GetWishlistRequ
 	return &entities.GetWishlistResponse{
 		Items:      items,
 		NextCursor: nextCursor,
+		Total:      total,
 	}, nil
 }
 
@@ -210,7 +211,7 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 
 	go func() {
 		defer wg.Done()
-		wishlistItems, nextCursor, wishlistItemsErr = s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
+		wishlistItems, nextCursor, _, wishlistItemsErr = s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
 	}()
 
 	wg.Wait()

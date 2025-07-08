@@ -25,6 +25,7 @@ const (
 	ItemReturnRequested   OrderItemStatus = "return_requested"
 	ItemReturned          OrderItemStatus = "returned"
 	ItemRefunded          OrderItemStatus = "refunded"
+	ItemInitiatedRefund   OrderItemStatus = "initiated_refund"
 )
 
 // OrderItem represents an item in an order
@@ -48,6 +49,7 @@ type OrderItem struct {
 	UpdatedAt        time.Time        `json:"updated_at" gorm:"column:updated_at"`
 	SalesforceID     string           `json:"-" gorm:"column:salesforce_id"`
 	Status           OrderItemStatus  `json:"status" db:"status"`
+	StripeRefundID   string           `json:"-" gorm:"column:stripe_refund_id"`
 }
 
 func (m *OrderItem) TableName() string {

@@ -110,6 +110,21 @@ func (mr *MockClientMockRecorder) GetProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvider", reflect.TypeOf((*MockClient)(nil).GetProvider))
 }
 
+// GetRefund mocks base method.
+func (m *MockClient) GetRefund(ctx context.Context, refundId string) (*entities.RefundResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRefund", ctx, refundId)
+	ret0, _ := ret[0].(*entities.RefundResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRefund indicates an expected call of GetRefund.
+func (mr *MockClientMockRecorder) GetRefund(ctx, refundId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefund", reflect.TypeOf((*MockClient)(nil).GetRefund), ctx, refundId)
+}
+
 // GetSetupIntent mocks base method.
 func (m *MockClient) GetSetupIntent(ctx context.Context, customerId *string) (*entities.GetSetupIntentResponse, error) {
 	m.ctrl.T.Helper()
@@ -141,16 +156,16 @@ func (mr *MockClientMockRecorder) GetWebhookEvent(ctx, req interface{}) *gomock.
 }
 
 // Refund mocks base method.
-func (m *MockClient) Refund(arg0 context.Context, req *entities.RefundRequest) (*entities.RefundResponse, error) {
+func (m *MockClient) Refund(ctx context.Context, req any) (*providers.RefundResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Refund", arg0, req)
-	ret0, _ := ret[0].(*entities.RefundResponse)
+	ret := m.ctrl.Call(m, "Refund", ctx, req)
+	ret0, _ := ret[0].(*providers.RefundResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Refund indicates an expected call of Refund.
-func (mr *MockClientMockRecorder) Refund(arg0, req interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Refund(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refund", reflect.TypeOf((*MockClient)(nil).Refund), arg0, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refund", reflect.TypeOf((*MockClient)(nil).Refund), ctx, req)
 }

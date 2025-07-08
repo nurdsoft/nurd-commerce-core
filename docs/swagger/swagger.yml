@@ -624,6 +624,10 @@ definitions:
             next_cursor:
                 type: string
                 x-go-name: NextCursor
+            total:
+                format: int64
+                type: integer
+                x-go-name: Total
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities
     HealthCheckResponse:
@@ -1968,66 +1972,6 @@ paths:
             summary: Create Product
             tags:
                 - products
-    /product-variants:
-        get:
-            description: '### Get a paginated list of product variants with optional filtering'
-            operationId: ListProductVariantsRequest
-            parameters:
-                - default: 1
-                  format: int64
-                  in: query
-                  name: page
-                  type: integer
-                  x-go-name: Page
-                - default: 10
-                  format: int64
-                  in: query
-                  name: page_size
-                  type: integer
-                  x-go-name: PageSize
-                - description: Search term for name/description (optional)
-                  in: query
-                  name: search
-                  type: string
-                  x-go-name: Search
-                - description: Minimum price filter (optional)
-                  in: query
-                  name: min_price
-                  type: string
-                  x-go-name: MinPrice
-                - description: Maximum price filter (optional)
-                  in: query
-                  name: max_price
-                  type: string
-                  x-go-name: MaxPrice
-                - default: created_at
-                  in: query
-                  name: sort_by
-                  type: string
-                  x-go-name: SortBy
-                - default: desc
-                  in: query
-                  name: sort_order
-                  type: string
-                  x-go-name: SortOrder
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: ListProductVariantsResponse
-                    schema:
-                        $ref: '#/definitions/ListProductVariantsResponse'
-                "400":
-                    description: Bad Request
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: List Product Variants
-            tags:
-                - products
     /product/{product_id}:
         get:
             operationId: GetProductRequest
@@ -2119,6 +2063,66 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Product Variant
+            tags:
+                - products
+    /product/variants:
+        get:
+            description: '### Get a paginated list of product variants with optional filtering'
+            operationId: ListProductVariantsRequest
+            parameters:
+                - default: 1
+                  format: int64
+                  in: query
+                  name: page
+                  type: integer
+                  x-go-name: Page
+                - format: int64
+                  in: query
+                  maximum: 100
+                  name: page_size
+                  type: integer
+                  x-go-name: PageSize
+                - description: Search term for name/description (optional)
+                  in: query
+                  name: search
+                  type: string
+                  x-go-name: Search
+                - description: Minimum price filter (optional)
+                  in: query
+                  name: min_price
+                  type: string
+                  x-go-name: MinPrice
+                - description: Maximum price filter (optional)
+                  in: query
+                  name: max_price
+                  type: string
+                  x-go-name: MaxPrice
+                - default: created_at)
+                  in: query
+                  name: sort_by
+                  type: string
+                  x-go-name: SortBy
+                - default: desc)
+                  in: query
+                  name: sort_order
+                  type: string
+                  x-go-name: SortOrder
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ListProductVariantsResponse
+                    schema:
+                        $ref: '#/definitions/ListProductVariantsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: List Product Variants
             tags:
                 - products
     /stripe/payment-method/{payment_method_id}:

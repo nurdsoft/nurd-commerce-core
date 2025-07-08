@@ -263,6 +263,23 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 			s.log.Errorf("Error processing payment intent failed: %v", err)
 			return nil
 		}
+
+	// TODO: handle refund.failed
+	case "refund.updated":
+		s.log.Info("Refund updated ", "refund_id", event.ObjectId)
+		refund, err := s.stripeClient.GetRefund(ctx, event.ObjectId)
+		if err != nil {
+			s.log.Errorf("Error getting refund: %v", err)
+			return nil
+		}
+
+		if refund.Status == stripeEntities.StripeRefundSucceeded {
+			err = s.ordersClient.ProcessRefundSucceeded(ctx, event.ObjectId, refund.Amount)
+			if err != nil {
+				s.log.Errorf("Error processing refund succeeded: %v", err)
+				return nil
+			}
+		}
 	default:
 		s.log.Warnf("Unhandled event type: %s", event.Type)
 		return nil

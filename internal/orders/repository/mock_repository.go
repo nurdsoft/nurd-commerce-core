@@ -139,6 +139,21 @@ func (mr *MockRepositoryMockRecorder) GetOrderItemsByID(ctx, orderID interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItemsByID", reflect.TypeOf((*MockRepository)(nil).GetOrderItemsByID), ctx, orderID)
 }
 
+// GetOrderItemsByStripeRefundID mocks base method.
+func (m *MockRepository) GetOrderItemsByStripeRefundID(ctx context.Context, stripeRefundID string) ([]*entities.OrderItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderItemsByStripeRefundID", ctx, stripeRefundID)
+	ret0, _ := ret[0].([]*entities.OrderItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderItemsByStripeRefundID indicates an expected call of GetOrderItemsByStripeRefundID.
+func (mr *MockRepositoryMockRecorder) GetOrderItemsByStripeRefundID(ctx, stripeRefundID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItemsByStripeRefundID", reflect.TypeOf((*MockRepository)(nil).GetOrderItemsByStripeRefundID), ctx, stripeRefundID)
+}
+
 // ListOrders mocks base method.
 func (m *MockRepository) ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string, includeItems bool) ([]*entities.Order, string, error) {
 	m.ctrl.T.Helper()

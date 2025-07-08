@@ -6,6 +6,7 @@ import "time"
 type GetWishlistResponse struct {
 	Items      []*WishlistItem `json:"items"`
 	NextCursor string          `json:"next_cursor"`
+	Total      int64           `json:"total"` // Total number of items in the wishlist
 }
 
 // swagger:model GetWishlistProductTimestampsResponse

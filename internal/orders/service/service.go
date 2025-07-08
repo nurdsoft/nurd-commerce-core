@@ -42,6 +42,8 @@ type Service interface {
 	ProcessPaymentSucceeded(ctx context.Context, paymentID string) error
 	ProcessPaymentFailed(ctx context.Context, paymentID string) error
 	UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequest) error
+	RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error)
+	ProcessRefundSucceeded(ctx context.Context, refundId string, refundAmount decimal.Decimal) error
 }
 
 type service struct {
@@ -845,6 +847,248 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 				s.log.Errorf("Error notifying order status change: %v", err)
 			}
 		}()
+	}
+
+	return nil
+}
+
+// swagger:route POST /orders/{order_reference}/refund orders RefundOrderRequest
+//
+// # Initiate an Order Refund
+// ### Refund order items by SKU & Quantity
+//
+// Produces:
+// - application/json
+//
+// Responses:
+//
+//	200: RefundOrderResponse Order refund initiated successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error) {
+	order, err := s.repo.GetOrderByReference(ctx, req.OrderReference)
+	if err != nil {
+		return nil, moduleErrors.NewAPIError("ORDER_NOT_FOUND")
+	}
+
+	// TODO: Improve by adding a FSM for Order State Machine
+
+	// disable multiple refunds for the same order
+	if order.Status == entities.Refunded {
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Order is not eligible for refund")
+	}
+
+	// get order items
+	orderItems, err := s.repo.GetOrderItemsByID(ctx, order.ID)
+	if err != nil {
+		s.log.Errorf("Error fetching order items: %v", err)
+		return nil, moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS")
+	}
+
+	// iterate over order items and request body items to check if they match by sku
+	var refundableAmount decimal.Decimal
+	var shouldChangeOrderStatus bool
+	var totalRefundableQuantity, totalOrderQuantity int
+	orderItemsRefundData := make(map[string]interface{})
+	orderRefundData := make(map[string]interface{})
+	refundableItems := make([]*entities.RefundableItem, 0)
+	refundableOrderItems := make([]*entities.OrderItem, 0)
+
+	for _, orderItem := range orderItems {
+		// Calculate total order quantity
+		totalOrderQuantity += orderItem.Quantity
+		// filter order items that can be refunded
+		if orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund {
+			refundableOrderItems = append(refundableOrderItems, orderItem)
+		}
+	}
+
+	for _, item := range req.Body.Items {
+		if item.Sku != "" {
+			for _, orderItem := range refundableOrderItems {
+				if orderItem.SKU == item.Sku && orderItem.Quantity >= item.Quantity {
+					totalItemCost := orderItem.Price.Mul(decimal.NewFromInt(int64(item.Quantity)))
+					refundableAmount = refundableAmount.Add(totalItemCost)
+					// quantity of items that are valid for refund
+					totalRefundableQuantity += item.Quantity
+
+					orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
+						"status":               entities.ItemInitiatedRefund.String(),
+						"stripe_refund_amount": totalItemCost.InexactFloat64(),
+					}
+					refundableItems = append(refundableItems, &entities.RefundableItem{
+						ItemId:   orderItem.ID.String(),
+						Sku:      orderItem.SKU,
+						Quantity: item.Quantity,
+						Price:    orderItem.Price,
+					})
+					break
+				}
+			}
+		}
+	}
+
+	if refundableAmount.IsZero() {
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "No refundable items found or amount is zero")
+	}
+
+	if refundableAmount.GreaterThan(order.Total) {
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Refundable amount exceeds order total")
+	}
+
+	// Check if we're refunding all available order items
+	if totalRefundableQuantity == totalOrderQuantity {
+		shouldChangeOrderStatus = true
+	}
+
+	switch s.paymentClient.GetProvider() {
+	case providers.ProviderStripe:
+		refundResponse, err := s.paymentClient.Refund(ctx, &stripeEntities.RefundRequest{
+			PaymentIntentId: *order.StripePaymentIntentID,
+			Amount:          refundableAmount,
+		})
+		if err != nil {
+			s.log.Errorf("Error processing refund via Stripe: %v", err)
+			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Error processing refund via Stripe")
+		}
+
+		if refundResponse.Status != stripeEntities.StripeRefundSucceeded && refundResponse.Status != stripeEntities.StripeRefundPending {
+			s.log.Errorf("Stripe refund failed with status: %s and ID: %s", refundResponse.Status, refundResponse.ID)
+			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Stripe refund failed")
+		}
+		// iterate over orderItemsRefundData and set the stripe refund id
+		for orderItemID, data := range orderItemsRefundData {
+			data.(map[string]interface{})["stripe_refund_id"] = refundResponse.ID
+			data.(map[string]interface{})["stripe_refund_created_at"] = time.Now().UTC()
+			orderItemsRefundData[orderItemID] = data
+		}
+		var stripeTotalRefund decimal.Decimal
+
+		if shouldChangeOrderStatus {
+			// update order refund total for the whole order
+			if order.StripeRefundTotal != nil {
+				stripeTotalRefund = order.StripeRefundTotal.Add(refundableAmount)
+			} else {
+				stripeTotalRefund = refundableAmount
+			}
+			orderRefundData["stripe_refund_total"] = stripeTotalRefund
+		}
+
+		// Stripe doesn't care about individual item refunds, it just processes the amount given
+		// so its safe to mark all refundable items as refunded, assuming the above call succeeded
+		for _, item := range refundableItems {
+			if item.ItemId != "" {
+				item.RefundInitiated = true
+			}
+		}
+	default:
+		return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Payment provider not supported for refunds")
+	}
+
+	// update order items with refund data
+	err = s.repo.UpdateOrderWithOrderItems(ctx, order.ID, orderRefundData, orderItemsRefundData)
+	if err != nil {
+		s.log.Errorf("Error updating order items with refund data: %v", err)
+	}
+
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			CustomerID:     order.CustomerID.String(),
+			OrderID:        order.ID.String(),
+			OrderReference: order.OrderReference,
+			Status:         entities.Refunded.String(),
+		})
+		if err != nil {
+			s.log.Errorf("Error notifying order status change: %v", err)
+		}
+	}()
+
+	return &entities.RefundOrderResponse{
+		TotalRefundableAmount: refundableAmount,
+		RefundableItems:       refundableItems,
+	}, nil
+}
+
+func (s *service) ProcessRefundSucceeded(ctx context.Context, refundId string, refundAmount decimal.Decimal) error {
+	s.log.Info("Processing refund succeeded for refund ID: %s with amount: %s", refundId, refundAmount.String())
+
+	orderItems, err := s.repo.GetOrderItemsByStripeRefundID(ctx, refundId)
+	if err != nil {
+		s.log.Errorf("Error fetching order items by refund ID: %v", err)
+		return moduleErrors.NewAPIError("ORDER_ITEMS_NOT_FOUND_BY_REFUND_ID")
+	}
+
+	if len(orderItems) == 0 {
+		s.log.Errorf("No order items found for refund ID: %s", refundId)
+		return nil
+	}
+
+	// Assuming refundId is unique for each order item, all the resulting order items should have the same order ID
+	orderID := orderItems[0].OrderID
+	orderItemsRefundData := make(map[string]interface{})
+
+	order, err := s.repo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		s.log.Errorf("Error fetching order by ID: %v", err)
+		return moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_ID")
+	}
+
+	if order.Status == entities.Refunded {
+		s.log.Errorf("Order %s is already in refunded state", orderID)
+		return nil
+	}
+
+	var shouldChangeOrderStatus bool
+	var itemsRefunded int
+	orderRefundData := make(map[string]interface{})
+
+	// gather count of items that are already refunded
+	for _, item := range orderItems {
+		if item.Status == entities.ItemRefunded {
+			itemsRefunded++
+		}
+	}
+
+	paymentProvider := s.paymentClient.GetProvider()
+
+	switch paymentProvider {
+	case providers.ProviderStripe:
+		for _, item := range orderItems {
+			if item.StripeRefundID == refundId && item.Status == entities.ItemInitiatedRefund {
+				orderItemsRefundData[item.ID.String()] = map[string]interface{}{
+					"status":               entities.ItemRefunded,
+					"stripe_refund_amount": refundAmount.InexactFloat64(),
+				}
+				itemsRefunded++
+			}
+		}
+
+		if itemsRefunded == len(orderItems) {
+			shouldChangeOrderStatus = true
+		}
+
+		if shouldChangeOrderStatus {
+			// refund status for partial refunds is only available at item level
+			// the order status will be set to refunded only if all items are refunded)
+			orderRefundData["status"] = entities.Refunded
+
+			if order.StripeRefundTotal != nil {
+				orderRefundData["stripe_refund_total"] = order.StripeRefundTotal.Add(refundAmount)
+			} else {
+				orderRefundData["stripe_refund_total"] = refundAmount
+			}
+		}
+	default:
+		s.log.Errorf("Payment provider %s does not support refund processing", paymentProvider)
+		return nil
+	}
+
+	// update order items with refund data
+	err = s.repo.UpdateOrderWithOrderItems(ctx, orderID, orderRefundData, orderItemsRefundData)
+	if err != nil {
+		s.log.Errorf("Error updating order items with refund data: %v", err)
 	}
 
 	return nil

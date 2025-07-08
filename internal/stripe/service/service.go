@@ -12,7 +12,6 @@ import (
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	stripeClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/client"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe/entities"
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +20,6 @@ type Service interface {
 	GetSetupIntent(ctx context.Context) (*entities.GetSetupIntentResponse, error)
 	HandleStripeWebhook(ctx context.Context, req *entities.StripeWebhookRequest) error
 	GetPaymentMethod(ctx context.Context, req *entities.StripeGetPaymentMethodRequest) (*entities.GetPaymentMethodResponse, error)
-	InitiateRefund(ctx context.Context, req *entities.StripeRefundRequest) (*entities.StripeRefundResponse, error)
 }
 
 type service struct {
@@ -265,56 +263,27 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 			s.log.Errorf("Error processing payment intent failed: %v", err)
 			return nil
 		}
+
+	// TODO: handle refund.failed
+	case "refund.updated":
+		s.log.Info("Refund updated ", "refund_id", event.ObjectId)
+		refund, err := s.stripeClient.GetRefund(ctx, event.ObjectId)
+		if err != nil {
+			s.log.Errorf("Error getting refund: %v", err)
+			return nil
+		}
+
+		if refund.Status == stripeEntities.StripeRefundSucceeded {
+			err = s.ordersClient.ProcessRefundSucceeded(ctx, event.ObjectId, refund.Amount)
+			if err != nil {
+				s.log.Errorf("Error processing refund succeeded: %v", err)
+				return nil
+			}
+		}
 	default:
 		s.log.Warnf("Unhandled event type: %s", event.Type)
 		return nil
 	}
 
 	return nil
-}
-
-// swagger:route POST /stripe/refund/{payment_intent_id} stripe StripeRefundRequest
-//
-// ### Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
-//
-// Produces:
-//   - application/json
-//
-// Responses:
-//
-//	200: StripeRefundResponse Refund initiated successfully
-//	400: DefaultError Bad Request
-//	500: DefaultError Internal Server Error
-func (s *service) InitiateRefund(ctx context.Context, req *entities.StripeRefundRequest) (*entities.StripeRefundResponse, error) {
-	refundReq := &stripeEntities.RefundRequest{}
-
-	if req.Body.Amount != "" {
-		amount, err := decimal.NewFromString(req.Body.Amount)
-		if err != nil {
-			return nil, moduleErrors.NewAPIError("STRIPE_INVALID_REFUND_AMOUNT", "Amount must be a valid decimal")
-		}
-		if amount.IsNegative() {
-			return nil, moduleErrors.NewAPIError("STRIPE_INVALID_REFUND_AMOUNT", "Amount cannot be negative")
-		}
-
-		if amount.IsZero() {
-			s.log.Info("Refunding full payment intent without amount specified")
-		} else {
-			s.log.Info("Refunding payment intent with amount specified:", amount.String())
-		}
-
-		refundReq.Amount = amount
-	}
-
-	refundReq.PaymentIntentId = req.PaymentIntentId
-
-	resp, err := s.stripeClient.Refund(ctx, refundReq)
-	if err != nil {
-		return nil, err
-	}
-
-	return &entities.StripeRefundResponse{
-		Id:     resp.Id,
-		Status: resp.Status,
-	}, nil
 }

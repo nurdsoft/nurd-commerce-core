@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	entities "github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
+	decimal "github.com/shopspring/decimal"
 )
 
 // MockClient is a mock of Client interface.
@@ -75,4 +76,18 @@ func (m *MockClient) ProcessPaymentSucceeded(ctx context.Context, paymentID stri
 func (mr *MockClientMockRecorder) ProcessPaymentSucceeded(ctx, paymentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPaymentSucceeded", reflect.TypeOf((*MockClient)(nil).ProcessPaymentSucceeded), ctx, paymentID)
+}
+
+// ProcessRefundSucceeded mocks base method.
+func (m *MockClient) ProcessRefundSucceeded(ctx context.Context, refundId string, refundAmount decimal.Decimal) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessRefundSucceeded", ctx, refundId, refundAmount)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessRefundSucceeded indicates an expected call of ProcessRefundSucceeded.
+func (mr *MockClientMockRecorder) ProcessRefundSucceeded(ctx, refundId, refundAmount interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessRefundSucceeded", reflect.TypeOf((*MockClient)(nil).ProcessRefundSucceeded), ctx, refundId, refundAmount)
 }

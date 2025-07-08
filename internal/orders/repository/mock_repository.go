@@ -139,6 +139,21 @@ func (mr *MockRepositoryMockRecorder) GetOrderItemsByID(ctx, orderID interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItemsByID", reflect.TypeOf((*MockRepository)(nil).GetOrderItemsByID), ctx, orderID)
 }
 
+// GetOrderItemsByStripeRefundID mocks base method.
+func (m *MockRepository) GetOrderItemsByStripeRefundID(ctx context.Context, stripeRefundID string) ([]*entities.OrderItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderItemsByStripeRefundID", ctx, stripeRefundID)
+	ret0, _ := ret[0].([]*entities.OrderItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderItemsByStripeRefundID indicates an expected call of GetOrderItemsByStripeRefundID.
+func (mr *MockRepositoryMockRecorder) GetOrderItemsByStripeRefundID(ctx, stripeRefundID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItemsByStripeRefundID", reflect.TypeOf((*MockRepository)(nil).GetOrderItemsByStripeRefundID), ctx, stripeRefundID)
+}
+
 // ListOrders mocks base method.
 func (m *MockRepository) ListOrders(ctx context.Context, customerID uuid.UUID, limit int, cursor string, includeItems bool) ([]*entities.Order, string, error) {
 	m.ctrl.T.Helper()
@@ -182,4 +197,18 @@ func (m *MockRepository) Update(ctx context.Context, details map[string]interfac
 func (mr *MockRepositoryMockRecorder) Update(ctx, details, orderID, customerID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, details, orderID, customerID)
+}
+
+// UpdateOrderWithOrderItems mocks base method.
+func (m *MockRepository) UpdateOrderWithOrderItems(ctx context.Context, orderID uuid.UUID, orderData, orderItemsData map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrderWithOrderItems", ctx, orderID, orderData, orderItemsData)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrderWithOrderItems indicates an expected call of UpdateOrderWithOrderItems.
+func (mr *MockRepositoryMockRecorder) UpdateOrderWithOrderItems(ctx, orderID, orderData, orderItemsData interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderWithOrderItems", reflect.TypeOf((*MockRepository)(nil).UpdateOrderWithOrderItems), ctx, orderID, orderData, orderItemsData)
 }

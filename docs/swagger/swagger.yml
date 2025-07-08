@@ -1041,6 +1041,67 @@ definitions:
                 x-go-name: Width
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
+    RefundItem:
+        properties:
+            quantity:
+                description: Quantity of the item to refund
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            sku:
+                description: Unique identifier for the item to refund
+                type: string
+                x-go-name: Sku
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    RefundOrderRequestBody:
+        properties:
+            items:
+                items:
+                    $ref: '#/definitions/RefundItem'
+                type: array
+                x-go-name: Items
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    RefundOrderResponse:
+        properties:
+            refundable_items:
+                description: Items that will be refunded
+                items:
+                    $ref: '#/definitions/RefundableItem'
+                type: array
+                x-go-name: RefundableItems
+            total_refundable_amount:
+                description: Total amount that will be refunded
+                type: string
+                x-go-name: TotalRefundableAmount
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    RefundableItem:
+        properties:
+            item_id:
+                description: Order Item ID
+                type: string
+                x-go-name: ItemId
+            price:
+                description: Order Item Price that will be refunded
+                type: string
+                x-go-name: Price
+            quantity:
+                description: Order Item Quantity
+                format: int64
+                type: integer
+                x-go-name: Quantity
+            refund_initiated:
+                description: Refund Initiated
+                type: boolean
+                x-go-name: RefundInitiated
+            sku:
+                description: Order Item SKU
+                type: string
+                x-go-name: Sku
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     SetupIntent:
         properties:
             customer:
@@ -1845,6 +1906,40 @@ paths:
             summary: Update Order
             tags:
                 - orders
+    /orders/{order_reference}/refund:
+        post:
+            description: '### Refund order items by SKU & Quantity'
+            operationId: RefundOrderRequest
+            parameters:
+                - description: Order reference
+                  in: path
+                  name: order_reference
+                  required: true
+                  type: string
+                  x-go-name: OrderReference
+                - description: Body of the request
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/RefundOrderRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: Order refund initiated successfully
+                    schema:
+                        $ref: '#/definitions/RefundOrderResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Initiate an Order Refund
+            tags:
+                - orders
     /product:
         post:
             operationId: CreateProductRequest
@@ -2076,40 +2171,6 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Customer Payment Methods
-            tags:
-                - stripe
-    /stripe/refund/{payment_intent_id}:
-        post:
-            operationId: StripeRefundRequest
-            parameters:
-                - description: Payment Intent ID
-                  example: pi_1J2Y3Z4A5B6C7D8E9F0G
-                  in: path
-                  name: payment_intent_id
-                  required: true
-                  type: string
-                  x-go-name: PaymentIntentId
-                - description: Body
-                  in: body
-                  name: Body
-                  schema:
-                    $ref: '#/definitions/StripeRefundRequestBody'
-            produces:
-                - application/json
-            responses:
-                "200":
-                    description: Refund initiated successfully
-                    schema:
-                        $ref: '#/definitions/StripeRefundResponse'
-                "400":
-                    description: Bad Request
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-                "500":
-                    description: Internal Server Error
-                    schema:
-                        $ref: '#/definitions/DefaultError'
-            summary: Initiate a full refund by not specifying an amount, or a partial refund by specifying an amount
             tags:
                 - stripe
     /stripe/setup-intent:

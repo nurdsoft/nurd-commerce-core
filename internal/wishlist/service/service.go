@@ -228,9 +228,14 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 		return nil, nil
 	}
 
-	if cartItems == nil {
+	if cartItems == nil || len(cartItems.Items) == 0 {
 		// If there are no items in the cart, return all wishlist items
 		// Ideally, this should not happen if the calling frontend is properly managing the empty cart state
+		// sort items by created_at
+		sort.Slice(wishlistItems, func(i, j int) bool {
+			return wishlistItems[i].CreatedAt.After(wishlistItems[j].CreatedAt)
+		})
+
 		return &entities.GetWishlistResponse{
 			Items:      wishlistItems,
 			NextCursor: nextCursor,

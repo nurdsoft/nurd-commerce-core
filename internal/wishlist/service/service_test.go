@@ -645,9 +645,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		// Another product only in wishlist
 		wishlistOnlyProductID := uuid.New()
 
-		mockCartClient.EXPECT().GetCartItems(ctx).Return(&cartEntities.GetCartItemsResponse{
-			Items: []cartEntities.CartItemDetail{},
-		}, nil).Times(1)
+		mockCartClient.EXPECT().GetCartItems(ctx).Return(nil, nil).Times(1)
 
 		// Create wishlist with two products - one in cart, one not in cart
 		creationTime := time.Now()

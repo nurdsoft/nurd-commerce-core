@@ -229,6 +229,15 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	expectedTransactionID := "123456"
 	expectedAddress := "123 Main St"
 	expectedTotal := decimal.NewFromInt(115)
+	expectedBillingInfo := entities.BillingInfo{
+		FirstName: "John",
+		LastName:  "Doe",
+		Address:   "123 Main St",
+		City:      "Anytown",
+		State:     "CA",
+		Country:   "US",
+		Zip:       "12345",
+	}
 
 	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
 
@@ -298,8 +307,8 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		CreatePayment(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req authorizenetEntities.CreatePaymentTransactionRequest) {
 			assert.Equal(t, expectedTotal, req.Amount)
-			assert.Equal(t, customerAuthorizeNetID, req.ProfileID)
 			assert.Equal(t, paymentNonce, req.PaymentNonce)
+			assert.EqualValues(t, expectedBillingInfo, req.BillingInfo)
 		}).
 		Return(providers.PaymentProviderResponse{
 			ID:     expectedTransactionID,
@@ -340,6 +349,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 			AddressID:      addressID,
 			ShippingRateID: shippingRateID,
 			PaymentNonce:   paymentNonce,
+			BillingInfo:    expectedBillingInfo,
 		},
 	}
 

@@ -40,8 +40,18 @@ type PaymentProfile struct {
 
 type CreatePaymentTransactionRequest struct {
 	Amount       decimal.Decimal
-	ProfileID    string
 	PaymentNonce string
+	BillingInfo  BillingInfo
+}
+
+type BillingInfo struct {
+	FirstName string
+	LastName  string
+	Address   string
+	City      string
+	State     string
+	Country   string
+	Zip       string
 }
 
 type CreatePaymentTransactionResponse struct {

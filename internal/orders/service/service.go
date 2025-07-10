@@ -171,6 +171,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		Customer:        *customer,
 		PaymentMethodId: req.Body.StripePaymentMethodID,
 		PaymentNonce:    req.Body.PaymentNonce,
+		BillingInfo:     req.Body.BillingInfo,
 	}
 
 	paymentResponse, err := s.createPaymentByProvider(ctx, paymentReq)
@@ -412,8 +413,16 @@ func (s *service) createPaymentByProvider(ctx context.Context, paymentReq entiti
 	case providers.ProviderAuthorizeNet:
 		req = authorizenetEntities.CreatePaymentTransactionRequest{
 			Amount:       paymentReq.Amount,
-			ProfileID:    *paymentReq.Customer.AuthorizeNetID,
 			PaymentNonce: paymentReq.PaymentNonce,
+			BillingInfo: authorizenetEntities.BillingInfo{
+				FirstName: paymentReq.BillingInfo.FirstName,
+				LastName:  paymentReq.BillingInfo.LastName,
+				Address:   paymentReq.BillingInfo.Address,
+				City:      paymentReq.BillingInfo.City,
+				State:     paymentReq.BillingInfo.State,
+				Country:   paymentReq.BillingInfo.Country,
+				Zip:       paymentReq.BillingInfo.Zip,
+			},
 		}
 	}
 

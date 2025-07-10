@@ -129,8 +129,16 @@ func TestClient_CreatePayment(t *testing.T) {
 
 	ctx := context.Background()
 	req := entities.CreatePaymentTransactionRequest{
-		Amount:    decimal.NewFromInt(1000),
-		ProfileID: "profile_123",
+		Amount: decimal.NewFromInt(1000),
+		BillingInfo: entities.BillingInfo{
+			FirstName: "John",
+			LastName:  "Doe",
+			Address:   "123 Main St",
+			City:      "Anytown",
+			State:     "CA",
+			Country:   "US",
+			Zip:       "12345",
+		},
 	}
 
 	t.Run("Success: Approved", func(t *testing.T) {

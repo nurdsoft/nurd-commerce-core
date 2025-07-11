@@ -867,7 +867,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
 func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error) {
-	provider := s.paymentClient.GetProvider() // <-- Move to top
+	provider := s.paymentClient.GetProvider()
 
 	order, err := s.repo.GetOrderByReference(ctx, req.OrderReference)
 	if err != nil {

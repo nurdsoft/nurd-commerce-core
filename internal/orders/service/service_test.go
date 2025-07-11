@@ -873,7 +873,7 @@ func TestUpdateOrder(t *testing.T) {
 	})
 }
 
-func TestRefundOrder(t *testing.T) {
+func TestRefundOrder_WithStripe(t *testing.T) {
 	t.Run("success with stripe refund", func(t *testing.T) {
 		tc := setupTestController(t)
 		s := newServiceUnderTest(tc)
@@ -911,6 +911,10 @@ func TestRefundOrder(t *testing.T) {
 			},
 		}
 
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
 			Return(existingOrder, nil)
@@ -918,10 +922,6 @@ func TestRefundOrder(t *testing.T) {
 		tc.mockRepo.EXPECT().
 			GetOrderItemsByID(gomock.Any(), orderID).
 			Return(orderItems, nil)
-
-		tc.mockPayment.EXPECT().
-			GetProvider().
-			Return(providers.ProviderStripe)
 
 		tc.mockPayment.EXPECT().
 			Refund(gomock.Any(), gomock.Any()).
@@ -1090,6 +1090,10 @@ func TestRefundOrder(t *testing.T) {
 		orderRef := "ORD123456"
 		ctx := context.Background()
 
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
 			Return(nil, errors.New("order not found"))
@@ -1128,6 +1132,10 @@ func TestRefundOrder(t *testing.T) {
 			OrderReference: orderRef,
 			Status:         entities.Refunded,
 		}
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
 
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
@@ -1179,6 +1187,10 @@ func TestRefundOrder(t *testing.T) {
 				Status:   entities.ItemDelivered,
 			},
 		}
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
 
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
@@ -1236,6 +1248,10 @@ func TestRefundOrder(t *testing.T) {
 				Status:   entities.ItemDelivered,
 			},
 		}
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
 
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
@@ -1296,6 +1312,10 @@ func TestRefundOrder(t *testing.T) {
 			},
 		}
 
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).
 			Return(existingOrder, nil)
@@ -1303,10 +1323,6 @@ func TestRefundOrder(t *testing.T) {
 		tc.mockRepo.EXPECT().
 			GetOrderItemsByID(gomock.Any(), orderID).
 			Return(orderItems, nil)
-
-		tc.mockPayment.EXPECT().
-			GetProvider().
-			Return(providers.ProviderStripe)
 
 		tc.mockPayment.EXPECT().
 			Refund(gomock.Any(), gomock.Any()).
@@ -1431,6 +1447,10 @@ func TestRefundOrder(t *testing.T) {
 				Status:   entities.ItemDelivered, // Available for refund
 			},
 		}
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
 
 		tc.mockRepo.EXPECT().
 			GetOrderByReference(gomock.Any(), orderRef).

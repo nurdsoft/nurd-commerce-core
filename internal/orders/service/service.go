@@ -153,6 +153,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 			Quantity:         item.Quantity,
 			Price:            item.Price,
 			Attributes:       item.Attributes,
+			Status:           entities.ItemPending,
 		}
 		orderItems = append(orderItems, orderItem)
 		subTotal = subTotal.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
@@ -875,6 +876,8 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 //	400: DefaultError Bad Request
 //	500: DefaultError Internal Server Error
 func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequest) (*entities.RefundOrderResponse, error) {
+	provider := s.paymentClient.GetProvider()
+
 	order, err := s.repo.GetOrderByReference(ctx, req.OrderReference)
 	if err != nil {
 		return nil, moduleErrors.NewAPIError("ORDER_NOT_FOUND")
@@ -897,6 +900,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	// iterate over order items and request body items to check if they match by sku
 	var refundableAmount decimal.Decimal
 	var shouldChangeOrderStatus bool
+	var shouldRefundWholeOrder bool
 	var totalRefundableQuantity, totalOrderQuantity int
 	orderItemsRefundData := make(map[string]interface{})
 	orderRefundData := make(map[string]interface{})
@@ -906,7 +910,8 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	for _, orderItem := range orderItems {
 		// Calculate total order quantity
 		totalOrderQuantity += orderItem.Quantity
-		// filter order items that can be refunded
+
+		// Extra work, filter order items that can be refunded
 		if orderItem.Status != entities.ItemRefunded && orderItem.Status != entities.ItemInitiatedRefund {
 			refundableOrderItems = append(refundableOrderItems, orderItem)
 		}
@@ -921,9 +926,12 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 					// quantity of items that are valid for refund
 					totalRefundableQuantity += item.Quantity
 
-					orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
-						"status":               entities.ItemInitiatedRefund.String(),
-						"stripe_refund_amount": totalItemCost.InexactFloat64(),
+					switch provider {
+					case providers.ProviderStripe:
+						orderItemsRefundData[orderItem.ID.String()] = map[string]interface{}{
+							"status":               entities.ItemInitiatedRefund.String(),
+							"stripe_refund_amount": totalItemCost.InexactFloat64(),
+						}
 					}
 					refundableItems = append(refundableItems, &entities.RefundableItem{
 						ItemId:   orderItem.ID.String(),
@@ -948,14 +956,28 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	// Check if we're refunding all available order items
 	if totalRefundableQuantity == totalOrderQuantity {
 		shouldChangeOrderStatus = true
+		shouldRefundWholeOrder = true
 	}
 
-	switch s.paymentClient.GetProvider() {
+	switch provider {
 	case providers.ProviderStripe:
-		refundResponse, err := s.paymentClient.Refund(ctx, &stripeEntities.RefundRequest{
-			PaymentIntentId: *order.StripePaymentIntentID,
-			Amount:          refundableAmount,
-		})
+		var refundResponse *providers.RefundResponse
+		var err error
+
+		if shouldRefundWholeOrder {
+			// Everything needs to be refunded, including shipping and taxes
+			s.log.Info("Refunding entire order amount via Stripe")
+			refundResponse, err = s.paymentClient.Refund(ctx, &stripeEntities.RefundRequest{
+				PaymentIntentId: *order.StripePaymentIntentID,
+			})
+		} else {
+			// TODO: find a way to calculate the item-level refunding amount excluding shipping and taxes
+			s.log.Infof("Refunding partial order amount via Stripe: %s", refundableAmount.String())
+			refundResponse, err = s.paymentClient.Refund(ctx, &stripeEntities.RefundRequest{
+				PaymentIntentId: *order.StripePaymentIntentID,
+				Amount:          refundableAmount,
+			})
+		}
 		if err != nil {
 			s.log.Errorf("Error processing refund via Stripe: %v", err)
 			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Error processing refund via Stripe")
@@ -965,7 +987,6 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 			s.log.Errorf("Stripe refund failed with status: %s and ID: %s", refundResponse.Status, refundResponse.ID)
 			return nil, moduleErrors.NewAPIError("ORDER_REFUNDING_ERROR", "Stripe refund failed")
 		}
-		// iterate over orderItemsRefundData and set the stripe refund id
 		for orderItemID, data := range orderItemsRefundData {
 			data.(map[string]interface{})["stripe_refund_id"] = refundResponse.ID
 			data.(map[string]interface{})["stripe_refund_created_at"] = time.Now().UTC()
@@ -980,7 +1001,9 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 			} else {
 				stripeTotalRefund = refundableAmount
 			}
+			// this total represents the total amount refunded via Stripe, it can change with each initiated refund
 			orderRefundData["stripe_refund_total"] = stripeTotalRefund
+			orderRefundData["status"] = entities.Refunded
 		}
 
 		// Stripe doesn't care about individual item refunds, it just processes the amount given

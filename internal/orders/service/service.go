@@ -994,6 +994,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 			}
 			// this total represents the total amount refunded via Stripe, it can change with each initiated refund
 			orderRefundData["stripe_refund_total"] = stripeTotalRefund
+			orderRefundData["status"] = entities.Refunded
 		}
 
 		// Stripe doesn't care about individual item refunds, it just processes the amount given

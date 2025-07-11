@@ -99,7 +99,7 @@ type ListProductVariantsRequest struct {
 	//
 	// in:query
 	Page int `json:"page"`
-	// Page size for pagination. Default: 10, max: 100
+	// Page size for pagination. Default: 10
 	//
 	// in:query
 	PageSize int `json:"page_size"`
@@ -115,11 +115,11 @@ type ListProductVariantsRequest struct {
 	//
 	// in:query
 	MaxPrice *decimal.Decimal `json:"max_price"`
-	// Sort field (optional, default: created_at)
+	// Sort field (optional), Default: created_at
 	//
 	// in:query
 	SortBy *string `json:"sort_by"`
-	// Sort direction (optional, default: desc)
+	// Sort direction (optional), Default: desc
 	//
 	// in:query
 	SortOrder *string `json:"sort_order"`

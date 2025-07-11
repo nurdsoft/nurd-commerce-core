@@ -68,8 +68,7 @@ type TransactionRequest struct {
 	TransactionType string       `json:"transactionType"`
 	Amount          string       `json:"amount"`
 	Payment         PaymentNonce `json:"payment"`
-	Customer        Customer     `json:"customer"`
-	BillTo          BillTo       `json:"billTo"`
+	BillTo          BillTo       `json:"billTo,omitzero"`
 }
 
 type PaymentNonce struct {
@@ -81,12 +80,14 @@ type OpaqueData struct {
 	DataValue      string `json:"dataValue,omitempty"`
 }
 
-type Customer struct {
-	ID string `json:"id"`
-}
-
 type BillTo struct {
-	Zip string `json:"zip"`
+	FirstName string `json:"firstName,omitempty"`
+	LastName  string `json:"lastName,omitempty"`
+	Address   string `json:"address,omitempty"`
+	City      string `json:"city,omitempty"`
+	State     string `json:"state,omitempty"`
+	Zip       string `json:"zip,omitempty"`
+	Country   string `json:"country,omitempty"`
 }
 
 type RequestData struct {

@@ -153,6 +153,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 			Quantity:         item.Quantity,
 			Price:            item.Price,
 			Attributes:       item.Attributes,
+			Status:           entities.ItemPending,
 		}
 		orderItems = append(orderItems, orderItem)
 		subTotal = subTotal.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))

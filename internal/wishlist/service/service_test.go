@@ -634,6 +634,45 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		// Explicitly verify the timestamps are in the correct order
 		assert.True(t, resp.Items[0].CreatedAt.After(resp.Items[1].CreatedAt))
 	})
+
+	t.Run("Empty cart results in all wishlist items", func(t *testing.T) {
+		svc, ctx, mockRepo, mockCartClient := setup()
+		req := &entities.GetMoreFromWishlistRequest{}
+
+		// Create a product that will be in both cart and wishlist
+		sharedProductID := uuid.New()
+
+		// Another product only in wishlist
+		wishlistOnlyProductID := uuid.New()
+
+		mockCartClient.EXPECT().GetCartItems(ctx).Return(nil, nil).Times(1)
+
+		// Create wishlist with two products - one in cart, one not in cart
+		creationTime := time.Now()
+		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
+			{
+				Id:         uuid.New(),
+				CustomerID: customerUUID,
+				ProductID:  sharedProductID,
+				CreatedAt:  creationTime,
+			},
+			{
+				Id:         uuid.New(),
+				CustomerID: customerUUID,
+				ProductID:  wishlistOnlyProductID,
+				CreatedAt:  creationTime,
+			},
+		}, "", int64(0), nil).Times(1)
+
+		resp, err := svc.GetMoreFromWishlist(ctx, req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		// Both products should be returned since cart is empty
+		assert.Equal(t, 2, len(resp.Items))
+		assert.Equal(t, sharedProductID, resp.Items[0].ProductID)
+		assert.Equal(t, wishlistOnlyProductID, resp.Items[1].ProductID)
+	})
 }
 
 func Test_service_GetWishlistProductTimestamps(t *testing.T) {

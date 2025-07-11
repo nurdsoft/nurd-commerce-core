@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"sort"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
@@ -13,8 +16,6 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	"go.uber.org/zap"
-	"sort"
-	"sync"
 )
 
 type Service interface {
@@ -184,7 +185,6 @@ func (s *service) BulkRemoveFromWishlist(ctx context.Context, req *entities.Bulk
 //	404: DefaultError Not Found
 //	500: DefaultError Internal Server Error
 func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMoreFromWishlistRequest) (*entities.GetWishlistResponse, error) {
-
 	customerID := sharedMeta.XCustomerID(ctx)
 
 	if customerID == "" {
@@ -228,6 +228,20 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 		return nil, nil
 	}
 
+	if cartItems == nil || len(cartItems.Items) == 0 {
+		// If there are no items in the cart, return all wishlist items
+		// Ideally, this should not happen if the calling frontend is properly managing the empty cart state
+		// sort items by created_at
+		sort.Slice(wishlistItems, func(i, j int) bool {
+			return wishlistItems[i].CreatedAt.After(wishlistItems[j].CreatedAt)
+		})
+
+		return &entities.GetWishlistResponse{
+			Items:      wishlistItems,
+			NextCursor: nextCursor,
+			Total:      int64(len(wishlistItems)),
+		}, nil
+	}
 	// Create a set of product IDs that are in the cart
 	cartProductIDs := make(map[string]struct{}, len(cartItems.Items))
 	for _, item := range cartItems.Items {

@@ -266,7 +266,7 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 
 	// TODO: handle refund.failed
 	case "refund.updated":
-		s.log.Info("Refund updated ", "refund_id", event.ObjectId)
+		s.log.Info("Refund updated ", "refund_id ", event.ObjectId)
 		refund, err := s.stripeClient.GetRefund(ctx, event.ObjectId)
 		if err != nil {
 			s.log.Errorf("Error getting refund: %v", err)
@@ -274,7 +274,7 @@ func (s *service) HandleStripeWebhook(ctx context.Context, req *entities.StripeW
 		}
 
 		if refund.Status == stripeEntities.StripeRefundSucceeded {
-			err = s.ordersClient.ProcessRefundSucceeded(ctx, event.ObjectId, refund.Amount)
+			err = s.ordersClient.ProcessRefundSucceeded(ctx, refund.Id, refund.Amount)
 			if err != nil {
 				s.log.Errorf("Error processing refund succeeded: %v", err)
 				return nil

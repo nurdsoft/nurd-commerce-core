@@ -10,6 +10,8 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	"go.uber.org/zap"
@@ -25,23 +27,26 @@ type Service interface {
 }
 
 type service struct {
-	repo             repository.Repository
-	log              *zap.SugaredLogger
-	config           cfg.Config
-	salesforceClient salesforce.Client
+	repo            repository.Repository
+	log             *zap.SugaredLogger
+	config          cfg.Config
+	sfClient        salesforce.Client
+	inventoryClient inventory.Client
 }
 
 func New(
 	repo repository.Repository,
 	logger *zap.SugaredLogger,
 	config cfg.Config,
-	salesforceClient salesforce.Client,
+	sfClient salesforce.Client,
+	inventoryClient inventory.Client,
 ) Service {
 	return &service{
-		repo:             repo,
-		log:              logger,
-		config:           config,
-		salesforceClient: salesforceClient,
+		repo:            repo,
+		log:             logger,
+		config:          config,
+		sfClient:        sfClient,
+		inventoryClient: inventoryClient,
 	}
 }
 
@@ -75,24 +80,26 @@ func (s *service) CreateCustomer(ctx context.Context, req *entities.CreateCustom
 	if err != nil {
 		return nil, err
 	} else {
-		go func() {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+		if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+			go func() {
+				bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
 
-			var lastName string
+				var lastName string
 
-			if req.Data.LastName != nil && *req.Data.LastName != "" {
-				lastName = *req.Data.LastName
-			} else {
-				lastName = "\u200b"
-			}
+				if req.Data.LastName != nil && *req.Data.LastName != "" {
+					lastName = *req.Data.LastName
+				} else {
+					lastName = "\u200b"
+				}
 
-			_, err := s.createSalesforceUser(bgCtx, req.Data.FirstName, lastName, req.Data.Email, createCustomer.ID.String())
-			if err != nil {
-				s.log.Error("Error creating salesforce user account")
-				return
-			}
-		}()
+				_, err := s.createSalesforceUser(bgCtx, req.Data.FirstName, lastName, req.Data.Email, createCustomer.ID.String())
+				if err != nil {
+					s.log.Error("Error creating salesforce user account")
+					return
+				}
+			}()
+		}
 	}
 
 	return createCustomer, nil
@@ -169,63 +176,65 @@ func (s *service) UpdateCustomer(ctx context.Context, req *entities.UpdateCustom
 		return nil, err
 	}
 
-	go func(reqData *entities.UpdateCustomerRequestBody, customer *entities.Customer) {
-		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+		go func(reqData *entities.UpdateCustomerRequestBody, customer *entities.Customer) {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
 
-		var firstName, lastName, phone, email string
+			var firstName, lastName, phone, email string
 
-		if req.Data.LastName != nil {
-			lastName = *req.Data.LastName
-		} else if customer.LastName != nil && *customer.LastName != "" {
-			// if last name is not provided, use the existing one
-			lastName = *customer.LastName
-		} else {
-			// zero width space, salesforce does not accept empty strings
-			lastName = "\u200b"
-		}
-
-		if req.Data.PhoneNumber != nil {
-			phone = *req.Data.PhoneNumber
-		} else if customer.PhoneNumber != nil {
-			phone = *customer.PhoneNumber
-		}
-
-		if req.Data.FirstName != nil {
-			firstName = *req.Data.FirstName
-		} else if customer.FirstName != "" {
-			firstName = customer.FirstName
-		}
-
-		if req.Data.Email != nil {
-			email = *req.Data.Email
-		} else if customer.Email != "" {
-			email = customer.Email
-		}
-
-		if customer.SalesforceID == nil {
-			s.log.Info("Customer does not have a salesforce id, creating one")
-			_, err := s.createSalesforceUser(bgCtx, firstName, lastName, email, customerID)
-			if err != nil {
-				s.log.Error("Error creating salesforce user account")
-				return
+			if req.Data.LastName != nil {
+				lastName = *req.Data.LastName
+			} else if customer.LastName != nil && *customer.LastName != "" {
+				// if last name is not provided, use the existing one
+				lastName = *customer.LastName
+			} else {
+				// zero width space, salesforce does not accept empty strings
+				lastName = "\u200b"
 			}
-		} else {
-			err = s.salesforceClient.UpdateUserAccount(bgCtx, &salesforceEntities.UpdateSFUserRequest{
-				ID:        *customer.SalesforceID,
-				FirstName: firstName,
-				LastName:  lastName,
-				Phone:     phone,
-				Email:     email,
-			})
-			if err != nil {
-				s.log.Error("Error updating salesforce user account")
-				return
-			}
-		}
 
-		s.log.Info("User details updated successfully")
-	}(req.Data, customer)
+			if req.Data.PhoneNumber != nil {
+				phone = *req.Data.PhoneNumber
+			} else if customer.PhoneNumber != nil {
+				phone = *customer.PhoneNumber
+			}
+
+			if req.Data.FirstName != nil {
+				firstName = *req.Data.FirstName
+			} else if customer.FirstName != "" {
+				firstName = customer.FirstName
+			}
+
+			if req.Data.Email != nil {
+				email = *req.Data.Email
+			} else if customer.Email != "" {
+				email = customer.Email
+			}
+
+			if customer.SalesforceID == nil {
+				s.log.Info("Customer does not have a salesforce id, creating one")
+				_, err := s.createSalesforceUser(bgCtx, firstName, lastName, email, customerID)
+				if err != nil {
+					s.log.Error("Error creating salesforce user account")
+					return
+				}
+			} else {
+				err := s.sfClient.UpdateUserAccount(bgCtx, &salesforceEntities.UpdateSFUserRequest{
+					ID:        *customer.SalesforceID,
+					FirstName: firstName,
+					LastName:  lastName,
+					Phone:     phone,
+					Email:     email,
+				})
+				if err != nil {
+					s.log.Error("Error updating salesforce user account")
+					return
+				}
+			}
+
+			s.log.Info("User details updated successfully")
+		}(req.Data, customer)
+	}
 
 	return customer, nil
 }
@@ -240,7 +249,7 @@ func (s *service) GetCustomerByID(ctx context.Context, id string) (*entities.Cus
 
 // Create a new user in Salesforce and update the user with the Salesforce ID
 func (s *service) createSalesforceUser(ctx context.Context, firstName, lastName, email, customerID string) (*salesforceEntities.CreateSFUserResponse, error) {
-	res, err := s.salesforceClient.CreateUserAccount(ctx, &salesforceEntities.CreateSFUserRequest{
+	res, err := s.sfClient.CreateUserAccount(ctx, &salesforceEntities.CreateSFUserRequest{
 		FirstName:   firstName,
 		LastName:    lastName,
 		PersonEmail: email,
@@ -248,6 +257,7 @@ func (s *service) createSalesforceUser(ctx context.Context, firstName, lastName,
 	if err != nil {
 		return nil, err
 	}
+
 	// update user with salesforce id
 	err = s.repo.Update(ctx, map[string]interface{}{
 		"salesforce_id": res.ID,

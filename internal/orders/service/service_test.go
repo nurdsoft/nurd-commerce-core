@@ -189,7 +189,6 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		Return(nil)
 
 	notifyCallDone := make(chan struct{})
-
 	tc.mockWebhook.EXPECT().
 		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
@@ -198,6 +197,14 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 			close(notifyCallDone)
 		}).
 		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) {
+			close(salesforceCallDone)
+		}).
+		Return(nil, nil)
 
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
@@ -214,6 +221,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 	assert.NotEmpty(t, resp.OrderReference)
 	// wait for async notify call to be done
 	<-notifyCallDone
+	<-salesforceCallDone
 }
 
 func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
@@ -334,7 +342,6 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		Return(nil)
 
 	notifyCallDone := make(chan struct{})
-
 	tc.mockWebhook.EXPECT().
 		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
@@ -343,6 +350,14 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 			close(notifyCallDone)
 		}).
 		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) {
+			close(salesforceCallDone)
+		}).
+		Return(nil, nil)
 
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
@@ -360,6 +375,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	assert.NotEmpty(t, resp.OrderReference)
 	// wait for async notify call to be done
 	<-notifyCallDone
+	<-salesforceCallDone
 }
 
 func TestProcessPaymentSucceeded_WithStripe(t *testing.T) {

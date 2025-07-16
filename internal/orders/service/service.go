@@ -236,7 +236,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		go func() {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 				CustomerID:     customerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
@@ -250,7 +250,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		go func() {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-			_, err = s.inventoryClient.CreateOrder(bgCtx, inventoryEntities.CreateInventoryOrderRequest{
+			_, err := s.inventoryClient.CreateOrder(bgCtx, inventoryEntities.CreateInventoryOrderRequest{
 				Order:      *order,
 				OrderItems: orderItems,
 				Address:    *address,
@@ -494,7 +494,7 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string)
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
@@ -508,7 +508,7 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string)
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
+		err := s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
 			Order:    *order,
 			Customer: *customer,
 			Status:   entities.PaymentSuccess.String(),
@@ -570,7 +570,7 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) er
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
@@ -584,7 +584,7 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) er
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
+		err := s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
 			Order:    *order,
 			Customer: *customer,
 			Status:   entities.PaymentFailed.String(),
@@ -706,7 +706,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
 
-			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 				CustomerID:     order.CustomerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
@@ -885,7 +885,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,

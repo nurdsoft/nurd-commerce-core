@@ -1,8 +1,11 @@
 package shipping
 
 import (
+	"net/http"
+
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/fakeprovider"
 	shipengineClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/shipengine/client"
 	shipengineService "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/shipengine/service"
 	upsClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/providers/ups/client"
@@ -10,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 // ModuleParams contain dependencies for module
@@ -26,7 +28,9 @@ type ModuleParams struct {
 // nolint:gocritic
 func NewModule(p ModuleParams) (client.Client, error) {
 	switch p.Config.Provider {
-	case ProviderShipengine, "":
+	case "":
+		return fakeprovider.NewClient(), nil
+	case ProviderShipengine:
 		service, err := shipengineService.New(p.HttpClient, p.Config.Shipengine, p.Logger)
 		if err != nil {
 			return nil, err

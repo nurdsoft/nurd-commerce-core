@@ -22,7 +22,9 @@ type Config struct {
 // Validate config.
 func (c *Config) Validate() error {
 	switch c.Provider {
-	case ProviderShipengine, "": // defaults to Shipengine
+	case "":
+		return nil
+	case ProviderShipengine:
 		return c.Shipengine.Validate()
 	case ProviderUPS:
 		return c.UPS.Validate()

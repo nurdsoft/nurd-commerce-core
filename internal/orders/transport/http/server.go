@@ -35,6 +35,7 @@ func registerCreateOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
 func registerListOrders(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -50,6 +51,7 @@ func registerListOrders(server *httpTransport.Server, ep goKitEndpoint.Endpoint,
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
 func registerGetOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -65,6 +67,7 @@ func registerGetOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, a
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
 func registerCancelOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -80,6 +83,7 @@ func registerCancelOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
 func registerUpdateOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -95,6 +99,7 @@ func registerUpdateOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }
 
 func registerRefundOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -110,4 +115,5 @@ func registerRefundOrder(server *httpTransport.Server, ep goKitEndpoint.Endpoint
 	)
 
 	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
 }

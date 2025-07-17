@@ -2,12 +2,14 @@ package addressclient
 
 import (
 	"database/sql"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/repository"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/service"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
 	"go.uber.org/fx"
@@ -26,6 +28,7 @@ type ModuleParams struct {
 	CommonConfig     cfg.Config
 	Logger           *zap.SugaredLogger
 	ShippingClient   shipping.Client
+	InventoryClient  inventory.Client
 	SalesforceClient salesforce.Client
 	CustomerClient   customerclient.Client
 }
@@ -34,7 +37,7 @@ type ModuleParams struct {
 // nolint:gocritic
 func NewClientModule(p ModuleParams) Client {
 	repo := repository.New(p.DB, p.GormDB)
-	svc := service.New(repo, p.Logger, p.CommonConfig, p.ShippingClient, p.SalesforceClient, p.CustomerClient)
+	svc := service.New(repo, p.Logger, p.CommonConfig, p.ShippingClient, p.SalesforceClient, p.InventoryClient, p.CustomerClient)
 
 	client := NewClient(svc)
 

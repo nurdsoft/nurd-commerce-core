@@ -2,7 +2,11 @@ package service
 
 import (
 	"context"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
+
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -11,10 +15,10 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -33,6 +37,7 @@ type service struct {
 	config           cfg.Config
 	shippingClient   shipping.Client
 	salesforceClient salesforce.Client
+	inventoryClient  inventory.Client
 	customerClient   customerclient.Client
 }
 
@@ -42,6 +47,7 @@ func New(
 	config cfg.Config,
 	shippingClient shipping.Client,
 	salesforceClient salesforce.Client,
+	inventoryClient inventory.Client,
 	customerClient customerclient.Client,
 ) Service {
 	return &service{
@@ -50,6 +56,7 @@ func New(
 		config:           config,
 		shippingClient:   shippingClient,
 		salesforceClient: salesforceClient,
+		inventoryClient:  inventoryClient,
 		customerClient:   customerClient,
 	}
 }
@@ -114,34 +121,35 @@ func (s *service) AddAddress(ctx context.Context, req *entities.AddAddressReques
 			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
-			// TODO Handle salesforce customer creation if it doesn't exist
-			if err != nil || customer.SalesforceID == nil {
-				s.log.Error("Error fetching customer details")
-				return
-			}
+			if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+				customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
+				// TODO Handle salesforce customer creation if it doesn't exist
+				if err != nil || customer.SalesforceID == nil {
+					s.log.Error("Error fetching customer details")
+					return
+				}
 
-			addressStreet := req.Address.Address
-			if req.Address.Apartment != nil {
-				addressStreet += ", " + *req.Address.Apartment
-			}
+				addressStreet := req.Address.Address
+				if req.Address.Apartment != nil {
+					addressStreet += ", " + *req.Address.Apartment
+				}
 
-			city := ""
-			if req.Address.City != nil {
-				city = *req.Address.City
-			}
+				city := ""
+				if req.Address.City != nil {
+					city = *req.Address.City
+				}
 
-			err = s.createSalesforceUserAddress(bgCtx, customerID, address.ID.String(), &salesforceEntities.CreateSFAddressRequest{
-				AccountC:               *customer.SalesforceID,
-				ShippingStreetC:        addressStreet,
-				ShippingCityC:          city,
-				ShippingStateProvinceC: req.Address.StateCode,
-				ShippingCountryC:       req.Address.CountryCode,
-				ShippingZipPostalCodeC: req.Address.PostalCode,
-			})
-			if err != nil {
-				s.log.Error("Error creating salesforce address")
-				// return nil, errors.New("error creating salesforce address")
+				err = s.createSalesforceUserAddress(bgCtx, customerID, address.ID.String(), &salesforceEntities.CreateSFAddressRequest{
+					AccountC:               *customer.SalesforceID,
+					ShippingStreetC:        addressStreet,
+					ShippingCityC:          city,
+					ShippingStateProvinceC: req.Address.StateCode,
+					ShippingCountryC:       req.Address.CountryCode,
+					ShippingZipPostalCodeC: req.Address.PostalCode,
+				})
+				if err != nil {
+					s.log.Error("Error creating salesforce address")
+				}
 			}
 		}()
 	}
@@ -265,50 +273,52 @@ func (s *service) UpdateAddress(ctx context.Context, req *entities.UpdateAddress
 			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
-			// TODO Handle salesforce customer creation if it doesn't exist
-			if err != nil || customer.SalesforceID == nil {
-				s.log.Error("Error fetching customer details")
-				return
-			}
-
-			addressStreet := req.Address.Address
-			if req.Address.Apartment != nil {
-				addressStreet += ", " + *req.Address.Apartment
-			}
-
-			city := ""
-			if req.Address.City != nil {
-				city = *req.Address.City
-			}
-
-			if updatedAddress.SalesforceID != nil {
-				err = s.salesforceClient.UpdateUserAddress(bgCtx, &salesforceEntities.UpdateSFAddressRequest{
-					AccountC:               *customer.SalesforceID,
-					AddressID:              *updatedAddress.SalesforceID,
-					ShippingStreetC:        addressStreet,
-					ShippingCityC:          city,
-					ShippingStateProvinceC: req.Address.StateCode,
-					ShippingCountryC:       req.Address.CountryCode,
-					ShippingZipPostalCodeC: req.Address.PostalCode,
-				})
-				if err != nil {
-					s.log.Error("Error updating salesforce address")
+			if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+				customer, err := s.customerClient.GetCustomerByID(bgCtx, customerID)
+				// TODO Handle salesforce customer creation if it doesn't exist
+				if err != nil || customer.SalesforceID == nil {
+					s.log.Error("Error fetching customer details")
 					return
 				}
-			} else {
-				// create new address in salesforce if it doesn't exist
-				err := s.createSalesforceUserAddress(bgCtx, customerID, req.AddressID.String(), &salesforceEntities.CreateSFAddressRequest{
-					AccountC:               *customer.SalesforceID,
-					ShippingStreetC:        addressStreet,
-					ShippingCityC:          city,
-					ShippingStateProvinceC: req.Address.StateCode,
-					ShippingCountryC:       req.Address.CountryCode,
-					ShippingZipPostalCodeC: req.Address.PostalCode,
-				})
-				if err != nil {
-					s.log.Error("Error creating salesforce address")
-					return
+
+				addressStreet := req.Address.Address
+				if req.Address.Apartment != nil {
+					addressStreet += ", " + *req.Address.Apartment
+				}
+
+				city := ""
+				if req.Address.City != nil {
+					city = *req.Address.City
+				}
+
+				if updatedAddress.SalesforceID != nil {
+					err = s.salesforceClient.UpdateUserAddress(bgCtx, &salesforceEntities.UpdateSFAddressRequest{
+						AccountC:               *customer.SalesforceID,
+						AddressID:              *updatedAddress.SalesforceID,
+						ShippingStreetC:        addressStreet,
+						ShippingCityC:          city,
+						ShippingStateProvinceC: req.Address.StateCode,
+						ShippingCountryC:       req.Address.CountryCode,
+						ShippingZipPostalCodeC: req.Address.PostalCode,
+					})
+					if err != nil {
+						s.log.Error("Error updating salesforce address")
+						return
+					}
+				} else {
+					// create new address in salesforce if it doesn't exist
+					err := s.createSalesforceUserAddress(bgCtx, customerID, req.AddressID.String(), &salesforceEntities.CreateSFAddressRequest{
+						AccountC:               *customer.SalesforceID,
+						ShippingStreetC:        addressStreet,
+						ShippingCityC:          city,
+						ShippingStateProvinceC: req.Address.StateCode,
+						ShippingCountryC:       req.Address.CountryCode,
+						ShippingZipPostalCodeC: req.Address.PostalCode,
+					})
+					if err != nil {
+						s.log.Error("Error creating salesforce address")
+						return
+					}
 				}
 			}
 		}()
@@ -350,11 +360,13 @@ func (s *service) DeleteAddress(ctx context.Context, req *entities.DeleteAddress
 			bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			if address.SalesforceID != nil {
-				err = s.salesforceClient.DeleteUserAddress(bgCtx, *address.SalesforceID)
-				if err != nil {
-					s.log.Error("Error deleting salesforce address")
-					return
+			if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+				if address.SalesforceID != nil {
+					err = s.salesforceClient.DeleteUserAddress(bgCtx, *address.SalesforceID)
+					if err != nil {
+						s.log.Error("Error deleting salesforce address")
+						return
+					}
 				}
 			}
 		}()

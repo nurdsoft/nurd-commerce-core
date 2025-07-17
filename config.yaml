@@ -22,7 +22,7 @@ DB:
     Password: 123
     SSLMode: "disable"
 Shipping:
-  Provider: "Shipengine"
+  Provider: ""
   Shipengine:
     Host: ""
     Token: ""

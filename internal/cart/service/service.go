@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	sharedDecimal "github.com/nurdsoft/nurd-commerce-core/shared/decimal"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
-	"time"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
 	addressEntities "github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -48,6 +51,7 @@ type service struct {
 	cache            cache.Cache
 	productClient    productclient.Client
 	addressClient    addressclient.Client
+	inventoryClient  inventory.Client
 	salesforceClient salesforce.Client
 }
 
@@ -59,6 +63,7 @@ func New(
 	cache cache.Cache,
 	productClient productclient.Client,
 	addressClient addressclient.Client,
+	inventoryClient inventory.Client,
 	salesforceClient salesforce.Client,
 ) Service {
 	return &service{
@@ -69,6 +74,7 @@ func New(
 		cache:            cache,
 		productClient:    productClient,
 		addressClient:    addressClient,
+		inventoryClient:  inventoryClient,
 		salesforceClient: salesforceClient,
 	}
 }
@@ -225,57 +231,15 @@ func (s *service) UpdateCartItem(ctx context.Context, req *entities.UpdateCartIt
 			s.log.Errorf("Error adding item to cart: %v", err)
 			return nil, moduleErrors.NewAPIError("CART_ERROR_UPDATING_CART_ITEM")
 		} else {
-			// only sync with salesforce if the item is successfully added to the cart
-			go func() {
-				bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-				defer cancel()
+			if s.inventoryClient.GetProvider() == providers.ProviderSalesforce {
+				// only sync with salesforce if the item is successfully added to the cart
+				go func() {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+					defer cancel()
 
-				// If product already has a SalesforceID no need to create it again
-				if product.SalesforceID != nil {
-					return
-				}
-
-				var pricebookEntry *salesforceEntities.CreateSFPriceBookEntryResponse
-				// Create a salesforce product
-				salesforceProduct, err := s.salesforceClient.CreateProduct(bgCtx, &salesforceEntities.CreateSFProductRequest{
-					Name: product.Name,
-					// TODO: confirm if this is the correct description
-					Description: productVariant.SKU,
-					ProductCode: product.ID.String(),
-					IsActive:    true,
-				})
-				if err != nil {
-					s.log.Errorf("Error creating product on salesforce: %v", err)
-				}
-
-				if product != nil {
-					// Create a salesforce pricebook entry
-					pricebookEntry, err = s.salesforceClient.CreatePriceBookEntry(bgCtx, &salesforceEntities.CreateSFPriceBookEntryRequest{
-						Product2ID:   salesforceProduct.ID,
-						Pricebook2ID: salesforceEntities.StandardPriceBook,
-						// Unit price is 0 because the real price will be available in the order items
-						UnitPrice: 0,
-					})
-					if err != nil {
-						s.log.Errorf("Error creating pricebook entry on salesforce: %v", err)
-					}
-				}
-
-				if pricebookEntry != nil {
-					// Save the salesforce product and pricebook entry ids to the database
-					err = s.productClient.UpdateProduct(bgCtx, &productEntities.UpdateProductRequest{
-						ProductID: product.ID,
-						Data: &productEntities.UpdateProductRequestBody{
-							SalesforceID:               salesforceProduct.ID,
-							SalesforcePricebookEntryId: pricebookEntry.ID,
-						},
-					})
-					if err != nil {
-						s.log.Errorf("Error updating product: %v", err)
-					}
-				}
-
-			}()
+					s.syncSalesforceProduct(bgCtx, product, productVariant)
+				}()
+			}
 		}
 	}
 
@@ -289,6 +253,53 @@ func (s *service) UpdateCartItem(ctx context.Context, req *entities.UpdateCartIt
 
 	return resultItem, nil
 
+}
+
+func (s *service) syncSalesforceProduct(ctx context.Context, product *productEntities.Product, productVariant *productEntities.ProductVariant) {
+	// If product already has a SalesforceID no need to create it again
+	if product.SalesforceID != nil {
+		return
+	}
+
+	var pricebookEntry *salesforceEntities.CreateSFPriceBookEntryResponse
+	// Create a salesforce product
+	salesforceProduct, err := s.salesforceClient.CreateProduct(ctx, &salesforceEntities.CreateSFProductRequest{
+		Name: product.Name,
+		// TODO: confirm if this is the correct description
+		Description: productVariant.SKU,
+		ProductCode: product.ID.String(),
+		IsActive:    true,
+	})
+	if err != nil {
+		s.log.Errorf("Error creating product on salesforce: %v", err)
+	}
+
+	if product != nil {
+		// Create a salesforce pricebook entry
+		pricebookEntry, err = s.salesforceClient.CreatePriceBookEntry(ctx, &salesforceEntities.CreateSFPriceBookEntryRequest{
+			Product2ID:   salesforceProduct.ID,
+			Pricebook2ID: salesforceEntities.StandardPriceBook,
+			// Unit price is 0 because the real price will be available in the order items
+			UnitPrice: 0,
+		})
+		if err != nil {
+			s.log.Errorf("Error creating pricebook entry on salesforce: %v", err)
+		}
+	}
+
+	if pricebookEntry != nil {
+		// Save the salesforce product and pricebook entry ids to the database
+		err = s.productClient.UpdateProduct(ctx, &productEntities.UpdateProductRequest{
+			ProductID: product.ID,
+			Data: &productEntities.UpdateProductRequestBody{
+				SalesforceID:               salesforceProduct.ID,
+				SalesforcePricebookEntryId: pricebookEntry.ID,
+			},
+		})
+		if err != nil {
+			s.log.Errorf("Error updating product: %v", err)
+		}
+	}
 }
 
 // swagger:route GET /cart/items carts GetCartItems

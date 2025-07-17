@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
 
@@ -72,6 +73,7 @@ var apiCommand = &cobra.Command{
 			orders.ModuleHttpAPI,
 			ordersclient.ModuleClient,
 			webhook.Module,
+			inventory.Module,
 			salesforce.Module,
 			swagger.ModuleServeSwagger,
 			stripeModule.ModuleHttpAPI,

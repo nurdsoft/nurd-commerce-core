@@ -25,8 +25,8 @@ import (
 	wishlistclient "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
-	salesforceclient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	inventoryEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
@@ -37,46 +37,46 @@ import (
 )
 
 type testController struct {
-	mockRepo       *repository.MockRepository
-	mockCustomer   *customerclient.MockClient
-	mockCart       *cartclient.MockClient
-	mockPayment    *payment.MockClient
-	mockWishlist   *wishlistclient.MockClient
-	mockSalesforce *salesforceclient.MockClient
-	mockAddress    *addressclient.MockClient
-	mockProduct    *productclient.MockClient
-	mockWebhook    *webhookclient.MockClient
+	mockRepo      *repository.MockRepository
+	mockCustomer  *customerclient.MockClient
+	mockCart      *cartclient.MockClient
+	mockPayment   *payment.MockClient
+	mockWishlist  *wishlistclient.MockClient
+	mockInventory *inventory.MockClient
+	mockAddress   *addressclient.MockClient
+	mockProduct   *productclient.MockClient
+	mockWebhook   *webhookclient.MockClient
 }
 
 func setupTestController(t *testing.T) *testController {
 	ctrl := gomock.NewController(t)
 
 	return &testController{
-		mockRepo:       repository.NewMockRepository(ctrl),
-		mockCustomer:   customerclient.NewMockClient(ctrl),
-		mockCart:       cartclient.NewMockClient(ctrl),
-		mockPayment:    payment.NewMockClient(ctrl),
-		mockWishlist:   wishlistclient.NewMockClient(ctrl),
-		mockSalesforce: salesforceclient.NewMockClient(ctrl),
-		mockAddress:    addressclient.NewMockClient(ctrl),
-		mockProduct:    productclient.NewMockClient(ctrl),
-		mockWebhook:    webhookclient.NewMockClient(ctrl),
+		mockRepo:      repository.NewMockRepository(ctrl),
+		mockCustomer:  customerclient.NewMockClient(ctrl),
+		mockCart:      cartclient.NewMockClient(ctrl),
+		mockPayment:   payment.NewMockClient(ctrl),
+		mockWishlist:  wishlistclient.NewMockClient(ctrl),
+		mockInventory: inventory.NewMockClient(ctrl),
+		mockAddress:   addressclient.NewMockClient(ctrl),
+		mockProduct:   productclient.NewMockClient(ctrl),
+		mockWebhook:   webhookclient.NewMockClient(ctrl),
 	}
 }
 
 func newServiceUnderTest(tc *testController) *service {
 	logger, _ := zap.NewDevelopment()
 	return &service{
-		repo:             tc.mockRepo,
-		log:              logger.Sugar(),
-		customerClient:   tc.mockCustomer,
-		cartClient:       tc.mockCart,
-		paymentClient:    tc.mockPayment,
-		wishlistClient:   tc.mockWishlist,
-		salesforceClient: tc.mockSalesforce,
-		addressClient:    tc.mockAddress,
-		productClient:    tc.mockProduct,
-		webhookClient:    tc.mockWebhook,
+		repo:            tc.mockRepo,
+		log:             logger.Sugar(),
+		customerClient:  tc.mockCustomer,
+		cartClient:      tc.mockCart,
+		paymentClient:   tc.mockPayment,
+		wishlistClient:  tc.mockWishlist,
+		inventoryClient: tc.mockInventory,
+		addressClient:   tc.mockAddress,
+		productClient:   tc.mockProduct,
+		webhookClient:   tc.mockWebhook,
 	}
 }
 
@@ -189,7 +189,6 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 		Return(nil)
 
 	notifyCallDone := make(chan struct{})
-
 	tc.mockWebhook.EXPECT().
 		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
@@ -198,6 +197,14 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 			close(notifyCallDone)
 		}).
 		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) {
+			close(salesforceCallDone)
+		}).
+		Return(nil, nil)
 
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
@@ -214,6 +221,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 	assert.NotEmpty(t, resp.OrderReference)
 	// wait for async notify call to be done
 	<-notifyCallDone
+	<-salesforceCallDone
 }
 
 func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
@@ -334,7 +342,6 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 		Return(nil)
 
 	notifyCallDone := make(chan struct{})
-
 	tc.mockWebhook.EXPECT().
 		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
@@ -343,6 +350,14 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 			close(notifyCallDone)
 		}).
 		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) {
+			close(salesforceCallDone)
+		}).
+		Return(nil, nil)
 
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
@@ -360,6 +375,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	assert.NotEmpty(t, resp.OrderReference)
 	// wait for async notify call to be done
 	<-notifyCallDone
+	<-salesforceCallDone
 }
 
 func TestProcessPaymentSucceeded_WithStripe(t *testing.T) {
@@ -425,11 +441,11 @@ func TestProcessPaymentSucceeded_WithStripe(t *testing.T) {
 			Return(nil)
 
 		salesforceCallDone := make(chan struct{})
-		tc.mockSalesforce.EXPECT().
+		tc.mockInventory.EXPECT().
 			UpdateOrderStatus(gomock.Any(), gomock.Any()).
-			Do(func(_ context.Context, req *salesforceEntities.UpdateOrderRequest) {
-				assert.Equal(t, salesforceID, req.AccountID)
-				assert.Equal(t, salesforceID, req.OrderId)
+			Do(func(_ context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) {
+				assert.Equal(t, salesforceID, req.Order.SalesforceID)
+				assert.Equal(t, salesforceID, *req.Customer.SalesforceID)
 				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
 				close(salesforceCallDone)
 			}).
@@ -544,11 +560,11 @@ func TestProcessPaymentSucceeded_WithAuthorizeNet(t *testing.T) {
 			Return(nil)
 
 		salesforceCallDone := make(chan struct{})
-		tc.mockSalesforce.EXPECT().
+		tc.mockInventory.EXPECT().
 			UpdateOrderStatus(gomock.Any(), gomock.Any()).
-			Do(func(_ context.Context, req *salesforceEntities.UpdateOrderRequest) {
-				assert.Equal(t, salesforceID, req.AccountID)
-				assert.Equal(t, salesforceID, req.OrderId)
+			Do(func(_ context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) {
+				assert.Equal(t, salesforceID, req.Order.SalesforceID)
+				assert.Equal(t, salesforceID, *req.Customer.SalesforceID)
 				assert.Equal(t, entities.PaymentSuccess.String(), req.Status)
 				close(salesforceCallDone)
 			}).

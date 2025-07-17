@@ -24,8 +24,8 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	inventoryEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	authorizenetEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/providers"
@@ -47,38 +47,38 @@ type Service interface {
 }
 
 type service struct {
-	repo             repository.Repository
-	log              *zap.SugaredLogger
-	customerClient   customerclient.Client
-	cartClient       cartclient.Client
-	paymentClient    payment.Client
-	wishlistClient   wishlistclient.Client
-	salesforceClient salesforce.Client
-	addressClient    addressclient.Client
-	productClient    productclient.Client
-	webhookClient    webhook.Client
-	config           cfg.Config
+	repo            repository.Repository
+	log             *zap.SugaredLogger
+	customerClient  customerclient.Client
+	cartClient      cartclient.Client
+	paymentClient   payment.Client
+	wishlistClient  wishlistclient.Client
+	inventoryClient inventory.Client
+	addressClient   addressclient.Client
+	productClient   productclient.Client
+	webhookClient   webhook.Client
+	config          cfg.Config
 }
 
 func New(
 	repo repository.Repository, log *zap.SugaredLogger, customerClient customerclient.Client,
 	cartClient cartclient.Client, paymentClient payment.Client,
 	wishlistClient wishlistclient.Client, config cfg.Config,
-	salesforceClient salesforce.Client, addressClient addressclient.Client, productClient productclient.Client,
+	inventoryClient inventory.Client, addressClient addressclient.Client, productClient productclient.Client,
 	webhookClient webhook.Client,
 ) Service {
 	return &service{
-		repo:             repo,
-		log:              log,
-		customerClient:   customerClient,
-		cartClient:       cartClient,
-		paymentClient:    paymentClient,
-		wishlistClient:   wishlistClient,
-		salesforceClient: salesforceClient,
-		addressClient:    addressClient,
-		productClient:    productClient,
-		webhookClient:    webhookClient,
-		config:           config,
+		repo:            repo,
+		log:             log,
+		customerClient:  customerClient,
+		cartClient:      cartClient,
+		paymentClient:   paymentClient,
+		wishlistClient:  wishlistClient,
+		inventoryClient: inventoryClient,
+		addressClient:   addressClient,
+		productClient:   productClient,
+		webhookClient:   webhookClient,
+		config:          config,
 	}
 }
 
@@ -236,7 +236,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		go func() {
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 				CustomerID:     customerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
@@ -248,150 +248,18 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		}()
 
 		go func() {
-			if customer.SalesforceID == nil {
-				s.log.Errorf("Customer does not have a salesforce id")
-				return
-			}
-
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
-
-			city := ""
-			if address.City != nil {
-				city = *address.City
-			}
-
-			// create order on salesforce
-			res, err := s.salesforceClient.CreateOrder(bgCtx, &salesforceEntities.CreateSFOrderRequest{
-				OrderReferenceC:         order.OrderReference,
-				AccountID:               *customer.SalesforceID,
-				EffectiveDate:           time.Now().Format("2006-01-02"),
-				Status:                  entities.Pending.String(),
-				BillingStreet:           address.Address,
-				BillingCity:             city,
-				BillingState:            address.StateCode,
-				BillingPostalCode:       address.PostalCode,
-				BillingCountry:          address.CountryCode,
-				ShippingStreet:          address.Address,
-				ShippingCity:            city,
-				ShippingState:           address.StateCode,
-				ShippingPostalCode:      address.PostalCode,
-				ShippingCountry:         address.CountryCode,
-				TotalC:                  order.Total.String(),
-				SubTotalC:               order.Subtotal.String(),
-				ShippingRateC:           order.ShippingRate.String(),
-				TaxAmountC:              order.TaxAmount.String(),
-				ShippingCarrierNameC:    order.ShippingCarrierName,
-				ShippingCarrierServiceC: order.ShippingServiceType,
-				CurrencyC:               order.Currency,
-				Pricebook2ID:            salesforceEntities.StandardPriceBook,
-				EstimatedDeliveryDateC: func() string {
-					if order.ShippingEstimatedDeliveryDate.IsZero() {
-						return time.Now().Format("2006-01-02")
-					}
-					return order.ShippingEstimatedDeliveryDate.Format("2006-01-02")
-				}(),
-				OrderCreatedAtC: time.Now().Format("2006-01-02"),
+			_, err := s.inventoryClient.CreateOrder(bgCtx, inventoryEntities.CreateInventoryOrderRequest{
+				Order:      *order,
+				OrderItems: orderItems,
+				Address:    *address,
+				Customer:   *customer,
+				CartItems:  cartItems.Items,
 			})
 			if err != nil {
-				s.log.Errorf("Error creating order on salesforce: %v", err)
-				return
+				s.log.Errorf("Error creating order on inventory: %v", err)
 			}
-			if res.Success {
-				// update order with salesforce order id
-				err = s.repo.Update(bgCtx, map[string]interface{}{
-					"salesforce_id": res.ID,
-				}, order.ID.String(), order.CustomerID.String())
-				if err != nil {
-					s.log.Errorf("Error updating order with salesforce order id: %v", err)
-					return
-				}
-
-				productIDs := func() []string {
-					var ids []string
-					for _, item := range cartItems.Items {
-						ids = append(ids, item.ProductID.String())
-					}
-					return ids
-				}
-				// get salesforce products by product ids
-				products, err := s.productClient.GetProductsByIDs(bgCtx, productIDs())
-				if err != nil {
-					s.log.Errorf("Error fetching salesforce products: %v", err)
-					return
-				}
-
-				sfOrderItems := make([]*salesforceEntities.OrderItem, 0, len(orderItems))
-
-				if len(products) > 0 {
-					for _, item := range cartItems.Items {
-
-						description := ""
-						if item.Description != nil {
-							description = *item.Description
-						}
-
-						sfOrderItem := salesforceEntities.OrderItem{
-							OrderID:     res.ID,
-							Quantity:    item.Quantity,
-							UnitPrice:   item.Price.InexactFloat64(),
-							Description: item.Name,
-							TypeC:       description,
-						}
-
-						for _, product := range products {
-							if product.ID == item.ProductID && product.SalesforcePricebookEntryId != nil {
-								sfOrderItem.PricebookEntryID = *product.SalesforcePricebookEntryId
-								break
-							}
-						}
-
-						sfOrderItems = append(sfOrderItems, &sfOrderItem)
-					}
-
-					// add items to order on salesforce
-					_, err := s.salesforceClient.AddOrderItems(bgCtx, sfOrderItems)
-					if err != nil {
-						s.log.Errorf("Error adding items to order on salesforce: %v", err)
-						return
-					}
-
-					// get order items from salesforce
-					items, err := s.salesforceClient.GetOrderItems(bgCtx, res.ID)
-					if err != nil {
-						s.log.Errorf("Error fetching order items from salesforce: %v", err)
-						return
-					}
-
-					if len(items.Records) > 0 {
-						// map of order item id to salesforce order item id
-						ids := make(map[string]string)
-						// build the map based on TypeC and Description and ProductID & Product2Id
-						// salesforce order items
-						for _, item := range items.Records {
-							// order items
-							for _, orderItem := range orderItems {
-								if orderItem.Description != nil &&
-									item.TypeC == *orderItem.Description &&
-									item.Description == orderItem.Name {
-									ids[orderItem.ID.String()] = item.ID
-									break
-								}
-							}
-						}
-
-						// update order items with salesforce order item ids
-						err = s.repo.AddSalesforceIDPerOrderItem(bgCtx, ids)
-						if err != nil {
-							s.log.Errorf("Error updating order items with salesforce order item ids: %v", err)
-							return
-						}
-					}
-				} else {
-					s.log.Errorf("No products found for order items")
-				}
-			}
-
 		}()
 	}
 
@@ -578,21 +446,18 @@ func (s *service) CancelOrder(ctx context.Context, req *entities.CancelOrderRequ
 		return err
 	}
 
-	// update order status on salesforce
+	// update order status on inventory
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
-		if customer.SalesforceID != nil && order.SalesforceID != "" {
-			err = s.salesforceClient.UpdateOrderStatus(bgCtx, &salesforceEntities.UpdateOrderRequest{
-				OrderId:   order.SalesforceID,
-				Status:    entities.Cancelled.String(),
-				AccountID: *customer.SalesforceID,
-			})
-			if err != nil {
-				s.log.Errorf("Error updating order status on salesforce: %v", err)
-				return
-			}
+		err = s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
+			Order:    *order,
+			Customer: *customer,
+			Status:   entities.Cancelled.String(),
+		})
+		if err != nil {
+			s.log.Errorf("Error updating order status on inventory: %v", err)
 		}
 	}()
 
@@ -629,7 +494,7 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string)
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
@@ -641,18 +506,15 @@ func (s *service) ProcessPaymentSucceeded(ctx context.Context, paymentID string)
 	}()
 
 	go func() {
-		if customer.SalesforceID != nil && order.SalesforceID != "" {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-			defer cancel()
-			err = s.salesforceClient.UpdateOrderStatus(bgCtx, &salesforceEntities.UpdateOrderRequest{
-				OrderId:   order.SalesforceID,
-				Status:    entities.PaymentSuccess.String(),
-				AccountID: *customer.SalesforceID,
-			})
-			if err != nil {
-				s.log.Errorf("Error updating order status on salesforce: %v", err)
-				return
-			}
+		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		err := s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
+			Order:    *order,
+			Customer: *customer,
+			Status:   entities.PaymentSuccess.String(),
+		})
+		if err != nil {
+			s.log.Errorf("Error updating order status on inventory: %v", err)
 		}
 	}()
 
@@ -708,7 +570,7 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) er
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,
@@ -720,18 +582,15 @@ func (s *service) ProcessPaymentFailed(ctx context.Context, paymentID string) er
 	}()
 
 	go func() {
-		if customer.SalesforceID != nil && order.SalesforceID != "" {
-			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-			defer cancel()
-			err = s.salesforceClient.UpdateOrderStatus(bgCtx, &salesforceEntities.UpdateOrderRequest{
-				OrderId:   order.SalesforceID,
-				Status:    entities.PaymentFailed.String(),
-				AccountID: *customer.SalesforceID,
-			})
-			if err != nil {
-				s.log.Errorf("Error updating order status on salesforce: %v", err)
-				return
-			}
+		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		err := s.inventoryClient.UpdateOrderStatus(bgCtx, inventoryEntities.UpdateInventoryOrderStatusRequest{
+			Order:    *order,
+			Customer: *customer,
+			Status:   entities.PaymentFailed.String(),
+		})
+		if err != nil {
+			s.log.Errorf("Error updating order status on inventory: %v", err)
 		}
 	}()
 
@@ -847,7 +706,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 			bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
 
-			err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+			err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 				CustomerID:     order.CustomerID.String(),
 				OrderID:        order.ID.String(),
 				OrderReference: order.OrderReference,
@@ -1026,7 +885,7 @@ func (s *service) RefundOrder(ctx context.Context, req *entities.RefundOrderRequ
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		err = s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
+		err := s.webhookClient.NotifyOrderStatusChange(bgCtx, &webhookEntities.NotifyOrderStatusChangeRequest{
 			CustomerID:     order.CustomerID.String(),
 			OrderID:        order.ID.String(),
 			OrderReference: order.OrderReference,

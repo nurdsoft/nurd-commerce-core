@@ -9,7 +9,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
+	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
+	entities0 "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 )
 
 // MockClient is a mock of Client interface.
@@ -36,10 +37,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddOrderItems mocks base method.
-func (m *MockClient) AddOrderItems(ctx context.Context, items []*entities.OrderItem) (*entities.AddOrderItemResponse, error) {
+func (m *MockClient) AddOrderItems(ctx context.Context, items []*entities0.OrderItem) (*entities0.AddOrderItemResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddOrderItems", ctx, items)
-	ret0, _ := ret[0].(*entities.AddOrderItemResponse)
+	ret0, _ := ret[0].(*entities0.AddOrderItemResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +52,10 @@ func (mr *MockClientMockRecorder) AddOrderItems(ctx, items interface{}) *gomock.
 }
 
 // CreateOrder mocks base method.
-func (m *MockClient) CreateOrder(ctx context.Context, req *entities.CreateSFOrderRequest) (*entities.CreateSFOrderResponse, error) {
+func (m *MockClient) CreateOrder(ctx context.Context, req entities.CreateInventoryOrderRequest) (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrder", ctx, req)
-	ret0, _ := ret[0].(*entities.CreateSFOrderResponse)
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +67,10 @@ func (mr *MockClientMockRecorder) CreateOrder(ctx, req interface{}) *gomock.Call
 }
 
 // CreatePriceBookEntry mocks base method.
-func (m *MockClient) CreatePriceBookEntry(ctx context.Context, req *entities.CreateSFPriceBookEntryRequest) (*entities.CreateSFPriceBookEntryResponse, error) {
+func (m *MockClient) CreatePriceBookEntry(ctx context.Context, req *entities0.CreateSFPriceBookEntryRequest) (*entities0.CreateSFPriceBookEntryResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePriceBookEntry", ctx, req)
-	ret0, _ := ret[0].(*entities.CreateSFPriceBookEntryResponse)
+	ret0, _ := ret[0].(*entities0.CreateSFPriceBookEntryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +82,10 @@ func (mr *MockClientMockRecorder) CreatePriceBookEntry(ctx, req interface{}) *go
 }
 
 // CreateProduct mocks base method.
-func (m *MockClient) CreateProduct(ctx context.Context, req *entities.CreateSFProductRequest) (*entities.CreateSFProductResponse, error) {
+func (m *MockClient) CreateProduct(ctx context.Context, req *entities0.CreateSFProductRequest) (*entities0.CreateSFProductResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateProduct", ctx, req)
-	ret0, _ := ret[0].(*entities.CreateSFProductResponse)
+	ret0, _ := ret[0].(*entities0.CreateSFProductResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,10 +97,10 @@ func (mr *MockClientMockRecorder) CreateProduct(ctx, req interface{}) *gomock.Ca
 }
 
 // CreateUserAccount mocks base method.
-func (m *MockClient) CreateUserAccount(ctx context.Context, req *entities.CreateSFUserRequest) (*entities.CreateSFUserResponse, error) {
+func (m *MockClient) CreateUserAccount(ctx context.Context, req *entities0.CreateSFUserRequest) (*entities0.CreateSFUserResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUserAccount", ctx, req)
-	ret0, _ := ret[0].(*entities.CreateSFUserResponse)
+	ret0, _ := ret[0].(*entities0.CreateSFUserResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,10 +112,10 @@ func (mr *MockClientMockRecorder) CreateUserAccount(ctx, req interface{}) *gomoc
 }
 
 // CreateUserAddress mocks base method.
-func (m *MockClient) CreateUserAddress(ctx context.Context, req *entities.CreateSFAddressRequest) (*entities.CreateSFAddressResponse, error) {
+func (m *MockClient) CreateUserAddress(ctx context.Context, req *entities0.CreateSFAddressRequest) (*entities0.CreateSFAddressResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUserAddress", ctx, req)
-	ret0, _ := ret[0].(*entities.CreateSFAddressResponse)
+	ret0, _ := ret[0].(*entities0.CreateSFAddressResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -140,10 +141,10 @@ func (mr *MockClientMockRecorder) DeleteUserAddress(ctx, addressId interface{}) 
 }
 
 // GetAccountByID mocks base method.
-func (m *MockClient) GetAccountByID(ctx context.Context, accountId string) (*entities.Account, error) {
+func (m *MockClient) GetAccountByID(ctx context.Context, accountId string) (*entities0.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountByID", ctx, accountId)
-	ret0, _ := ret[0].(*entities.Account)
+	ret0, _ := ret[0].(*entities0.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -155,10 +156,10 @@ func (mr *MockClientMockRecorder) GetAccountByID(ctx, accountId interface{}) *go
 }
 
 // GetOrderItems mocks base method.
-func (m *MockClient) GetOrderItems(ctx context.Context, orderId string) (*entities.GetOrderItemsResponse, error) {
+func (m *MockClient) GetOrderItems(ctx context.Context, orderId string) (*entities0.GetOrderItemsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOrderItems", ctx, orderId)
-	ret0, _ := ret[0].(*entities.GetOrderItemsResponse)
+	ret0, _ := ret[0].(*entities0.GetOrderItemsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -170,7 +171,7 @@ func (mr *MockClientMockRecorder) GetOrderItems(ctx, orderId interface{}) *gomoc
 }
 
 // UpdateOrderStatus mocks base method.
-func (m *MockClient) UpdateOrderStatus(ctx context.Context, req *entities.UpdateOrderRequest) error {
+func (m *MockClient) UpdateOrderStatus(ctx context.Context, req entities.UpdateInventoryOrderStatusRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOrderStatus", ctx, req)
 	ret0, _ := ret[0].(error)
@@ -184,7 +185,7 @@ func (mr *MockClientMockRecorder) UpdateOrderStatus(ctx, req interface{}) *gomoc
 }
 
 // UpdateUserAccount mocks base method.
-func (m *MockClient) UpdateUserAccount(ctx context.Context, req *entities.UpdateSFUserRequest) error {
+func (m *MockClient) UpdateUserAccount(ctx context.Context, req *entities0.UpdateSFUserRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUserAccount", ctx, req)
 	ret0, _ := ret[0].(error)
@@ -198,7 +199,7 @@ func (mr *MockClientMockRecorder) UpdateUserAccount(ctx, req interface{}) *gomoc
 }
 
 // UpdateUserAddress mocks base method.
-func (m *MockClient) UpdateUserAddress(ctx context.Context, req *entities.UpdateSFAddressRequest) error {
+func (m *MockClient) UpdateUserAddress(ctx context.Context, req *entities0.UpdateSFAddressRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUserAddress", ctx, req)
 	ret0, _ := ret[0].(error)

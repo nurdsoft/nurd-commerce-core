@@ -10,7 +10,7 @@ import (
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/client"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	salesforceConfig "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	sfErrors "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/errors"
 	"go.uber.org/zap"
@@ -37,13 +37,13 @@ type Service interface {
 	GetOrderItems(ctx context.Context, orderId string) (*entities.GetOrderItemsResponse, error)
 }
 type service struct {
-	config     inventory.Config
+	config     salesforceConfig.Config
 	httpClient *http.Client
 	log        *zap.SugaredLogger
 	cache      cache.Cache
 }
 
-func New(cfg inventory.Config, httpClient *http.Client, logger *zap.SugaredLogger, cache cache.Cache) Service {
+func New(cfg salesforceConfig.Config, httpClient *http.Client, logger *zap.SugaredLogger, cache cache.Cache) Service {
 	return &service{
 		config:     cfg,
 		httpClient: httpClient,
@@ -301,14 +301,14 @@ func (s *service) CreateOrder(ctx context.Context, order *entities.CreateSFOrder
 }
 
 func (s *service) AddOrderItems(ctx context.Context, items []*entities.OrderItem) (*entities.AddOrderItemResponse, error) {
-	url := fmt.Sprintf("%s/services/data/%s/composite/batch", s.config.Salesforce.ApiHost, s.config.Salesforce.ApiVersion)
+	url := fmt.Sprintf("%s/services/data/%s/composite/batch", s.config.ApiHost, s.config.ApiVersion)
 
 	batchRequest := &entities.AddOrderItemRequest{}
 
 	for _, item := range items {
 		batchRequest.BatchRequests = append(batchRequest.BatchRequests, entities.BatchRequests{
 			Method:    "POST",
-			URL:       fmt.Sprintf("/services/data/%s/sobjects/OrderItem", s.config.Salesforce.ApiVersion),
+			URL:       fmt.Sprintf("/services/data/%s/sobjects/OrderItem", s.config.ApiVersion),
 			RichInput: *item,
 		})
 	}
@@ -400,12 +400,12 @@ func (s *service) newSession(ctx context.Context) (*SFSession, error) {
 
 // getAccessToken retrieves a new access token from salesforce
 func (s *service) getAccessToken(ctx context.Context) (*entities.Oauth2Response, error) {
-	httpClient := client.New(s.config.Salesforce.ApiHost, s.httpClient, s.log)
+	httpClient := client.New(s.config.ApiHost, s.httpClient, s.log)
 
 	res := &entities.Oauth2Response{}
 
 	url := fmt.Sprintf("%s?grant_type=password&client_id=%s&client_secret=%s&username=%s&password=%s",
-		oauthEndpoint, s.config.Salesforce.ClientID, s.config.Salesforce.ClientSecret, s.config.Salesforce.Username, s.config.Salesforce.Password)
+		oauthEndpoint, s.config.ClientID, s.config.ClientSecret, s.config.Username, s.config.Password)
 
 	err := httpClient.Post(ctx, url, nil, nil, res)
 
@@ -423,8 +423,8 @@ func (s *service) getAccessToken(ctx context.Context) (*entities.Oauth2Response,
 func (s *service) GetOrderItems(ctx context.Context, orderId string) (*entities.GetOrderItemsResponse, error) {
 	url := fmt.Sprintf(
 		"%s/services/data/%s/query/?q=SELECT+Id,Quantity,Product2Id,Description,PricebookEntryId,Type__c+FROM+OrderItem+WHERE+OrderId='%s'",
-		s.config.Salesforce.ApiHost,
-		s.config.Salesforce.ApiVersion,
+		s.config.ApiHost,
+		s.config.ApiVersion,
 		orderId,
 	)
 
@@ -452,7 +452,7 @@ func (s *service) GetOrderItems(ctx context.Context, orderId string) (*entities.
 // makeUrl creates a salesforce api url with the given sObjectType and objectId
 func (s *service) makeUrl(sObjectType, objectId string) string {
 	url := fmt.Sprintf("%s/services/data/%s/sobjects/%s/%s",
-		s.config.Salesforce.ApiHost, s.config.Salesforce.ApiVersion, sObjectType, objectId)
+		s.config.ApiHost, s.config.ApiVersion, sObjectType, objectId)
 
 	return url
 }

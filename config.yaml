@@ -49,6 +49,7 @@ Taxes:
   Stripe:
     Key: ""
 Inventory:
+  Provider: "none"
   Salesforce:
     ApiHost: xxxx
     ApiVersion: xxxx

@@ -26,7 +26,7 @@ func (c *localClient) ValidateAddress(ctx context.Context, address entities.Addr
 func (c *localClient) GetShippingRates(ctx context.Context, shipment entities.Shipment) ([]entities.ShippingRate, error) {
 	return []entities.ShippingRate{
 		{
-			Amount:                decimal.NewFromInt(100),
+			Amount:                decimal.NewFromFloat(9.99),
 			Currency:              "USD",
 			CarrierName:           "Fake Carrier",
 			CarrierCode:           "FAKE",

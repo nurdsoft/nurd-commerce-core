@@ -20,8 +20,8 @@ type localClient struct{}
 
 func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error) {
 	return &entities.CalculateTaxResponse{
-		Tax:         decimal.NewFromFloat(3.99),
-		TotalAmount: decimal.NewFromFloat(103.99),
+		Tax:         decimal.NewFromInt(399),
+		TotalAmount: decimal.NewFromInt(10399),
 		Currency:    "USD",
 		Breakdown:   json.JSON(`{"tax": 3.99}`),
 	}, nil

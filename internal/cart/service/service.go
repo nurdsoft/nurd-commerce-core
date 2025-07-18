@@ -12,7 +12,6 @@ import (
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
-	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
 	addressEntities "github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -21,13 +20,14 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/repository"
 	productEntities "github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
+	taxesEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	shipping "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
-	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -47,7 +47,7 @@ type service struct {
 	repo             repository.Repository
 	log              *zap.SugaredLogger
 	shippingClient   shipping.Client
-	stripeClient     stripe.Client
+	taxesClient      taxes.Client
 	cache            cache.Cache
 	productClient    productclient.Client
 	addressClient    addressclient.Client
@@ -59,7 +59,7 @@ func New(
 	repo repository.Repository,
 	log *zap.SugaredLogger,
 	shippingClient shipping.Client,
-	stripeClient stripe.Client,
+	taxesClient taxes.Client,
 	cache cache.Cache,
 	productClient productclient.Client,
 	addressClient addressclient.Client,
@@ -70,7 +70,7 @@ func New(
 		repo:             repo,
 		log:              log,
 		shippingClient:   shippingClient,
-		stripeClient:     stripeClient,
+		taxesClient:      taxesClient,
 		cache:            cache,
 		productClient:    productClient,
 		addressClient:    addressClient,
@@ -345,7 +345,7 @@ func (s *service) GetCartItems(ctx context.Context) (*entities.GetCartItemsRespo
 //
 // Parameters:
 //
-//   + name: item_id
+//   - name: item_id
 //     in: path
 //     description: ID of the item to be removed
 //     required: true
@@ -483,11 +483,11 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		}
 	}
 
-	var taxItems []stripeEntities.TaxItem
+	var taxItems []taxesEntities.TaxItem
 	var totalCartPrice decimal.Decimal
 
 	for _, item := range getActiveCarItems.Items {
-		taxItem := stripeEntities.TaxItem{
+		taxItem := taxesEntities.TaxItem{
 			// Stripe requires to provide the amount of the product with the no.of pieces being bought
 			Price:     item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))),
 			Quantity:  item.Quantity,
@@ -503,7 +503,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		totalCartPrice = totalCartPrice.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 	}
 
-	toAddress := stripeEntities.Address{
+	toAddress := taxesEntities.Address{
 		State:      address.StateCode,
 		PostalCode: address.PostalCode,
 		Country:    address.CountryCode,
@@ -513,9 +513,9 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		toAddress.City = *address.City
 	}
 
-	res, err := s.stripeClient.CalculateTax(ctx, &stripeEntities.CalculateTaxRequest{
+	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
 		ShippingAmount: shippingRate.Amount,
-		FromAddress: stripeEntities.Address{
+		FromAddress: taxesEntities.Address{
 			City:       req.Body.WarehouseAddress.City,
 			State:      req.Body.WarehouseAddress.StateCode,
 			PostalCode: req.Body.WarehouseAddress.PostalCode,

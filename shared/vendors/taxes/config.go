@@ -2,16 +2,26 @@
 package taxes
 
 import (
+	"errors"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/providers"
 	stripeConfig "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/config"
 )
 
 // Config should be included as part of service config.
 type Config struct {
-	Stripe stripeConfig.Config
+	Provider providers.ProviderType
+	Stripe   stripeConfig.Config
 }
 
 // Validate config.
 func (c *Config) Validate() error {
-	// TODO Add conditional to use validate() to enabled tax vendor
-	return c.Stripe.Validate()
+	switch c.Provider {
+	case "":
+		return nil
+	case providers.ProviderStripe:
+		return c.Stripe.Validate()
+	default:
+		return errors.New("invalid tax provider")
+	}
 }

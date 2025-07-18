@@ -20,7 +20,7 @@ import (
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
-	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes"
 )
 
 // ModuleParams for cart.
@@ -34,7 +34,7 @@ type ModuleParams struct {
 	CommonConfig     cfg.Config
 	Logger           *zap.SugaredLogger
 	ShippingClient   shipping.Client
-	StripeClient     stripe.Client
+	TaxesClient      taxes.Client
 	ProductClient    productclient.Client
 	AddressClient    addressclient.Client
 	InventoryClient  inventory.Client
@@ -46,7 +46,7 @@ type ModuleParams struct {
 func NewModule(p ModuleParams) error {
 	repo := repository.New(p.DB, p.GormDB)
 	cacheClient := cache.New()
-	svc := service.New(repo, p.Logger, p.ShippingClient, p.StripeClient, cacheClient, p.ProductClient, p.AddressClient, p.InventoryClient, p.SalesforceClient)
+	svc := service.New(repo, p.Logger, p.ShippingClient, p.TaxesClient, cacheClient, p.ProductClient, p.AddressClient, p.InventoryClient, p.SalesforceClient)
 	eps := endpoints.New(svc)
 
 	http.RegisterTransport(p.HTTPServer, eps, p.APPTransport)

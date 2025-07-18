@@ -46,6 +46,7 @@ Payment:
     SignatureKey: "fake-signature-key"
     Endpoint: "https://apitest.authorize.net/xml/v1/request.api"
 Taxes:
+  Provider: "stripe"
   Stripe:
     Key: ""
 Inventory:

@@ -26,7 +26,7 @@ func NewClient(provider providers.ProviderType, stripeClient stripe.Client, fake
 
 func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error) {
 	switch c.provider {
-	case "":
+	case "", providers.ProviderNone:
 		return c.fakeClient.CalculateTax(ctx, req)
 	case providers.ProviderStripe:
 		return c.stripeClient.CalculateTax(ctx, req)

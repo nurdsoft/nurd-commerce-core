@@ -202,7 +202,7 @@ func (s *service) GetProductsByIDs(ctx context.Context, ids []string) ([]entitie
 	return products, nil
 }
 
-// swagger:route GET /product/variants products ListProductVariantsRequest
+// swagger:route GET /product-variants products ListProductVariantsRequest
 //
 // # List Product Variants
 // ### Get a paginated list of product variants with optional filtering

@@ -454,7 +454,6 @@ func TestGetCustomerPaymentProfiles(t *testing.T) {
 
 func TestCreatePaymentTransaction(t *testing.T) {
 	ctx := context.TODO()
-	profileID := "test-profile-id"
 	apiLoginID := "test-login"
 	transactionKey := "test-key"
 	expectedID := "80041310709"
@@ -504,9 +503,17 @@ func TestCreatePaymentTransaction(t *testing.T) {
 		}
 
 		req := entities.CreatePaymentTransactionRequest{
-			ProfileID:    profileID,
 			Amount:       decimal.NewFromInt(100),
 			PaymentNonce: "1234567890",
+			BillingInfo: entities.BillingInfo{
+				FirstName: "John",
+				LastName:  "Doe",
+				Address:   "123 Main St",
+				City:      "Anytown",
+				State:     "CA",
+				Country:   "US",
+				Zip:       "12345",
+			},
 		}
 
 		res, err := svc.CreatePaymentTransaction(ctx, req)
@@ -551,7 +558,6 @@ func TestCreatePaymentTransaction(t *testing.T) {
 		}
 
 		req := entities.CreatePaymentTransactionRequest{
-			ProfileID:    profileID,
 			Amount:       decimal.NewFromInt(100),
 			PaymentNonce: "1234567890",
 		}
@@ -591,7 +597,6 @@ func TestCreatePaymentTransaction(t *testing.T) {
 		}
 
 		req := entities.CreatePaymentTransactionRequest{
-			ProfileID:    profileID,
 			Amount:       decimal.NewFromInt(100),
 			PaymentNonce: "1234567890",
 		}
@@ -617,7 +622,6 @@ func TestCreatePaymentTransaction(t *testing.T) {
 		}
 
 		req := entities.CreatePaymentTransactionRequest{
-			ProfileID:    profileID,
 			Amount:       decimal.NewFromInt(100),
 			PaymentNonce: "1234567890",
 		}

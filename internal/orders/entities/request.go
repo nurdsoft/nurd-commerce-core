@@ -18,10 +18,21 @@ type CreateOrderRequest struct {
 }
 
 type CreateOrderRequestBody struct {
-	AddressID             uuid.UUID `json:"address_id"`
-	ShippingRateID        uuid.UUID `json:"shipping_rate_id"`
-	StripePaymentMethodID string    `json:"stripe_payment_method_id,omitempty"`
-	PaymentNonce          string    `json:"payment_nonce,omitempty"`
+	AddressID             uuid.UUID   `json:"address_id"`
+	ShippingRateID        uuid.UUID   `json:"shipping_rate_id"`
+	StripePaymentMethodID string      `json:"stripe_payment_method_id,omitempty"`
+	PaymentNonce          string      `json:"payment_nonce,omitempty"`
+	BillingInfo           BillingInfo `json:"billing_info,omitzero"`
+}
+
+type BillingInfo struct {
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	Address   string `json:"address,omitempty"`
+	City      string `json:"city,omitempty"`
+	State     string `json:"state,omitempty"`
+	Country   string `json:"country,omitempty"`
+	Zip       string `json:"zip,omitempty"`
 }
 
 type CreatePaymentRequest struct {
@@ -30,6 +41,7 @@ type CreatePaymentRequest struct {
 	Customer        entities.Customer
 	PaymentMethodId string
 	PaymentNonce    string
+	BillingInfo     BillingInfo
 }
 
 // swagger:parameters orders ListOrdersRequest

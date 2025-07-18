@@ -2,6 +2,7 @@ package ordersclient
 
 import (
 	"database/sql"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/customerclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/service"
@@ -9,7 +10,7 @@ import (
 	webhookClient "github.com/nurdsoft/nurd-commerce-core/internal/webhook/client"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
-	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -25,20 +26,20 @@ import (
 type ModuleParams struct {
 	fx.In
 
-	DB               *sql.DB
-	GormDB           *gorm.DB
-	HTTPServer       *httpTransport.Server
-	APPTransport     svcTransport.Client
-	CommonConfig     cfg.Config
-	Logger           *zap.SugaredLogger
-	CartClient       cart.Client
-	PaymentClient    payment.Client
-	WishlistClient   wishlistclient.Client
-	SalesforceClient salesforce.Client
-	CustomerClient   customerclient.Client
-	AddressClient    addressclient.Client
-	ProductClient    productclient.Client
-	WebhookClient    webhookClient.Client
+	DB              *sql.DB
+	GormDB          *gorm.DB
+	HTTPServer      *httpTransport.Server
+	APPTransport    svcTransport.Client
+	CommonConfig    cfg.Config
+	Logger          *zap.SugaredLogger
+	CartClient      cart.Client
+	PaymentClient   payment.Client
+	WishlistClient  wishlistclient.Client
+	InventoryClient inventory.Client
+	CustomerClient  customerclient.Client
+	AddressClient   addressclient.Client
+	ProductClient   productclient.Client
+	WebhookClient   webhookClient.Client
 }
 
 // NewClientModule
@@ -47,7 +48,7 @@ func NewClientModule(p ModuleParams) Client {
 	repo := repository.New(p.DB, p.GormDB)
 	svc := service.New(
 		repo, p.Logger, p.CustomerClient, p.CartClient, p.PaymentClient,
-		p.WishlistClient, p.CommonConfig, p.SalesforceClient, p.AddressClient, p.ProductClient, p.WebhookClient)
+		p.WishlistClient, p.CommonConfig, p.InventoryClient, p.AddressClient, p.ProductClient, p.WebhookClient)
 
 	client := NewClient(svc)
 

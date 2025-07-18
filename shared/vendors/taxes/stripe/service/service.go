@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/config"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/errors"
 	"github.com/shopspring/decimal"
@@ -18,17 +18,17 @@ type Service interface {
 	CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error)
 }
 
-func New(config taxes.Config, logger *zap.SugaredLogger) (Service, error) {
+func New(config config.Config, logger *zap.SugaredLogger) (Service, error) {
 	return &service{config, logger}, nil
 }
 
 type service struct {
-	config taxes.Config
+	config config.Config
 	logger *zap.SugaredLogger
 }
 
 func (s *service) CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error) {
-	stripe.Key = s.config.Stripe.Key
+	stripe.Key = s.config.Key
 
 	var lineItems []*stripe.TaxCalculationLineItemParams
 

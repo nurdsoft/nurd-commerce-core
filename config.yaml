@@ -22,7 +22,7 @@ DB:
     Password: 123
     SSLMode: "disable"
 Shipping:
-  Provider: "Shipengine"
+  Provider: ""
   Shipengine:
     Host: ""
     Token: ""
@@ -46,9 +46,11 @@ Payment:
     SignatureKey: "fake-signature-key"
     Endpoint: "https://apitest.authorize.net/xml/v1/request.api"
 Taxes:
+  Provider: "stripe"
   Stripe:
     Key: ""
 Inventory:
+  Provider: "none"
   Salesforce:
     ApiHost: xxxx
     ApiVersion: xxxx

@@ -184,7 +184,7 @@ func (s *service) GetCustomerPaymentProfiles(ctx context.Context, req entities.G
 
 func (s *service) CreatePaymentTransaction(ctx context.Context, req entities.CreatePaymentTransactionRequest) (entities.CreatePaymentTransactionResponse, error) {
 	amount := req.Amount.StringFixed(2)
-	s.logger.Infof("Creating payment transaction: profileID=%s", req.ProfileID)
+	s.logger.Infof("Creating payment transaction: amount=%s", amount)
 
 	requestData := CreateTransactionRequest{
 		Data: TransactionRequestData{
@@ -201,8 +201,14 @@ func (s *service) CreatePaymentTransaction(ctx context.Context, req entities.Cre
 						DataValue:      req.PaymentNonce,
 					},
 				},
-				Customer: Customer{
-					ID: req.ProfileID,
+				BillTo: BillTo{
+					FirstName: req.BillingInfo.FirstName,
+					LastName:  req.BillingInfo.LastName,
+					Address:   req.BillingInfo.Address,
+					City:      req.BillingInfo.City,
+					State:     req.BillingInfo.State,
+					Country:   req.BillingInfo.Country,
+					Zip:       req.BillingInfo.Zip,
 				},
 			},
 		},

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/authorizenet"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment/stripe"
 
@@ -35,7 +36,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/payment"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping"
-	stripeTaxes "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
@@ -57,7 +58,7 @@ var apiCommand = &cobra.Command{
 			stripe.Module,
 			authorizenet.Module,
 			payment.Module,
-			stripeTaxes.Module,
+			taxes.Module,
 			log.Module,
 			customer.ModuleHttpAPI,
 			customerclient.ModuleClient,
@@ -72,6 +73,7 @@ var apiCommand = &cobra.Command{
 			orders.ModuleHttpAPI,
 			ordersclient.ModuleClient,
 			webhook.Module,
+			inventory.Module,
 			salesforce.Module,
 			swagger.ModuleServeSwagger,
 			stripeModule.ModuleHttpAPI,

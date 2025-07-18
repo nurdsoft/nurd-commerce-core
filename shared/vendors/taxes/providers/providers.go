@@ -5,5 +5,6 @@ type (
 )
 
 const (
+	ProviderNone   ProviderType = "none"
 	ProviderStripe ProviderType = "stripe"
 )

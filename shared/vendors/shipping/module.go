@@ -28,7 +28,7 @@ type ModuleParams struct {
 // nolint:gocritic
 func NewModule(p ModuleParams) (client.Client, error) {
 	switch p.Config.Provider {
-	case "":
+	case "", ProviderNone:
 		return fakeprovider.NewClient(), nil
 	case ProviderShipengine:
 		service, err := shipengineService.New(p.HttpClient, p.Config.Shipengine, p.Logger)

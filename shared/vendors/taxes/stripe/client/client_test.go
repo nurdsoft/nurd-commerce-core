@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
-	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/service"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"

@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
+	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/service"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -26,9 +27,27 @@ func TestClient_CalculateTax(t *testing.T) {
 		ToAddress:      entities.Address{City: "City", State: "State", PostalCode: "12345", Country: "US"},
 		TaxItems:       []entities.TaxItem{{Price: decimal.NewFromInt(1000), Quantity: 1, TaxCode: "tax_code"}},
 	}
+	stripeReq := &stripeEntities.CalculateTaxRequest{
+		ShippingAmount: req.ShippingAmount,
+		FromAddress: stripeEntities.Address{
+			Line1:      req.FromAddress.Line1,
+			City:       req.FromAddress.City,
+			State:      req.FromAddress.State,
+			PostalCode: req.FromAddress.PostalCode,
+			Country:    req.FromAddress.Country,
+		},
+		ToAddress: stripeEntities.Address{
+			Line1:      req.ToAddress.Line1,
+			City:       req.ToAddress.City,
+			State:      req.ToAddress.State,
+			PostalCode: req.ToAddress.PostalCode,
+			Country:    req.ToAddress.Country,
+		},
+		TaxItems: mapStripeTaxItems(req.TaxItems),
+	}
 
 	t.Run("Customer tax location invalid", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Customer tax location is invalid"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Customer tax location is invalid"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)
@@ -37,7 +56,7 @@ func TestClient_CalculateTax(t *testing.T) {
 	})
 
 	t.Run("Shipping address invalid", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Shipping address is invalid"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Shipping address is invalid"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)
@@ -46,7 +65,7 @@ func TestClient_CalculateTax(t *testing.T) {
 	})
 
 	t.Run("Invalid tax location", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Invalid tax location"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Invalid tax location"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)
@@ -55,7 +74,7 @@ func TestClient_CalculateTax(t *testing.T) {
 	})
 
 	t.Run("Tax ID invalid", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Tax ID is invalid"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Tax ID is invalid"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)
@@ -64,7 +83,7 @@ func TestClient_CalculateTax(t *testing.T) {
 	})
 
 	t.Run("Stripe tax inactive", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Stripe Tax is inactive"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Stripe Tax is inactive"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)
@@ -73,7 +92,7 @@ func TestClient_CalculateTax(t *testing.T) {
 	})
 
 	t.Run("Taxes calculation failed", func(t *testing.T) {
-		mockService.EXPECT().CalculateTax(ctx, req).Return(nil, &appErrors.APIError{Message: "Unable to calculate taxes"})
+		mockService.EXPECT().CalculateTax(ctx, stripeReq).Return(nil, &appErrors.APIError{Message: "Unable to calculate taxes"})
 
 		_, err := client.CalculateTax(ctx, req)
 		assert.Error(t, err)

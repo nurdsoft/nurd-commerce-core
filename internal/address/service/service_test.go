@@ -18,6 +18,8 @@ import (
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	sfEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	shippingClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/client"
+	inventoryClient "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 )
 
 var (
@@ -39,6 +41,7 @@ func Test_service_AddAddress(t *testing.T) {
 		mockRepo := repository.NewMockRepository(ctrl)
 		mockShippingClient := shippingClient.NewMockClient(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
+		mockInventoryClient := inventoryClient.NewMockClient(ctrl)
 		userUUID := uuid.New()
 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
 		svc := &service{
@@ -46,6 +49,7 @@ func Test_service_AddAddress(t *testing.T) {
 			log:              zap.NewExample().Sugar(),
 			shippingClient:   mockShippingClient,
 			salesforceClient: mockSfClient,
+			inventoryClient:  mockInventoryClient,
 			customerClient:   customerclient.NewMockClient(ctrl),
 		}
 		return svc, ctx, mockRepo, mockShippingClient, mockSfClient
@@ -221,11 +225,12 @@ func Test_service_UpdateAddress(t *testing.T) {
 		*repository.MockRepository,
 		*shippingClient.MockClient,
 		*salesforce.MockClient,
+		*inventoryClient.MockClient,
 	) {
 		mockRepo := repository.NewMockRepository(ctrl)
 		mockShippingClient := shippingClient.NewMockClient(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
-
+		mockInventoryClient := inventoryClient.NewMockClient(ctrl)
 		userUUID := uuid.New()
 
 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
@@ -234,13 +239,14 @@ func Test_service_UpdateAddress(t *testing.T) {
 			log:              zap.NewExample().Sugar(),
 			shippingClient:   mockShippingClient,
 			salesforceClient: mockSfClient,
+			inventoryClient:  mockInventoryClient,
 			customerClient:   customerclient.NewMockClient(ctrl),
 		}
-		return svc, ctx, mockRepo, mockShippingClient, mockSfClient
+		return svc, ctx, mockRepo, mockShippingClient, mockSfClient, mockInventoryClient
 	}
 
 	t.Run("Valid request", func(t *testing.T) {
-		svc, ctx, mockRepo, mockShipingClient, mockSfClient := setup()
+		svc, ctx, mockRepo, mockShipingClient, mockSfClient, mockInventoryClient := setup()
 		addressID := uuid.New()
 		req := &entities.UpdateAddressRequest{
 			AddressID: addressID,
@@ -282,6 +288,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 			ID: customerID,
 		}, nil).AnyTimes()
 
+		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).AnyTimes()
 		mockSfClient.EXPECT().UpdateUserAddress(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockSfClient.EXPECT().CreateUserAddress(gomock.Any(), gomock.Any()).Return(&sfEntities.CreateSFAddressResponse{}, nil).AnyTimes()
 		mockRepo.EXPECT().UpdateAddressField(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -292,7 +299,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 	})
 
 	t.Run("no user ID", func(t *testing.T) {
-		svc, _, _, _, _ := setup()
+		svc, _, _, _, _, _ := setup()
 		addressID := uuid.New()
 		req := &entities.UpdateAddressRequest{
 			AddressID: addressID,
@@ -313,7 +320,7 @@ func Test_service_UpdateAddress(t *testing.T) {
 	})
 
 	t.Run("Valid request with an invalid address", func(t *testing.T) {
-		svc, ctx, _, mockShippingClient, _ := setup()
+		svc, ctx, _, mockShippingClient, _, _ := setup()
 		req := &entities.AddAddressRequest{
 			Address: &entities.AddressRequestBody{
 				FullName:    "John Doe",
@@ -343,22 +350,24 @@ func Test_service_DeleteAddress(t *testing.T) {
 		*service, context.Context,
 		*repository.MockRepository,
 		*salesforce.MockClient,
+		*inventoryClient.MockClient,
 	) {
 		mockRepo := repository.NewMockRepository(ctrl)
 		mockSfClient := salesforce.NewMockClient(ctrl)
-
+		mockInventoryClient := inventoryClient.NewMockClient(ctrl)
 		userUUID := uuid.New()
 		ctx := meta.WithXCustomerID(context.Background(), userUUID.String())
 		svc := &service{
 			repo:             mockRepo,
 			log:              zap.NewExample().Sugar(),
 			salesforceClient: mockSfClient,
+			inventoryClient:  mockInventoryClient,
 		}
-		return svc, ctx, mockRepo, mockSfClient
+		return svc, ctx, mockRepo, mockSfClient, mockInventoryClient
 	}
 
 	t.Run("Valid request", func(t *testing.T) {
-		svc, ctx, mockRepo, mockSfClient := setup()
+		svc, ctx, mockRepo, mockSfClient, mockInventoryClient := setup()
 		addressID := uuid.New()
 		req := &entities.DeleteAddressRequest{
 			AddressID: addressID,
@@ -367,6 +376,7 @@ func Test_service_DeleteAddress(t *testing.T) {
 			ID: addressID,
 		}, nil).Times(1)
 		mockRepo.EXPECT().DeleteAddress(ctx, meta.XCustomerID(ctx), addressID.String()).Return(nil).Times(1)
+		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).AnyTimes()
 		mockSfClient.EXPECT().DeleteUserAddress(gomock.Any(), addressID).Return(nil).AnyTimes()
 		err := svc.DeleteAddress(ctx, req)
 
@@ -374,7 +384,7 @@ func Test_service_DeleteAddress(t *testing.T) {
 	})
 
 	t.Run("no user ID", func(t *testing.T) {
-		svc, _, _, _ := setup()
+		svc, _, _, _, _ := setup()
 		addressID := uuid.New()
 		req := &entities.DeleteAddressRequest{
 			AddressID: addressID,

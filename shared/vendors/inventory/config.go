@@ -15,8 +15,6 @@ type Config struct {
 // Validate config.
 func (c *Config) Validate() error {
 	switch c.Provider {
-	case providers.ProviderNone:
-		return nil
 	case providers.ProviderSalesforce:
 		return c.Salesforce.Validate()
 	default:

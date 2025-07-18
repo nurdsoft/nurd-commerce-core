@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	ProviderNone       string = "none"
 	ProviderShipengine string = "Shipengine"
 	ProviderUPS        string = "UPS"
 )
@@ -23,7 +22,7 @@ type Config struct {
 // Validate config.
 func (c *Config) Validate() error {
 	switch c.Provider {
-	case ProviderNone:
+	case "":
 		return nil
 	case ProviderShipengine:
 		return c.Shipengine.Validate()

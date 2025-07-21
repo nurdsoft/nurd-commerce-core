@@ -81,6 +81,7 @@ func (s *service) addAccessControlHeaders(w http.ResponseWriter, allowMethods []
 		acAllowOriginHeader,
 		string(auth.AuthorizationKey),
 		string(auth.Access),
+		string(auth.CustomerIDKey),
 		"Host",
 		"Origin",
 	}, ","))

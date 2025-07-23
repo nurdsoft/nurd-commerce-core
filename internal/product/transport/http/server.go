@@ -20,6 +20,7 @@ func RegisterTransport(
 	registerCreateProductVariant(server, ep.CreateProductVariantEndpoint, svcTransportClient)
 	registerGetProductVariant(server, ep.GetProductVariantEndpoint, svcTransportClient)
 	registerListProductVariants(server, ep.ListProductVariantsEndpoint, svcTransportClient)
+	registerListProducts(server, ep.ListProductsEndpoint, svcTransportClient)
 }
 
 func registerCreateProduct(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -93,6 +94,22 @@ func registerListProductVariants(server *httpTransport.Server, ep goKitEndpoint.
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeListProductVariantsRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerListProducts(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "GET"
+	path := "/products"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeListProductsRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

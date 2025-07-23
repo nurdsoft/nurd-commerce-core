@@ -46,7 +46,7 @@ type GetProductRequest struct {
 	// Product ID to be fetched
 	//
 	// in:path
-	ProductID uuid.UUID `json:"product_id"`
+	ProductID string `json:"product_id"`
 }
 
 // swagger:parameters products CreateProductVariantRequest
@@ -141,4 +141,21 @@ type PaginationMeta struct {
 	PageSize   int `json:"page_size"`
 	Total      int `json:"total"`
 	TotalPages int `json:"total_pages"`
+}
+
+type ListProductsRequest struct {
+	Page     int     `json:"page"`
+	PageSize int     `json:"page_size"`
+	Search   *string `json:"search"`
+}
+
+type ListProductsResponse struct {
+	Data       []ProductResponse `json:"data"`
+	Pagination PaginationMeta    `json:"pagination"`
+}
+
+type ProductResponse struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	ImageURL *string `json:"image_url"`
 }

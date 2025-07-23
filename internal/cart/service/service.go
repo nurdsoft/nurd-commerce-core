@@ -135,8 +135,9 @@ func (s *service) UpdateCartItem(ctx context.Context, req *entities.UpdateCartIt
 		}
 	}
 
+	// TODO: start checking inventory provider to decide if we need to create a product in the database
 	product, err := s.productClient.GetProduct(ctx, &productEntities.GetProductRequest{
-		ProductID: req.Item.ProductID,
+		ProductID: req.Item.ProductID.String(),
 	})
 
 	if (err != nil || product == nil) && req.Item.ProductData != nil {

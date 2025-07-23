@@ -14,6 +14,7 @@ type Endpoints struct {
 	CreateProductVariantEndpoint endpoint.Endpoint
 	GetProductVariantEndpoint    endpoint.Endpoint
 	ListProductVariantsEndpoint  endpoint.Endpoint
+	ListProductsEndpoint         endpoint.Endpoint
 }
 
 func New(svc service.Service) *Endpoints {
@@ -23,6 +24,7 @@ func New(svc service.Service) *Endpoints {
 		CreateProductVariantEndpoint: makeCreateProductVariant(svc),
 		GetProductVariantEndpoint:    makeGetProductVariant(svc),
 		ListProductVariantsEndpoint:  makeListProductVariants(svc),
+		ListProductsEndpoint:         makeListProducts(svc),
 	}
 }
 
@@ -63,5 +65,13 @@ func makeListProductVariants(svc service.Service) endpoint.Endpoint {
 		req := request.(*entities.ListProductVariantsRequest) //nolint:errcheck
 
 		return svc.ListProductVariants(ctx, req)
+	}
+}
+
+func makeListProducts(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.ListProductsRequest) //nolint:errcheck
+
+		return svc.ListProducts(ctx, req)
 	}
 }

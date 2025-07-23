@@ -51,41 +51,26 @@ func (mr *MockClientMockRecorder) CreateOrder(ctx, req interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockClient)(nil).CreateOrder), ctx, req)
 }
 
-// CreateUserAccount mocks base method.
-func (m *MockClient) CreateUserAccount(ctx context.Context, req any) (any, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUserAccount", ctx, req)
-	ret0, _ := ret[0].(any)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateUserAccount indicates an expected call of CreateUserAccount.
-func (mr *MockClientMockRecorder) CreateUserAccount(ctx, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserAccount", reflect.TypeOf((*MockClient)(nil).CreateUserAccount), ctx, req)
-}
-
 // GetProductByID mocks base method.
-func (m *MockClient) GetProductByID(ctx context.Context, req any) (any, error) {
+func (m *MockClient) GetProductByID(ctx context.Context, id string) (*entities.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProductByID", ctx, req)
-	ret0, _ := ret[0].(any)
+	ret := m.ctrl.Call(m, "GetProductByID", ctx, id)
+	ret0, _ := ret[0].(*entities.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProductByID indicates an expected call of GetProductByID.
-func (mr *MockClientMockRecorder) GetProductByID(ctx, req interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetProductByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockClient)(nil).GetProductByID), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockClient)(nil).GetProductByID), ctx, id)
 }
 
 // GetProducts mocks base method.
-func (m *MockClient) GetProducts(ctx context.Context, req any) (any, error) {
+func (m *MockClient) GetProducts(ctx context.Context, req entities.ListProductsRequest) (entities.ListProductsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProducts", ctx, req)
-	ret0, _ := ret[0].(any)
+	ret0, _ := ret[0].(entities.ListProductsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -122,18 +107,4 @@ func (m *MockClient) UpdateOrderStatus(ctx context.Context, req entities.UpdateI
 func (mr *MockClientMockRecorder) UpdateOrderStatus(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockClient)(nil).UpdateOrderStatus), ctx, req)
-}
-
-// UpdateUserAccount mocks base method.
-func (m *MockClient) UpdateUserAccount(ctx context.Context, req any) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUserAccount", ctx, req)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateUserAccount indicates an expected call of UpdateUserAccount.
-func (mr *MockClientMockRecorder) UpdateUserAccount(ctx, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserAccount", reflect.TypeOf((*MockClient)(nil).UpdateUserAccount), ctx, req)
 }

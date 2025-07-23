@@ -1,8 +1,9 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"time"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 
 	"github.com/google/uuid"
 )

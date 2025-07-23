@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -50,8 +51,8 @@ func decodeCreateProductRequest(_ context.Context, r *http.Request) (interface{}
 
 func decodeGetProductRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	params := mux.Vars(r)
-	productID, err := uuid.Parse(params["product_id"])
-	if err != nil {
+	productID := params["product_id"]
+	if productID == "" {
 		return nil, moduleErrors.NewAPIError("VALIDATION_ERROR", "product_id is not valid")
 	}
 
@@ -106,23 +107,16 @@ var validSortFields = map[string]struct{}{
 	"price":      {},
 }
 
+const (
+	defaultPage     = 1
+	defaultPageSize = 10
+)
+
 func decodeListProductVariantsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	query := r.URL.Query()
 
 	// Parse pagination parameters
-	page := 1
-	if pageStr := query.Get("page"); pageStr != "" {
-		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-
-	pageSize := 10
-	if pageSizeStr := query.Get("page_size"); pageSizeStr != "" {
-		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 && parsed <= 100 {
-			pageSize = parsed
-		}
-	}
+	page, pageSize := decodePaginationParams(query)
 
 	// Parse search parameter
 	var search *string
@@ -180,4 +174,39 @@ func decodeListProductVariantsRequest(_ context.Context, r *http.Request) (inter
 		SortOrder:  sortOrder,
 		Attributes: attributes,
 	}, nil
+}
+
+func decodeListProductsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	query := r.URL.Query()
+
+	page, pageSize := decodePaginationParams(query)
+
+	var search *string
+	if searchStr := query.Get("search"); searchStr != "" {
+		search = &searchStr
+	}
+
+	return &entities.ListProductsRequest{
+		Page:     page,
+		PageSize: pageSize,
+		Search:   search,
+	}, nil
+}
+
+func decodePaginationParams(query url.Values) (int, int) {
+	page := defaultPage
+	if pageStr := query.Get("page"); pageStr != "" {
+		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+
+	pageSize := defaultPageSize
+	if pageSizeStr := query.Get("page_size"); pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 && parsed <= 100 {
+			pageSize = parsed
+		}
+	}
+
+	return page, pageSize
 }

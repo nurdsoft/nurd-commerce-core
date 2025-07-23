@@ -170,6 +170,21 @@ func (mr *MockClientMockRecorder) GetOrderItems(ctx, orderId interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItems", reflect.TypeOf((*MockClient)(nil).GetOrderItems), ctx, orderId)
 }
 
+// GetProductByID mocks base method.
+func (m *MockClient) GetProductByID(ctx context.Context, id string) (*entities.Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProductByID", ctx, id)
+	ret0, _ := ret[0].(*entities.Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProductByID indicates an expected call of GetProductByID.
+func (mr *MockClientMockRecorder) GetProductByID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductByID", reflect.TypeOf((*MockClient)(nil).GetProductByID), ctx, id)
+}
+
 // UpdateOrderStatus mocks base method.
 func (m *MockClient) UpdateOrderStatus(ctx context.Context, req entities.UpdateInventoryOrderStatusRequest) error {
 	m.ctrl.T.Helper()

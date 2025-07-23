@@ -12,7 +12,7 @@ import (
 	orderEntities "github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
 	ordersrepo "github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
 	productEntities "github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
-	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
+	productRepo "github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
@@ -26,9 +26,9 @@ func TestClient_GetAccountByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	accountID := "0011N00001Gv7PQQAZ"
@@ -56,9 +56,9 @@ func TestClient_CreateUserAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.CreateSFUserRequest{FirstName: "John", LastName: "Doe", PersonEmail: "john.doe@example.com"}
@@ -87,9 +87,9 @@ func TestClient_UpdateUserAccount(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.UpdateSFUserRequest{ID: "0011N00001Gv7PQQAZ", FirstName: "John", LastName: "Doe"}
@@ -115,9 +115,9 @@ func TestClient_CreateUserAddress(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.CreateSFAddressRequest{AccountC: "0011N00001Gv7PQQAZ", ShippingStreetC: "123 Main St"}
@@ -145,9 +145,9 @@ func TestClient_UpdateUserAddress(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.UpdateSFAddressRequest{AccountC: "0011N00001Gv7PQQAZ", ShippingStreetC: "123 Main St"}
@@ -173,9 +173,9 @@ func TestClient_DeleteUserAddress(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	addressID := "0011N00001Gv7PQQAZ"
@@ -201,9 +201,9 @@ func TestClient_CreateProduct(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.CreateSFProductRequest{Name: "Test Product"}
@@ -231,9 +231,9 @@ func TestClient_CreatePriceBookEntry(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	req := &sfEntities.CreateSFPriceBookEntryRequest{Product2ID: "0011N00001Gv7PQQAZ", UnitPrice: 100}
@@ -261,9 +261,9 @@ func TestClient_CreateOrder(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	orderID := uuid.New()
@@ -350,8 +350,8 @@ func TestClient_CreateOrder(t *testing.T) {
 			}).
 			Return(nil)
 
-		mockProductClient.EXPECT().
-			GetProductsByIDs(ctx, []string{productID.String()}).Return([]productEntities.Product{
+		mockProductsRepo.EXPECT().
+			FindByIDs(ctx, []string{productID.String()}).Return([]productEntities.Product{
 			{
 				ID:                         productID,
 				Name:                       "Test Item",
@@ -395,9 +395,9 @@ func TestClient_AddOrderItems(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	items := []*sfEntities.OrderItem{{OrderID: "0011N00001Gv7PQQAZ", Quantity: 1, UnitPrice: 100}}
@@ -425,9 +425,9 @@ func TestClient_UpdateOrderStatus(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	customerSalesforceID := "0011N00001Gv7PQQAZ"
@@ -459,9 +459,9 @@ func TestClient_GetOrderItems(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	mockService := service.NewMockService(ctrl)
-	mockProductClient := productclient.NewMockClient(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
 	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
-	client := NewClient(mockService, providers.ProviderSalesforce, mockProductClient, mockOrdersRepo)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
 
 	ctx := context.Background()
 	orderID := "0011N00001Gv7PQQAZ"
@@ -482,5 +482,36 @@ func TestClient_GetOrderItems(t *testing.T) {
 		response, err := client.GetOrderItems(ctx, orderID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedResponse, response)
+	})
+}
+
+func TestClient_GetProductByID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	mockService := service.NewMockService(ctrl)
+	mockProductsRepo := productRepo.NewMockRepository(ctrl)
+	mockOrdersRepo := ordersrepo.NewMockRepository(ctrl)
+	client := NewClient(mockService, providers.ProviderSalesforce, mockProductsRepo, mockOrdersRepo)
+
+	ctx := context.Background()
+	productID := uuid.NewString()
+
+	t.Run("Error getting product by ID", func(t *testing.T) {
+		mockProductsRepo.EXPECT().FindByID(ctx, productID).Return(nil, &appErrors.APIError{Message: "Error getting product by ID"})
+
+		_, err := client.GetProductByID(ctx, productID)
+		assert.Error(t, err)
+		assert.IsType(t, &appErrors.APIError{}, err)
+		assert.Equal(t, "Error getting product by ID", err.Error())
+	})
+
+	t.Run("Valid product retrieval", func(t *testing.T) {
+		expectedResponse := &productEntities.Product{ID: uuid.MustParse(productID), Name: "Test Product"}
+		mockProductsRepo.EXPECT().FindByID(ctx, productID).Return(expectedResponse, nil)
+
+		response, err := client.GetProductByID(ctx, productID)
+		assert.NoError(t, err)
+		assert.Equal(t, productID, response.ID)
+		assert.Equal(t, "Test Product", response.Name)
 	})
 }

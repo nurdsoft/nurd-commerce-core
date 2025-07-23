@@ -7,35 +7,41 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
+	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
+	inventoryEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
 	"go.uber.org/zap"
 )
 
 type Service interface {
 	CreateProduct(ctx context.Context, req *entities.CreateProductRequest) (*entities.Product, error)
-	GetProduct(ctx context.Context, req *entities.GetProductRequest) (*entities.Product, error)
+	GetProduct(ctx context.Context, req *entities.GetProductRequest) (*inventoryEntities.Product, error)
 	GetProductsByIDs(ctx context.Context, ids []string) ([]entities.Product, error)
 	UpdateProduct(ctx context.Context, req *entities.UpdateProductRequest) error
 	CreateProductVariant(ctx context.Context, req *entities.CreateProductVariantRequest) (*entities.ProductVariant, error)
 	GetProductVariant(ctx context.Context, req *entities.GetProductVariantRequest) (*entities.ProductVariant, error)
 	GetProductVariantByID(ctx context.Context, variantID string) (*entities.ProductVariant, error)
 	ListProductVariants(ctx context.Context, req *entities.ListProductVariantsRequest) (*entities.ListProductVariantsResponse, error)
+	ListProducts(ctx context.Context, req *entities.ListProductsRequest) (*entities.ListProductsResponse, error)
 }
 
 type service struct {
-	repo   repository.Repository
-	log    *zap.SugaredLogger
-	config cfg.Config
+	repo            repository.Repository
+	inventoryClient inventory.Client
+	log             *zap.SugaredLogger
+	config          cfg.Config
 }
 
 func New(
 	repo repository.Repository,
+	inventoryClient inventory.Client,
 	logger *zap.SugaredLogger,
 	config cfg.Config,
 ) Service {
 	return &service{
-		repo:   repo,
-		log:    logger,
-		config: config,
+		repo:            repo,
+		inventoryClient: inventoryClient,
+		log:             logger,
+		config:          config,
 	}
 }
 
@@ -86,8 +92,8 @@ func (s *service) CreateProduct(ctx context.Context, req *entities.CreateProduct
 //	200: GetProductResponse
 //	404: DefaultError Not Found
 //	500: DefaultError Internal Server Error
-func (s *service) GetProduct(ctx context.Context, req *entities.GetProductRequest) (*entities.Product, error) {
-	product, err := s.repo.FindByID(ctx, req.ProductID.String())
+func (s *service) GetProduct(ctx context.Context, req *entities.GetProductRequest) (*inventoryEntities.Product, error) {
+	product, err := s.inventoryClient.GetProductByID(ctx, req.ProductID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,4 +227,52 @@ func (s *service) ListProductVariants(ctx context.Context, req *entities.ListPro
 		return nil, err
 	}
 	return response, nil
+}
+
+// swagger:route GET /products products ListProductsRequest
+//
+// # List Products
+// ### Get a paginated list of products with optional filtering
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: ListProductsResponse
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) ListProducts(ctx context.Context, req *entities.ListProductsRequest) (*entities.ListProductsResponse, error) {
+	search := ""
+	if req.Search != nil {
+		search = *req.Search
+	}
+
+	result, err := s.inventoryClient.GetProducts(ctx, inventoryEntities.ListProductsRequest{
+		Search:   search,
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	products := make([]entities.ProductResponse, len(result.Data))
+	for i, p := range result.Data {
+		products[i] = entities.ProductResponse{
+			ID:       p.ID,
+			Name:     p.Name,
+			ImageURL: p.ImageURL,
+		}
+	}
+	resp := &entities.ListProductsResponse{
+		Data: products,
+		Pagination: entities.PaginationMeta{
+			Page:       req.Page,
+			PageSize:   req.PageSize,
+			Total:      result.Pagination.Total,
+			TotalPages: result.Pagination.TotalPages,
+		},
+	}
+	return resp, nil
 }

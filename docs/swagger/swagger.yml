@@ -2064,7 +2064,6 @@ paths:
             operationId: GetProductRequest
             parameters:
                 - description: Product ID to be fetched
-                  format: uuid
                   in: path
                   name: product_id
                   required: true
@@ -2150,6 +2149,26 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Product Variant
+            tags:
+                - products
+    /products:
+        get:
+            description: '### Get a paginated list of products with optional filtering'
+            operationId: ListProductsRequest
+            produces:
+                - application/json
+            responses:
+                "200":
+                    $ref: '#/responses/ListProductsResponse'
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: List Products
             tags:
                 - products
     /stripe/payment-method/{payment_method_id}:

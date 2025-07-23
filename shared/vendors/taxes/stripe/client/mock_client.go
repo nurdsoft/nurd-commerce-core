@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
+	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
 )
 
 // MockClient is a mock of Client interface.

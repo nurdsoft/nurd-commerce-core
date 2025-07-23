@@ -66,10 +66,11 @@ func (s *service) AddToWishlist(ctx context.Context, req *entities.AddToWishlist
 		return moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
+	// TODO: start checking inventory provider to decide if we need to create a product in the database
 	var productIDs []uuid.UUID
 	for _, productReq := range req.Body.Products {
 		product, err := s.productClient.GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productReq.ProductID,
+			ProductID: productReq.ProductID.String(),
 		})
 
 		if (err != nil || product == nil) && productReq.ProductData != nil {

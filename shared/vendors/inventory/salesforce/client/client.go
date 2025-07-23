@@ -2,11 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
 	ordersRepo "github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
-	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
+	productRepo "github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	inventoryEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
@@ -26,16 +27,17 @@ type Client interface {
 	AddOrderItems(ctx context.Context, items []*entities.OrderItem) (*entities.AddOrderItemResponse, error)
 	UpdateOrderStatus(ctx context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) error
 	GetOrderItems(ctx context.Context, orderId string) (*entities.GetOrderItemsResponse, error)
+	GetProductByID(ctx context.Context, id string) (*inventoryEntities.Product, error)
 }
 
-func NewClient(svc service.Service, provider providers.ProviderType, productClient productclient.Client, ordersRepo ordersRepo.Repository) Client {
-	return &localClient{svc, productClient, ordersRepo}
+func NewClient(svc service.Service, provider providers.ProviderType, productsRepo productRepo.Repository, ordersRepo ordersRepo.Repository) Client {
+	return &localClient{svc, productsRepo, ordersRepo}
 }
 
 type localClient struct {
-	svc           service.Service
-	productClient productclient.Client
-	ordersRepo    ordersRepo.Repository
+	svc          service.Service
+	productsRepo productRepo.Repository
+	ordersRepo   ordersRepo.Repository
 }
 
 func (l localClient) GetAccountByID(ctx context.Context, accountId string) (*entities.Account, error) {
@@ -132,7 +134,7 @@ func (l localClient) CreateOrder(ctx context.Context, req inventoryEntities.Crea
 			return ids
 		}
 		// get salesforce products by product ids
-		products, err := l.productClient.GetProductsByIDs(ctx, productIDs())
+		products, err := l.productsRepo.FindByIDs(ctx, productIDs())
 		if err != nil {
 			return nil, err
 		}
@@ -226,4 +228,21 @@ func (l localClient) UpdateOrderStatus(ctx context.Context, req inventoryEntitie
 
 func (l localClient) GetOrderItems(ctx context.Context, orderId string) (*entities.GetOrderItemsResponse, error) {
 	return l.svc.GetOrderItems(ctx, orderId)
+}
+
+func (l localClient) GetProductByID(ctx context.Context, id string) (*inventoryEntities.Product, error) {
+	product, err := l.productsRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &inventoryEntities.Product{
+		ID:          product.ID.String(),
+		Name:        product.Name,
+		Description: product.Description,
+		ImageURL:    product.ImageURL,
+		Attributes:  (*json.RawMessage)(product.Attributes),
+		CreatedAt:   product.CreatedAt,
+		UpdatedAt:   product.UpdatedAt,
+	}, nil
 }

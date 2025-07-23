@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	ordersrepo "github.com/nurdsoft/nurd-commerce-core/internal/orders/repository"
-	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
+	productRepo "github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cache"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
@@ -19,12 +19,11 @@ import (
 type ModuleParams struct {
 	fx.In
 
-	Config        inventory.Config
-	HttpClient    *http.Client
-	Logger        *zap.SugaredLogger
-	DB            *sql.DB
-	GormDB        *gorm.DB
-	ProductClient productclient.Client
+	Config     inventory.Config
+	HttpClient *http.Client
+	Logger     *zap.SugaredLogger
+	DB         *sql.DB
+	GormDB     *gorm.DB
 }
 
 // NewModule
@@ -34,7 +33,8 @@ func NewModule(p ModuleParams) (client.Client, error) {
 	svc := service.New(p.Config.Salesforce, p.HttpClient, p.Logger, cache)
 
 	ordersRepo := ordersrepo.New(p.DB, p.GormDB)
-	client := client.NewClient(svc, p.Config.Provider, p.ProductClient, ordersRepo)
+	productsRepo := productRepo.New(p.DB, p.GormDB)
+	client := client.NewClient(svc, p.Config.Provider, productsRepo, ordersRepo)
 
 	return client, nil
 }

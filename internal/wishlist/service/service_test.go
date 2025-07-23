@@ -75,7 +75,7 @@ func Test_service_AddToWishlist(t *testing.T) {
 
 		// Mock product client to return product details
 		mockProductClient.EXPECT().GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productUUID,
+			ProductID: productUUID.String(),
 		}).Return(&productEntities.Product{
 			ID: productUUID,
 		}, nil).Times(1)
@@ -107,7 +107,7 @@ func Test_service_AddToWishlist(t *testing.T) {
 
 		// Mock product client to return nil for GetProduct (product not found)
 		mockProductClient.EXPECT().GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productUUID,
+			ProductID: productUUID.String(),
 		}).Return(nil, nil).Times(1)
 
 		// Mock product client to create a product
@@ -150,7 +150,7 @@ func Test_service_AddToWishlist(t *testing.T) {
 
 		// Mock product client to return nil for GetProduct (product not found)
 		mockProductClient.EXPECT().GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productUUID,
+			ProductID: productUUID.String(),
 		}).Return(nil, nil).Times(1)
 
 		// Mock create product to return an error
@@ -188,7 +188,7 @@ func Test_service_AddToWishlist(t *testing.T) {
 
 		// Mock product client to return nil for GetProduct (product not found) without error
 		mockProductClient.EXPECT().GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productUUID,
+			ProductID: productUUID.String(),
 		}).Return(nil, nil).Times(1)
 
 		// No create product call expected since no product data was provided
@@ -233,7 +233,7 @@ func Test_service_AddToWishlist(t *testing.T) {
 
 		// Mock product client to return product details
 		mockProductClient.EXPECT().GetProduct(ctx, &productEntities.GetProductRequest{
-			ProductID: productUUID,
+			ProductID: productUUID.String(),
 		}).Return(&productEntities.Product{
 			ID: productUUID,
 		}, nil).Times(1)

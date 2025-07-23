@@ -1,8 +1,9 @@
 package errors
 
 import (
-	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 // APIError represents a structured error response
@@ -32,6 +33,7 @@ var commonErrors = map[string]struct {
 	"PRODUCT_VARIANT_NOT_FOUND": {StatusCode: http.StatusNotFound, Message: "Product variant not found."},
 	"VALIDATION_ERROR":          {StatusCode: http.StatusBadRequest, Message: "Validation error."},
 	"INTERNAL_ERROR":            {StatusCode: http.StatusInternalServerError, Message: "An internal error occurred."},
+	"PROVIDER_NOT_IMPLEMENTED":  {StatusCode: http.StatusNotImplemented, Message: "Provider not implemented."},
 }
 
 // NewAPIError dynamically retrieves messages from JSON

@@ -34,7 +34,7 @@ func NewClientModule(p ModuleParams) Client {
 	repo := repository.New(p.DB, p.GormDB)
 	svc := service.New(repo, p.InventoryClient, p.Logger, p.CommonConfig)
 
-	client := NewClient(svc)
+	client := NewClient(svc, repo)
 
 	return client
 }

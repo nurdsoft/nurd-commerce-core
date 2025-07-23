@@ -3,10 +3,9 @@ package productclient
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
+	"github.com/nurdsoft/nurd-commerce-core/internal/product/repository"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/service"
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 )
 
 type Client interface {
@@ -18,12 +17,13 @@ type Client interface {
 	GetProductVariantByID(ctx context.Context, variantID string) (*entities.ProductVariant, error)
 }
 
-func NewClient(svc service.Service) Client {
-	return &localClient{svc}
+func NewClient(svc service.Service, repo repository.Repository) Client {
+	return &localClient{svc, repo}
 }
 
 type localClient struct {
-	svc service.Service
+	svc  service.Service
+	repo repository.Repository
 }
 
 func (c *localClient) CreateProduct(ctx context.Context, req *entities.CreateProductRequest) (*entities.Product, error) {
@@ -31,19 +31,7 @@ func (c *localClient) CreateProduct(ctx context.Context, req *entities.CreatePro
 }
 
 func (c *localClient) GetProduct(ctx context.Context, req *entities.GetProductRequest) (*entities.Product, error) {
-	product, err := c.svc.GetProduct(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return &entities.Product{
-		ID:          uuid.MustParse(product.ID),
-		Name:        product.Name,
-		Description: product.Description,
-		ImageURL:    product.ImageURL,
-		Attributes:  (*json.JSON)(product.Attributes),
-		CreatedAt:   product.CreatedAt,
-		UpdatedAt:   product.UpdatedAt,
-	}, nil
+	return c.repo.FindByID(ctx, req.ProductID)
 }
 
 func (c *localClient) UpdateProduct(ctx context.Context, req *entities.UpdateProductRequest) error {

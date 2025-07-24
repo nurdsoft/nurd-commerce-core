@@ -48,7 +48,7 @@ func initTracer() (func(context.Context) error, error) {
 //go:generate swagger generate spec -o ./docs/swagger/swagger.yml --scan-models
 func main() {
 
-	shutdown, err := initTracer()
+	/* shutdown, err := initTracer()
 	if err != nil {
 		log.Fatalf("failed to initialize tracer: %v", err)
 	}
@@ -56,7 +56,7 @@ func main() {
 		if err := shutdown(context.Background()); err != nil {
 			log.Fatalf("failed to shutdown tracer: %v", err)
 		}
-	}()
+	}()*/
 
 	static.StaticFiles = staticFiles
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/json"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
 	"gorm.io/gorm"
@@ -30,7 +30,7 @@ type Repository interface {
 	RemoveCartItem(ctx context.Context, cartID, itemID string) error
 	CreateCartShippingRates(ctx context.Context, shippingRate []entities.CartShippingRate) error
 	GetShippingRate(ctx context.Context, shippingRateID uuid.UUID) (*entities.CartShippingRate, error)
-	UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error
+	UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error
 	GetCartByID(ctx context.Context, cartID uuid.UUID) (*entities.Cart, error)
 }
 

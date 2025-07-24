@@ -100,8 +100,18 @@ func (l localClient) CreateOrder(ctx context.Context, req inventoryEntities.Crea
 		SubTotalC:               req.Order.Subtotal.String(),
 		ShippingRateC:           req.Order.ShippingRate.String(),
 		TaxAmountC:              req.Order.TaxAmount.String(),
-		ShippingCarrierNameC:    req.Order.ShippingCarrierName,
-		ShippingCarrierServiceC: req.Order.ShippingServiceType,
+		ShippingCarrierNameC: func() string {
+			if req.Order.ShippingCarrierName != nil {
+				return *req.Order.ShippingCarrierName
+			}
+			return ""
+		}(),
+		ShippingCarrierServiceC: func() string {
+			if req.Order.ShippingServiceType != nil {
+				return *req.Order.ShippingServiceType
+			}
+			return ""
+		}(),
 		CurrencyC:               req.Order.Currency,
 		Pricebook2ID:            entities.StandardPriceBook,
 		EstimatedDeliveryDateC: func() string {

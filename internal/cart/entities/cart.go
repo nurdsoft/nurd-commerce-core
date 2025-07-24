@@ -3,8 +3,8 @@ package entities
 import (
 	"time"
 
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -23,7 +23,7 @@ type Cart struct {
 	TaxAmount      decimal.Decimal `json:"tax_amount" gorm:"column:tax_amount"`
 	TaxCurrency    string          `json:"tax_currency" gorm:"column:tax_currency"`
 	TaxBreakdown   json.JSON       `json:"tax_breakdown" gorm:"column:tax_breakdown"`
-	ShippingRateID uuid.UUID       `json:"shipping_rate_id" gorm:"column:shipping_rate_id"`
+	ShippingRateID *uuid.UUID      `json:"shipping_rate_id" gorm:"column:shipping_rate_id"`
 	CreatedAt      time.Time       `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt      time.Time       `json:"updated_at" gorm:"column:updated_at"`
 }

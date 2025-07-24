@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"math/rand/v2"
 	"strings"
 	"time"
@@ -121,14 +122,17 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	}
 
 	// get shipping rate via cartclient
-	shipping, err := s.cartClient.GetShippingRateByID(ctx, req.Body.ShippingRateID)
-	if err != nil {
-		return nil, err
-	}
+	var shipping *cartEntities.CartShippingRate = nil
+	if req.Body.ShippingRateID != nil {
+		shipping, err = s.cartClient.GetShippingRateByID(ctx, *req.Body.ShippingRateID)
+		if err != nil {
+			return nil, err
+		}
+		if cart.ShippingRateID.String() != shipping.Id.String() {
+			s.log.Errorln("shipping rate does not match cart shipping rate")
+			return nil, moduleErrors.NewAPIError("ORDER_ERROR_CREATING")
+		}
 
-	if cart.ShippingRateID != req.Body.ShippingRateID && cart.ShippingRateID != shipping.Id {
-		s.log.Errorln("shipping rate does not match cart shipping rate")
-		return nil, moduleErrors.NewAPIError("ORDER_ERROR_CREATING")
 	}
 
 	orderItems := []*entities.OrderItem{}
@@ -158,8 +162,10 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		orderItems = append(orderItems, orderItem)
 		subTotal = subTotal.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 	}
-
-	total := cart.TaxAmount.Add(shipping.Amount).Add(subTotal)
+	total := cart.TaxAmount.Add(subTotal)
+	if shipping != nil {
+		total = total.Add(shipping.Amount)
+	}
 
 	customer, err := s.customerClient.GetCustomer(ctx)
 	if err != nil {
@@ -194,30 +200,33 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 	}
 
 	order := &entities.Order{
-		ID:                            orderId,
-		CustomerID:                    customerID,
-		CartID:                        cart.Id,
-		OrderReference:                orderRef,
-		TaxAmount:                     cart.TaxAmount,
-		Subtotal:                      subTotal,
-		Total:                         total,
-		Currency:                      cart.TaxCurrency,
-		TaxBreakdown:                  cart.TaxBreakdown,
-		ShippingRate:                  shipping.Amount,
-		ShippingCarrierName:           shipping.CarrierName,
-		ShippingCarrierCode:           shipping.CarrierCode,
-		ShippingEstimatedDeliveryDate: shipping.EstimatedDeliveryDate,
-		ShippingBusinessDaysInTransit: shipping.BusinessDaysInTransit,
-		ShippingServiceType:           shipping.ServiceType,
-		ShippingServiceCode:           shipping.ServiceCode,
-		DeliveryFullName:              address.FullName,
-		DeliveryAddress:               address.Address,
-		DeliveryCity:                  address.City,
-		DeliveryStateCode:             address.StateCode,
-		DeliveryCountryCode:           address.CountryCode,
-		DeliveryPostalCode:            address.PostalCode,
-		DeliveryPhoneNumber:           address.PhoneNumber,
-		Status:                        orderStatus,
+		ID:                  orderId,
+		CustomerID:          customerID,
+		CartID:              cart.Id,
+		OrderReference:      orderRef,
+		TaxAmount:           cart.TaxAmount,
+		Subtotal:            subTotal,
+		Total:               total,
+		Currency:            cart.TaxCurrency,
+		TaxBreakdown:        cart.TaxBreakdown,
+		DeliveryFullName:    address.FullName,
+		DeliveryAddress:     address.Address,
+		DeliveryCity:        address.City,
+		DeliveryStateCode:   address.StateCode,
+		DeliveryCountryCode: address.CountryCode,
+		DeliveryPostalCode:  address.PostalCode,
+		DeliveryPhoneNumber: address.PhoneNumber,
+		Status:              orderStatus,
+	}
+
+	if shipping != nil {
+		order.ShippingRate = &shipping.Amount
+		order.ShippingCarrierName = &shipping.CarrierName
+		order.ShippingCarrierCode = &shipping.CarrierCode
+		order.ShippingEstimatedDeliveryDate = &shipping.EstimatedDeliveryDate
+		order.ShippingBusinessDaysInTransit = &shipping.BusinessDaysInTransit
+		order.ShippingServiceType = &shipping.ServiceType
+		order.ShippingServiceCode = &shipping.ServiceCode
 	}
 
 	switch s.paymentClient.GetProvider() {
@@ -628,6 +637,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		s.log.Errorf("Error fetching order: %v", err)
 		return err
 	}
+	s.log.Infof("Order items data oscar: %+v", req.Body)
 
 	// update order status
 	data := map[string]interface{}{}
@@ -693,6 +703,7 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		data["items"] = itemsData
 	}
 
+	s.log.Infof("Updating order %s with data: %v", order.ID.String(), data)
 	err = s.repo.Update(ctx, data, order.ID.String(), order.CustomerID.String())
 
 	if err != nil {

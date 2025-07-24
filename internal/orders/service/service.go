@@ -637,7 +637,6 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 		s.log.Errorf("Error fetching order: %v", err)
 		return err
 	}
-	s.log.Infof("Order items data oscar: %+v", req.Body)
 
 	// update order status
 	data := map[string]interface{}{}

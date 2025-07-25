@@ -116,7 +116,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 			Id:             cartID,
 			TaxAmount:      decimal.NewFromFloat(10.0),
 			TaxCurrency:    "USD",
-			ShippingRateID: shippingRateID,
+			ShippingRateID: &shippingRateID,
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -209,7 +209,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
 			AddressID:             addressID,
-			ShippingRateID:        shippingRateID,
+			ShippingRateID:        &shippingRateID,
 			StripePaymentMethodID: paymentMethodID,
 		},
 	}
@@ -269,7 +269,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 			Id:             cartID,
 			TaxAmount:      decimal.NewFromInt(10),
 			TaxCurrency:    "USD",
-			ShippingRateID: shippingRateID,
+			ShippingRateID: &shippingRateID,
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -362,7 +362,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
 			AddressID:      addressID,
-			ShippingRateID: shippingRateID,
+			ShippingRateID: &shippingRateID,
 			PaymentNonce:   paymentNonce,
 			BillingInfo:    expectedBillingInfo,
 		},

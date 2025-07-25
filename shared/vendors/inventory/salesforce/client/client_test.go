@@ -271,6 +271,10 @@ func TestClient_CreateOrder(t *testing.T) {
 	productID := uuid.New()
 	customerSalesforceID := uuid.NewString()
 	description := "Test Item"
+	testCarrierName := "Test Carrier"
+	testCarrierService := "Test Service"
+	testShippingRate := decimal.NewFromInt(10)
+	testEstimatedDeliveryDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	req := entities.CreateInventoryOrderRequest{
 		Order: orderEntities.Order{
 			ID:                            orderID,
@@ -278,14 +282,14 @@ func TestClient_CreateOrder(t *testing.T) {
 			Status:                        orderEntities.Pending,
 			Total:                         decimal.NewFromInt(100),
 			Subtotal:                      decimal.NewFromInt(100),
-			ShippingRate:                  decimal.NewFromInt(10),
+			ShippingRate:                  &testShippingRate,
 			TaxAmount:                     decimal.NewFromInt(10),
-			ShippingCarrierName:           "Test Carrier",
-			ShippingServiceType:           "Test Service",
+			ShippingCarrierName:           &testCarrierName,
+			ShippingServiceType:           &testCarrierService,
 			Currency:                      "USD",
 			CustomerID:                    customerID,
 			CartID:                        uuid.New(),
-			ShippingEstimatedDeliveryDate: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			ShippingEstimatedDeliveryDate: &testEstimatedDeliveryDate,
 		},
 		OrderItems: []*orderEntities.OrderItem{
 			{
@@ -337,8 +341,8 @@ func TestClient_CreateOrder(t *testing.T) {
 				assert.Equal(t, req.Order.ShippingRate.String(), sfReq.ShippingRateC)
 				assert.Equal(t, req.Order.TaxAmount.String(), sfReq.TaxAmountC)
 				assert.Equal(t, req.Order.Currency, sfReq.CurrencyC)
-				assert.Equal(t, req.Order.ShippingCarrierName, sfReq.ShippingCarrierNameC)
-				assert.Equal(t, req.Order.ShippingServiceType, sfReq.ShippingCarrierServiceC)
+				assert.Equal(t, req.Order.ShippingCarrierName, &sfReq.ShippingCarrierNameC)
+				assert.Equal(t, req.Order.ShippingServiceType, &sfReq.ShippingCarrierServiceC)
 				assert.Equal(t, req.Order.ShippingEstimatedDeliveryDate.Format("2006-01-02"), sfReq.EstimatedDeliveryDateC)
 			}).
 			Return(&sfEntities.CreateSFOrderResponse{ID: salesforceOrderID, Success: true}, nil)

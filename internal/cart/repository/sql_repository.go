@@ -6,10 +6,10 @@ import (
 
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
 
+	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	errors "github.com/nurdsoft/nurd-commerce-core/internal/cart/errors"
 	"github.com/nurdsoft/nurd-commerce-core/shared/json"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
@@ -138,7 +138,7 @@ func (r *sqlRepository) GetShippingRate(ctx context.Context, shippingRate uuid.U
 	return &rate, err
 }
 
-func (r *sqlRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateID uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
+func (r *sqlRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateID *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
 	return r.gormDB.WithContext(ctx).
 		Model(&entities.Cart{}).
 		Where("id = ?", cartID).

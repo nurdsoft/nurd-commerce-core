@@ -39,13 +39,13 @@ type Order struct {
 	Total                         decimal.Decimal     `json:"total" gorm:"column:total"`
 	Currency                      string              `json:"currency" gorm:"column:currency"`
 	TaxBreakdown                  json.JSON           `json:"-" gorm:"column:tax_breakdown"`
-	ShippingRate                  decimal.Decimal     `json:"shipping_rate" gorm:"column:shipping_rate"`
-	ShippingCarrierName           string              `json:"shipping_carrier_name" gorm:"column:shipping_carrier_name"`
-	ShippingCarrierCode           string              `json:"shipping_carrier_code" gorm:"column:shipping_carrier_code"`
-	ShippingEstimatedDeliveryDate time.Time           `json:"shipping_estimated_delivery_date" gorm:"column:shipping_estimated_delivery_date"`
-	ShippingBusinessDaysInTransit string              `json:"shipping_business_days_in_transit" gorm:"column:shipping_business_days_in_transit"`
-	ShippingServiceType           string              `json:"shipping_service_type" gorm:"column:shipping_service_type"`
-	ShippingServiceCode           string              `json:"shipping_service_code" gorm:"column:shipping_service_code"`
+	ShippingRate                  *decimal.Decimal    `json:"shipping_rate" gorm:"column:shipping_rate"`
+	ShippingCarrierName           *string             `json:"shipping_carrier_name" gorm:"column:shipping_carrier_name"`
+	ShippingCarrierCode           *string             `json:"shipping_carrier_code" gorm:"column:shipping_carrier_code"`
+	ShippingEstimatedDeliveryDate *time.Time          `json:"shipping_estimated_delivery_date" gorm:"column:shipping_estimated_delivery_date"`
+	ShippingBusinessDaysInTransit *string             `json:"shipping_business_days_in_transit" gorm:"column:shipping_business_days_in_transit"`
+	ShippingServiceType           *string             `json:"shipping_service_type" gorm:"column:shipping_service_type"`
+	ShippingServiceCode           *string             `json:"shipping_service_code" gorm:"column:shipping_service_code"`
 	DeliveryFullName              string              `json:"delivery_full_name" gorm:"column:delivery_full_name"`
 	DeliveryAddress               string              `json:"delivery_address" gorm:"column:delivery_address"`
 	DeliveryApartment             string              `json:"delivery_apartment" gorm:"column:delivery_apartment"`

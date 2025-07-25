@@ -22,7 +22,7 @@ go_build_*
 go.work
 go.work.sum
 nurd-commerce
-.env
+.env*
 .env.vscode
 # Ignore any ZIP archives
 *.zip

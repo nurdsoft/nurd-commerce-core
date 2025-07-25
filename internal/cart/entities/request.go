@@ -1,8 +1,8 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/google/uuid"
+	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -80,7 +80,7 @@ type GetTaxRateRequestBody struct {
 	// required: true
 	// in:body
 	// example: 123e4567-e89b-12d3-a456-426614174000
-	ShippingRateID uuid.UUID `json:"shipping_rate_id"`
+	ShippingRateID *uuid.UUID `json:"shipping_rate_id"`
 	// Warehouse address
 	//
 	// required: true

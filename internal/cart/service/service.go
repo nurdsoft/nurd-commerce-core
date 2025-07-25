@@ -466,15 +466,22 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		return nil, moduleErrors.NewAPIError("CART_ERROR_GETTING_CART_ITEMS")
 	}
 
+	shippingAmount := decimal.Zero
+	var shippingRateId *uuid.UUID = nil
+
 	// get customer selected shipping rate
-	shippingRate, err := s.repo.GetShippingRate(ctx, req.Body.ShippingRateID)
-	if err != nil {
-		s.log.Errorf("Error retrieving shipping rate: %v", err)
-		return nil, err
+	if req.Body.ShippingRateID != nil {
+		shippingRate, err := s.repo.GetShippingRate(ctx, *req.Body.ShippingRateID)
+		if err != nil {
+			s.log.Errorf("Error retrieving shipping rate: %v", err)
+			return nil, err
+		}
+
+		shippingAmount = shippingRate.Amount
+		shippingRateId = &shippingRate.Id
 	}
 
-	cacheKey := getTaxRateCacheKey(req.Body.AddressID.String(), customerID, shippingRate.Id.String())
-
+	cacheKey := getTaxRateCacheKey(req.Body.AddressID.String(), customerID, getActiveCarItems.Items[0].CartID.String(), shippingRateId)
 	cachedResponse, err := s.cache.Get(ctx, cacheKey)
 	if err == nil && cachedResponse != nil {
 		var response entities.GetTaxRateResponse
@@ -514,7 +521,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	}
 
 	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
-		ShippingAmount: shippingRate.Amount,
+		ShippingAmount: shippingAmount,
 		FromAddress: taxesEntities.Address{
 			City:       req.Body.WarehouseAddress.City,
 			State:      req.Body.WarehouseAddress.StateCode,
@@ -537,7 +544,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	err = s.repo.UpdateCartShippingAndTaxRate(
 		ctx,
 		getActiveCarItems.Items[0].CartID.String(),
-		shippingRate.Id,
+		shippingRateId,
 		decimal.NewFromFloat(res.Tax.InexactFloat64()),
 		res.Currency,
 		res.Breakdown,
@@ -550,7 +557,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	response := entities.GetTaxRateResponse{
 		Tax:          decimal.NewFromFloat(res.Tax.InexactFloat64()),
 		Total:        decimal.NewFromFloat(res.TotalAmount.InexactFloat64()),
-		ShippingRate: decimal.NewFromFloat(shippingRate.Amount.InexactFloat64()),
+		ShippingRate: decimal.NewFromFloat(shippingAmount.InexactFloat64()),
 		Subtotal:     totalCartPrice,
 		Currency:     res.Currency,
 	}
@@ -739,6 +746,9 @@ func getShippingRateCacheKey(addressID, customerID, cartID string) string {
 	return fmt.Sprintf("shipping_rate_%s_%s_%s", addressID, customerID, cartID)
 }
 
-func getTaxRateCacheKey(addressID, customerID, shippingRateID string) string {
-	return fmt.Sprintf("tax_rate_%s_%s_%s", addressID, customerID, shippingRateID)
+func getTaxRateCacheKey(addressID, customerID, cartID string, shippingRateID *uuid.UUID) string {
+	if shippingRateID != nil {
+		return fmt.Sprintf("tax_rate_%s_%s_%s_%s", addressID, customerID, cartID, shippingRateID.String())
+	}
+	return fmt.Sprintf("tax_rate_%s_%s_%s", addressID, customerID, cartID)
 }

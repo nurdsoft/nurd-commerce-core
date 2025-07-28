@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
-	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/cart/errors"
 	"github.com/nurdsoft/nurd-commerce-core/internal/orders/entities"
+	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/orders/errors"
 	"gorm.io/gorm"
 )
 
@@ -156,7 +156,7 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 		itemsData, ok := items.([]map[string]interface{})
 		if !ok {
 			tx.Rollback()
-			return moduleErrors.NewAPIError("INVALID_ITEMS_DATA_FORMAT")
+			return moduleErrors.NewAPIError("ORDER_INVALID_ITEMS_DATA")
 		}
 
 		// Update each order item individually
@@ -167,7 +167,7 @@ func (r *sqlRepository) Update(ctx context.Context, details map[string]interface
 			// Validate that at least one identifier is provided
 			if (!hasID || itemID == "") && (!hasSKU || itemSKU == "") {
 				tx.Rollback()
-				return moduleErrors.NewAPIError("INVALID_ITEM_IDENTIFIER")
+				return moduleErrors.NewAPIError("ORDER_INVALID_ITEM_IDENTIFIER")
 			}
 
 			// Remove ID and SKU from update data
@@ -270,6 +270,9 @@ func (r *sqlRepository) GetOrderByID(ctx context.Context, orderID uuid.UUID) (*e
 func (r *sqlRepository) GetOrderItemsByID(ctx context.Context, orderID uuid.UUID) ([]*entities.OrderItem, error) {
 	var orderItems []*entities.OrderItem
 	if err := r.gormDB.WithContext(ctx).Where("order_id = ?", orderID).Find(&orderItems).Error; err != nil {
+		if dbErrors.IsNotFoundError(err) {
+			return nil, moduleErrors.NewAPIError("ORDER_NOT_FOUND")
+		}
 		return nil, err
 	}
 

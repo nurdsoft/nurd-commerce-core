@@ -23,6 +23,8 @@ var moduleErrors = map[string]struct {
 	"ORDER_NOT_FOUND_BY_PAYMENT_ID": {StatusCode: http.StatusNotFound, Message: "Order not found by payment ID."},
 	"ORDER_IS_NOT_PENDING":          {StatusCode: http.StatusBadRequest, Message: "Order is not pending."},
 	"ORDER_REFUNDING_ERROR":         {StatusCode: http.StatusInternalServerError, Message: "Error refunding order."},
+	"ORDER_INVALID_ITEMS_DATA":      {StatusCode: http.StatusBadRequest, Message: "Invalid items data in order."},
+	"ORDER_INVALID_ITEM_IDENTIFIER": {StatusCode: http.StatusBadRequest, Message: "Invalid item identifier in order."},
 }
 
 func NewAPIError(errorCode string, customMessage ...string) *errors.APIError {

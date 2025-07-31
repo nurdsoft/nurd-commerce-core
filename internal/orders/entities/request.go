@@ -19,7 +19,7 @@ type CreateOrderRequest struct {
 
 type CreateOrderRequestBody struct {
 	AddressID             uuid.UUID   `json:"address_id"`
-	ShippingRateID        *uuid.UUID  `json:"shipping_rate_id"`
+	ShippingRateID        *uuid.UUID   `json:"shipping_rate_id"`
 	StripePaymentMethodID string      `json:"stripe_payment_method_id,omitempty"`
 	PaymentNonce          string      `json:"payment_nonce,omitempty"`
 	BillingInfo           BillingInfo `json:"billing_info,omitzero"`

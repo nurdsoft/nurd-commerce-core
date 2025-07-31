@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"math/rand/v2"
 	"strings"
 	"time"

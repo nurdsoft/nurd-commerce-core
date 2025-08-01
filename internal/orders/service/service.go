@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"math/rand/v2"
 	"strings"
 	"time"
+
+	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
@@ -683,8 +684,8 @@ func (s *service) UpdateOrder(ctx context.Context, req *entities.UpdateOrderRequ
 			itemData := map[string]interface{}{}
 
 			// Add ID if provided
-			if item.ID != uuid.Nil {
-				itemData["id"] = item.ID.String()
+			if item.ID != "" {
+				itemData["id"] = item.ID
 			}
 
 			// Add SKU if provided (keep original key for identification)

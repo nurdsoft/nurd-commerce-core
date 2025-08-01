@@ -1,8 +1,9 @@
 package entities
 
 import (
-	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"net/http"
+
+	"github.com/nurdsoft/nurd-commerce-core/shared/errors"
 )
 
 // Module-specific errors
@@ -13,7 +14,7 @@ var moduleErrors = map[string]struct {
 	"CART_ERROR_UPDATING_CART_ITEM":     {StatusCode: http.StatusInternalServerError, Message: "Error updating cart item."},
 	"CART_ITEM_NOT_FOUND":               {StatusCode: http.StatusInternalServerError, Message: "Cart item not found."},
 	"CART_ERROR_GETTING_CART":           {StatusCode: http.StatusInternalServerError, Message: "Error getting cart."},
-	"CART_NOT_FOUND":                    {StatusCode: http.StatusInternalServerError, Message: "Cart not found."},
+	"CART_NOT_FOUND":                    {StatusCode: http.StatusNotFound, Message: "Cart not found."},
 	"CART_IS_EMPTY":                     {StatusCode: http.StatusBadRequest, Message: "Cart is empty."},
 	"CART_ERROR_GETTING_CART_ITEMS":     {StatusCode: http.StatusInternalServerError, Message: "Error getting cart items."},
 	"CART_ERROR_REMOVING_CART_ITEM":     {StatusCode: http.StatusInternalServerError, Message: "Error removing cart item."},

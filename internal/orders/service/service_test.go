@@ -770,7 +770,7 @@ func TestUpdateOrder(t *testing.T) {
 			Body: &entities.UpdateOrderRequestBody{
 				Items: []*entities.Item{
 					{
-						ID:     itemID,
+						ID:     itemID.String(),
 						Status: &itemStatus,
 					},
 				},

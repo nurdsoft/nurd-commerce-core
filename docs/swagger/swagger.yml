@@ -210,6 +210,12 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     CreateOrderResponse:
         properties:
+            order_items:
+                description: Order items
+                items:
+                    $ref: '#/definitions/OrderItem'
+                type: array
+                x-go-name: OrderItems
             order_reference:
                 description: Order reference
                 example: VZQ9IMMMYQ

@@ -23,7 +23,7 @@ type localClient struct {
 func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error) {
 	stripeReq := &stripeEntities.CalculateTaxRequest{
 		ShippingAmount: req.ShippingAmount,
-		FromAddress: stripeEntities.Address{
+		FromAddress: &stripeEntities.Address{
 			Line1:      req.FromAddress.Line1,
 			City:       req.FromAddress.City,
 			State:      req.FromAddress.State,

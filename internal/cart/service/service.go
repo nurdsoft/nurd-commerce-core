@@ -345,7 +345,7 @@ func (s *service) GetCartItems(ctx context.Context) (*entities.GetCartItemsRespo
 //
 // Parameters:
 //
-//   + name: item_id
+//   - name: item_id
 //     in: path
 //     description: ID of the item to be removed
 //     required: true
@@ -492,6 +492,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 
 	var taxItems []taxesEntities.TaxItem
 	var totalCartPrice decimal.Decimal
+	var toAddress, fromAddress taxesEntities.Address
 
 	for _, item := range getActiveCarItems.Items {
 		taxItem := taxesEntities.TaxItem{
@@ -510,7 +511,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		totalCartPrice = totalCartPrice.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 	}
 
-	toAddress := taxesEntities.Address{
+	toAddress = taxesEntities.Address{
 		State:      address.StateCode,
 		PostalCode: address.PostalCode,
 		Country:    address.CountryCode,
@@ -520,16 +521,20 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		toAddress.City = *address.City
 	}
 
-	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
-		ShippingAmount: shippingAmount,
-		FromAddress: taxesEntities.Address{
+	if req.Body.WarehouseAddress != nil {
+		fromAddress = taxesEntities.Address{
 			City:       req.Body.WarehouseAddress.City,
 			State:      req.Body.WarehouseAddress.StateCode,
 			PostalCode: req.Body.WarehouseAddress.PostalCode,
 			Country:    req.Body.WarehouseAddress.CountryCode,
-		},
-		ToAddress: toAddress,
-		TaxItems:  taxItems,
+		}
+	}
+
+	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
+		ShippingAmount: shippingAmount,
+		FromAddress:    &fromAddress,
+		ToAddress:      toAddress,
+		TaxItems:       taxItems,
 	})
 	if err != nil {
 		s.log.Errorf("Error calculating tax: %v", err)

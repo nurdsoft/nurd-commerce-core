@@ -57,6 +57,12 @@ type GetShippingRateRequestBody struct {
 	// in:body
 	// example:
 	WarehouseAddress WarehouseAddress `json:"warehouse_address"`
+	// Enable free shipping
+	//
+	// Adds and returns a FREE shipping option (can be used for digital products)
+	// in:body
+	// example: true
+	EnableFreeShipping bool `json:"enable_free_shipping"`
 }
 
 // swagger:parameters cart GetTaxRateRequest

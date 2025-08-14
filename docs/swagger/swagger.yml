@@ -558,6 +558,15 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: AddressID
+            enable_free_shipping:
+                description: |-
+                    Enable free shipping
+
+                    Adds and returns a FREE shipping option (can be used for digital products)
+                    in:body
+                example: true
+                type: boolean
+                x-go-name: EnableFreeShipping
             warehouse_address:
                 $ref: '#/definitions/WarehouseAddress'
         required:

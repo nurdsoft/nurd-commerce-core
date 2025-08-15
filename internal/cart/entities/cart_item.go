@@ -1,21 +1,23 @@
 package entities
 
 import (
+	"time"
+
 	"github.com/nurdsoft/nurd-commerce-core/shared/json"
 	"github.com/shopspring/decimal"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 // swagger:model CartItem
 type CartItem struct {
-	ID               uuid.UUID `json:"id" gorm:"column:id"`
-	CartID           uuid.UUID `json:"-" gorm:"column:cart_id"`
-	ProductVariantID uuid.UUID `json:"product_variant_id" gorm:"column:product_variant_id"`
-	Quantity         int       `json:"quantity" gorm:"column:quantity"`
-	CreatedAt        time.Time `json:"added_at" gorm:"column:created_at"`
-	UpdatedAt        time.Time `json:"updated_at" gorm:"column:updated_at"`
+	ID               uuid.UUID  `json:"id" gorm:"column:id"`
+	CartID           uuid.UUID  `json:"-" gorm:"column:cart_id"`
+	ProductVariantID uuid.UUID  `json:"product_variant_id" gorm:"column:product_variant_id"`
+	ShippingRateID   *uuid.UUID `json:"shipping_rate_id" gorm:"column:shipping_rate_id"`
+	Quantity         int        `json:"quantity" gorm:"column:quantity"`
+	CreatedAt        time.Time  `json:"added_at" gorm:"column:created_at"`
+	UpdatedAt        time.Time  `json:"updated_at" gorm:"column:updated_at"`
 }
 
 type CartItemDetail struct {
@@ -27,6 +29,7 @@ type CartItemDetail struct {
 	ImageURL         string           `json:"image_url" db:"image_url"`
 	ProductID        uuid.UUID        `json:"product_id" gorm:"column:product_id"`
 	ProductVariantID uuid.UUID        `json:"-" gorm:"column:product_variant_id"`
+	ShippingRateID   *uuid.UUID       `json:"shipping_rate_id" gorm:"column:shipping_rate_id"`
 	Price            decimal.Decimal  `json:"price" gorm:"column:price"`
 	Currency         string           `json:"currency" gorm:"column:currency"`
 	Attributes       *json.JSON       `json:"attributes" db:"attributes"`

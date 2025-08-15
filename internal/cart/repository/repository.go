@@ -24,13 +24,15 @@ type Repository interface {
 	CreateNewCart(ctx context.Context, tx Transaction, customerID string) (*entities.Cart, error)
 	UpdateCartStatus(ctx context.Context, tx Transaction, cartID string, status string) error
 	GetCartItem(ctx context.Context, cartID, productVariantID string) (*entities.CartItem, error)
+	GetCartItemByID(ctx context.Context, cartItemID uuid.UUID) (*entities.CartItem, error)
 	AddCartItem(ctx context.Context, tx Transaction, cartId, productVariantID string, quantity int) (*entities.CartItem, error)
 	UpdateCartItem(ctx context.Context, tx Transaction, itemID string, quantity int) error
 	GetCartItems(ctx context.Context, cartID string) ([]entities.CartItemDetail, error)
 	RemoveCartItem(ctx context.Context, cartID, itemID string) error
 	CreateCartShippingRates(ctx context.Context, shippingRate []entities.CartShippingRate) error
 	GetShippingRate(ctx context.Context, shippingRateID uuid.UUID) (*entities.CartShippingRate, error)
-	UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error
+	SetCartItemShippingRate(ctx context.Context, cartItemID uuid.UUID, shippingRateID uuid.UUID) error
+	UpdateCartTaxRate(ctx context.Context, cartID string, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error
 	GetCartByID(ctx context.Context, cartID uuid.UUID) (*entities.Cart, error)
 }
 

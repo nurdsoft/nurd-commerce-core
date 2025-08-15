@@ -302,6 +302,7 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 
 	return &entities.CreateOrderResponse{
 		OrderReference: order.OrderReference,
+		OrderItems:     orderItems,
 	}, nil
 }
 

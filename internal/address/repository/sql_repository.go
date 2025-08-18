@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
 	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/address/errors"
 	dbErrors "github.com/nurdsoft/nurd-commerce-core/shared/db"
@@ -104,4 +105,17 @@ func (r *sqlRepository) UpdateAddressField(ctx context.Context, customerID, addr
 	}
 
 	return nil
+}
+
+func (r *sqlRepository) GetDefaultAddress(ctx context.Context, customerID string) (*entities.Address, error) {
+	address := &entities.Address{}
+	err := r.gormDB.WithContext(ctx).Where("customer_id = ? AND is_default = ?", customerID, true).First(address).Error
+	if err != nil {
+		if dbErrors.IsNotFoundError(err) {
+			return nil, moduleErrors.NewAPIError("ADDRESS_NOT_FOUND")
+		}
+		return nil, err
+	}
+
+	return address, nil
 }

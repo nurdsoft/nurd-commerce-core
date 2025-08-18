@@ -29,6 +29,7 @@ type Service interface {
 	GetAddresses(ctx context.Context) (*entities.GetAllAddressResponse, error)
 	UpdateAddress(ctx context.Context, req *entities.UpdateAddressRequest) (*entities.Address, error)
 	DeleteAddress(ctx context.Context, req *entities.DeleteAddressRequest) error
+	GetDefaultAddress(ctx context.Context) (*entities.Address, error)
 }
 
 type service struct {
@@ -373,6 +374,21 @@ func (s *service) DeleteAddress(ctx context.Context, req *entities.DeleteAddress
 	}
 
 	return nil
+}
+
+func (s *service) GetDefaultAddress(ctx context.Context) (*entities.Address, error) {
+	customerID := sharedMeta.XCustomerID(ctx)
+
+	if customerID == "" {
+		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+
+	address, err := s.repo.GetDefaultAddress(ctx, customerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return address, nil
 }
 
 func (s *service) validateAddress(ctx context.Context, address, state, zipCode, country string, city *string) (*shippingEntities.Address, error) {

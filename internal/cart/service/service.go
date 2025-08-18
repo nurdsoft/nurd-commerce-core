@@ -345,7 +345,7 @@ func (s *service) GetCartItems(ctx context.Context) (*entities.GetCartItemsRespo
 //
 // Parameters:
 //
-//   - name: item_id
+//   + name: item_id
 //     in: path
 //     description: ID of the item to be removed
 //     required: true
@@ -452,12 +452,24 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	address, err := s.addressClient.GetAddress(ctx, &addressEntities.GetAddressRequest{
-		AddressID: req.Body.AddressID,
-	})
-	if err != nil {
-		s.log.Errorf("Error retrieving address: %v", err)
-		return nil, err
+	var address *addressEntities.Address
+	var err error
+
+	if req.Body.AddressID != uuid.Nil {
+		address, err = s.addressClient.GetAddress(ctx, &addressEntities.GetAddressRequest{
+			AddressID: req.Body.AddressID,
+		})
+		if err != nil {
+			s.log.Errorf("Error retrieving address: %v", err)
+			return nil, err
+		}
+	} else {
+		// rely on default address in case provided address is empty (possible for digital goods)
+		address, err = s.addressClient.GetDefaultAddress(ctx)
+		if err != nil {
+			s.log.Errorf("Error retrieving default address: %v", err)
+			return nil, err
+		}
 	}
 
 	// get items from active cart

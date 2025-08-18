@@ -267,7 +267,7 @@ func (mr *MockRepositoryMockRecorder) UpdateCartItem(ctx, tx, itemID, quantity i
 }
 
 // UpdateCartShippingAndTaxRate mocks base method.
-func (m *MockRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
+func (m *MockRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateCartShippingAndTaxRate", ctx, cartID, shippingRateId, taxAmount, taxCurrency, taxBreakdown)
 	ret0, _ := ret[0].(error)

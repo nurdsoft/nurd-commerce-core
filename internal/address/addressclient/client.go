@@ -9,6 +9,7 @@ import (
 
 type Client interface {
 	GetAddress(ctx context.Context, req *entities.GetAddressRequest) (*entities.Address, error)
+	GetDefaultAddress(ctx context.Context) (*entities.Address, error)
 }
 
 func NewClient(svc service.Service) Client {
@@ -21,4 +22,8 @@ type localClient struct {
 
 func (c *localClient) GetAddress(ctx context.Context, req *entities.GetAddressRequest) (*entities.Address, error) {
 	return c.svc.GetAddress(ctx, req)
+}
+
+func (c *localClient) GetDefaultAddress(ctx context.Context) (*entities.Address, error) {
+	return c.svc.GetDefaultAddress(ctx)
 }

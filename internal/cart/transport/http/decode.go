@@ -3,8 +3,9 @@ package http
 import (
 	"context"
 	"encoding/json"
-	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/cart/errors"
 	"net/http"
+
+	moduleErrors "github.com/nurdsoft/nurd-commerce-core/internal/cart/errors"
 
 	"github.com/gorilla/mux"
 
@@ -16,7 +17,9 @@ import (
 type RequestBodyType interface {
 	entities.UpdateCartItemRequestBody |
 		entities.GetTaxRateRequestBody |
-		entities.GetShippingRateRequestBody
+		entities.GetShippingRateRequestBody |
+		entities.CreateCartShippingRatesRequestBody |
+		entities.SetCartItemShippingRateRequestBody
 }
 
 func decodeBodyFromRequest[T RequestBodyType](req *T, r *http.Request) error {
@@ -80,6 +83,30 @@ func decodeGetTaxRateRequest(_ context.Context, r *http.Request) (interface{}, e
 	}
 
 	return &entities.GetTaxRateRequest{
+		Body: reqBody,
+	}, nil
+}
+
+func decodeCreateCartShippingRatesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	reqBody := &entities.CreateCartShippingRatesRequestBody{}
+	err := decodeBodyFromRequest(reqBody, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.CreateCartShippingRatesRequest{
+		Body: reqBody,
+	}, nil
+}
+
+func decodeSetCartItemShippingRateRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	reqBody := &entities.SetCartItemShippingRateRequestBody{}
+	err := decodeBodyFromRequest(reqBody, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.SetCartItemShippingRateRequest{
 		Body: reqBody,
 	}, nil
 }

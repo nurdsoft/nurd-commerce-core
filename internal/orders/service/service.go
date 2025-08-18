@@ -122,19 +122,12 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		return nil, err
 	}
 
-	// get shipping rate via cartclient
-	var shipping *cartEntities.CartShippingRate = nil
-	if req.Body.ShippingRateID != nil {
-		shipping, err = s.cartClient.GetShippingRateByID(ctx, *req.Body.ShippingRateID)
-		if err != nil {
-			return nil, err
-		}
-		if cart.ShippingRateID.String() != shipping.Id.String() {
-			s.log.Errorln("shipping rate does not match cart shipping rate")
-			return nil, moduleErrors.NewAPIError("ORDER_ERROR_CREATING")
-		}
+	// Calculate total shipping amount from cart items that have shipping rates
+	totalShippingAmount := decimal.Zero
 
-	}
+	var shippingRate *cartEntities.CartShippingRate
+	// map of shipping rate id to amount so we can properly sum all different shipping rates
+	shippingRatesValuesByID := make(map[uuid.UUID]decimal.Decimal)
 
 	orderItems := []*entities.OrderItem{}
 	orderId := uuid.New()
@@ -160,13 +153,42 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 			Attributes:       item.Attributes,
 			Status:           entities.ItemPending,
 		}
+
+		// Map shipping rate information from cart item to order item
+		if item.ShippingRateID != nil {
+			shippingRate, err = s.cartClient.GetShippingRateByID(ctx, *item.ShippingRateID)
+			if err != nil {
+				s.log.Errorf("Error retrieving shipping rate %s: %v", item.ShippingRateID.String(), err)
+				return nil, moduleErrors.NewAPIError("ORDER_ERROR_CREATING")
+			}
+
+			// if shipping rate id is provided, it should match the shipping rate id for the all cart items
+			if req.Body.ShippingRateID != nil && *req.Body.ShippingRateID != shippingRate.Id {
+				return nil, moduleErrors.NewAPIError("ORDER_ERROR_CREATING")
+			}
+
+			shippingRatesValuesByID[shippingRate.Id] = shippingRate.Amount
+
+			// Set shipping information on order item
+			orderItem.ShippingRateID = &shippingRate.Id
+			orderItem.ShippingRate = &shippingRate.Amount
+			orderItem.ShippingCarrierName = &shippingRate.CarrierName
+			orderItem.ShippingCarrierCode = &shippingRate.CarrierCode
+			orderItem.ShippingServiceType = &shippingRate.ServiceType
+			orderItem.ShippingServiceCode = &shippingRate.ServiceCode
+			orderItem.EstimatedDeliveryDate = &shippingRate.EstimatedDeliveryDate
+			orderItem.BusinessDaysInTransit = &shippingRate.BusinessDaysInTransit
+		}
+
 		orderItems = append(orderItems, orderItem)
 		subTotal = subTotal.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 	}
-	total := cart.TaxAmount.Add(subTotal)
-	if shipping != nil {
-		total = total.Add(shipping.Amount)
+
+	for _, amount := range shippingRatesValuesByID {
+		totalShippingAmount = totalShippingAmount.Add(amount)
 	}
+
+	total := cart.TaxAmount.Add(subTotal).Add(totalShippingAmount)
 
 	customer, err := s.customerClient.GetCustomer(ctx)
 	if err != nil {
@@ -220,14 +242,19 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 		Status:              orderStatus,
 	}
 
-	if shipping != nil {
-		order.ShippingRate = &shipping.Amount
-		order.ShippingCarrierName = &shipping.CarrierName
-		order.ShippingCarrierCode = &shipping.CarrierCode
-		order.ShippingEstimatedDeliveryDate = &shipping.EstimatedDeliveryDate
-		order.ShippingBusinessDaysInTransit = &shipping.BusinessDaysInTransit
-		order.ShippingServiceType = &shipping.ServiceType
-		order.ShippingServiceCode = &shipping.ServiceCode
+	// Set total shipping amount on order (if any items have shipping)
+	if totalShippingAmount.GreaterThan(decimal.Zero) {
+		order.ShippingRate = &totalShippingAmount
+		// if shipping rate id is provided, let's set the order-level fields to the shipping rate values
+		if req.Body.ShippingRateID != nil {
+			order.ShippingRate = &totalShippingAmount
+			order.ShippingCarrierName = &shippingRate.CarrierName
+			order.ShippingCarrierCode = &shippingRate.CarrierCode
+			order.ShippingEstimatedDeliveryDate = &shippingRate.EstimatedDeliveryDate
+			order.ShippingBusinessDaysInTransit = &shippingRate.BusinessDaysInTransit
+			order.ShippingServiceType = &shippingRate.ServiceType
+			order.ShippingServiceCode = &shippingRate.ServiceCode
+		}
 	}
 
 	switch s.paymentClient.GetProvider() {

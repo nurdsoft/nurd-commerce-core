@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	sharedDecimal "github.com/nurdsoft/nurd-commerce-core/shared/decimal"
@@ -40,6 +42,8 @@ type Service interface {
 	GetTaxRate(ctx context.Context, req *entities.GetTaxRateRequest) (*entities.GetTaxRateResponse, error)
 	GetShippingRate(ctx context.Context, req *entities.GetShippingRateRequest) (*entities.GetShippingRateResponse, error)
 	GetShippingRateByID(ctx context.Context, shippingRateID uuid.UUID) (*entities.CartShippingRate, error)
+	CreateCartShippingRates(ctx context.Context, req *entities.CreateCartShippingRatesRequest) (*entities.GetShippingRateResponse, error)
+	SetCartItemShippingRate(ctx context.Context, req *entities.SetCartItemShippingRateRequest) error
 	GetCart(ctx context.Context) (*entities.Cart, error)
 }
 
@@ -467,21 +471,54 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	}
 
 	shippingAmount := decimal.Zero
-	var shippingRateId *uuid.UUID = nil
+	shippingRateIDsForCache := ""
+	shippingRateIDsMap := make(map[uuid.UUID]struct{})
 
-	// get customer selected shipping rate
+	// if shipping rate id is provided, let's assume it's the only shipping rate for all items in the cart
 	if req.Body.ShippingRateID != nil {
+		shippingRateIDsForCache = req.Body.ShippingRateID.String()
+		shippingRateIDsMap[*req.Body.ShippingRateID] = struct{}{}
 		shippingRate, err := s.repo.GetShippingRate(ctx, *req.Body.ShippingRateID)
 		if err != nil {
-			s.log.Errorf("Error retrieving shipping rate: %v", err)
+			s.log.Errorf("Error retrieving shipping rate %s: %v", req.Body.ShippingRateID.String(), err)
 			return nil, err
 		}
-
 		shippingAmount = shippingRate.Amount
-		shippingRateId = &shippingRate.Id
+
+		// update all cart items with the shipping rate id provided
+		for _, item := range getActiveCarItems.Items {
+			err = s.repo.SetCartItemShippingRate(ctx, item.ID, *req.Body.ShippingRateID)
+			if err != nil {
+				s.log.Errorf("Error updating cart with shipping rate id: %v", err)
+				return nil, err
+			}
+		}
+	} else { // if shipping rate id is not provided, let's get shipping rates for the cart items
+		for _, item := range getActiveCarItems.Items {
+			if item.ShippingRateID != nil {
+				shippingRateIDsMap[*item.ShippingRateID] = struct{}{}
+			}
+		}
+
+		// sort the shipping rate ids to make the cache key consistent
+		shippingRateIDs := make([]string, 0, len(shippingRateIDsMap))
+		for shippingRateID := range shippingRateIDsMap {
+			shippingRateIDs = append(shippingRateIDs, shippingRateID.String())
+		}
+		sort.Strings(shippingRateIDs)
+		shippingRateIDsForCache = strings.Join(shippingRateIDs, ",")
+
+		for shippingRateID := range shippingRateIDsMap {
+			shippingRate, err := s.repo.GetShippingRate(ctx, shippingRateID)
+			if err != nil {
+				s.log.Errorf("Error retrieving shipping rate %s: %v", shippingRateID.String(), err)
+				return nil, err
+			}
+			shippingAmount = shippingAmount.Add(shippingRate.Amount)
+		}
 	}
 
-	cacheKey := getTaxRateCacheKey(req.Body.AddressID.String(), customerID, getActiveCarItems.Items[0].CartID.String(), shippingRateId)
+	cacheKey := getTaxRateCacheKey(req.Body.AddressID.String(), customerID, getActiveCarItems.Items[0].CartID.String(), shippingRateIDsForCache)
 	cachedResponse, err := s.cache.Get(ctx, cacheKey)
 	if err == nil && cachedResponse != nil {
 		var response entities.GetTaxRateResponse
@@ -540,11 +577,10 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	res.Tax = res.Tax.Div(decimal.NewFromInt(100))
 	res.TotalAmount = res.TotalAmount.Div(decimal.NewFromInt(100))
 
-	// update cart with tax & shipping rate
-	err = s.repo.UpdateCartShippingAndTaxRate(
+	// update cart with tax rate
+	err = s.repo.UpdateCartTaxRate(
 		ctx,
 		getActiveCarItems.Items[0].CartID.String(),
-		shippingRateId,
 		decimal.NewFromFloat(res.Tax.InexactFloat64()),
 		res.Currency,
 		res.Breakdown,
@@ -727,6 +763,123 @@ func (s *service) GetShippingRateByID(ctx context.Context, shippingRateID uuid.U
 	return shippingRate, nil
 }
 
+// swagger:route POST /cart/shipping-rates/create carts CreateCartShippingRatesRequest
+//
+// # Create Cart Shipping Rates
+// ### Create cart shipping rates for a specific cart
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: Empty Shipping rate set successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) CreateCartShippingRates(ctx context.Context, req *entities.CreateCartShippingRatesRequest) (*entities.GetShippingRateResponse, error) {
+	customerID := sharedMeta.XCustomerID(ctx)
+	if customerID == "" {
+		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+
+	if len(req.Body.CartShippingRates) == 0 {
+		return nil, moduleErrors.NewAPIError("CART_SHIPPING_RATES_REQUIRED")
+	}
+
+	address, err := s.addressClient.GetAddress(ctx, &addressEntities.GetAddressRequest{
+		AddressID: req.Body.AddressID,
+	})
+	if err != nil {
+		s.log.Errorf("Error retrieving address: %v", err)
+		return nil, err
+	}
+
+	activeCart, err := s.repo.GetActiveCart(ctx, customerID)
+	if err != nil {
+		s.log.Errorf("Error retrieving active cart: %v", err)
+		return nil, err
+	}
+
+	if activeCart == nil {
+		return nil, moduleErrors.NewAPIError("CART_NOT_FOUND")
+	}
+
+	shippingRates := make([]entities.CartShippingRate, len(req.Body.CartShippingRates))
+	for i, rate := range req.Body.CartShippingRates {
+		shippingRates[i] = entities.CartShippingRate{
+			Id:                    uuid.New(),
+			CartID:                activeCart.Id,
+			AddressID:             address.ID,
+			Amount:                rate.Amount,
+			Currency:              rate.Currency,
+			CarrierName:           rate.CarrierName,
+			CarrierCode:           rate.CarrierCode,
+			ServiceType:           rate.ServiceType,
+			ServiceCode:           rate.ServiceCode,
+			EstimatedDeliveryDate: rate.EstimatedDeliveryDate,
+			BusinessDaysInTransit: rate.BusinessDaysInTransit,
+			CreatedAt:             time.Now(),
+		}
+	}
+	err = s.repo.CreateCartShippingRates(ctx, shippingRates)
+	if err != nil {
+		s.log.Errorf("Error saving shipping rate: %v", err)
+		return nil, moduleErrors.NewAPIError("CART_ERROR_UPDATING_SHIPPING_RATE")
+	}
+
+	return &entities.GetShippingRateResponse{Rates: shippingRates}, nil
+}
+
+// swagger:route POST /cart/items/shipping-rate carts SetCartItemShippingRateRequest
+//
+// # Set Cart Item Shipping Rate
+// ### Set shipping rate for a specific cart item
+//
+// Produces:
+//   - application/json
+//
+// Responses:
+//
+//	200: Empty Shipping rate set successfully
+//	400: DefaultError Bad Request
+//	500: DefaultError Internal Server Error
+func (s *service) SetCartItemShippingRate(ctx context.Context, req *entities.SetCartItemShippingRateRequest) error {
+	customerID := sharedMeta.XCustomerID(ctx)
+	if customerID == "" {
+		return moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
+	}
+
+	_, err := s.repo.GetCartItemByID(ctx, req.Body.CartItemID)
+	if err != nil {
+		s.log.Errorf("Error retrieving cart item: %v", err)
+		return moduleErrors.NewAPIError("CART_ITEM_NOT_FOUND")
+	}
+
+	// Validate that the shipping rate exists
+	_, err = s.repo.GetShippingRate(ctx, req.Body.ShippingRateID)
+	if err != nil {
+		s.log.Errorf("Error retrieving shipping rate %s: %v", req.Body.ShippingRateID.String(), err)
+		return moduleErrors.NewAPIError("CART_SHIPPING_RATE_NOT_FOUND")
+	}
+
+	// Set shipping rate on the cart item
+	err = s.repo.SetCartItemShippingRate(ctx, req.Body.CartItemID, req.Body.ShippingRateID)
+	if err != nil {
+		s.log.Errorf("Error setting shipping rate on cart item: %v", err)
+		return moduleErrors.NewAPIError("CART_ERROR_UPDATING_SHIPPING_RATE")
+	}
+
+	// Clear cache for this customer since shipping rates changed
+	go func() {
+		// delete by pattern tax_rate_<any_address_id>_<customer_id>_<any_cart_id>_<any_shipping_rate_id>
+		if err := s.cache.DeleteByPattern(context.Background(), fmt.Sprintf("^tax_rate_[^_]+_%s_", customerID)); err != nil {
+			s.log.Errorf("Error deleting tax rate cache: %v", err)
+		}
+	}()
+
+	return nil
+}
+
 func (s *service) GetCart(ctx context.Context) (*entities.Cart, error) {
 	customerID := sharedMeta.XCustomerID(ctx)
 	if customerID == "" {
@@ -746,9 +899,9 @@ func getShippingRateCacheKey(addressID, customerID, cartID string) string {
 	return fmt.Sprintf("shipping_rate_%s_%s_%s", addressID, customerID, cartID)
 }
 
-func getTaxRateCacheKey(addressID, customerID, cartID string, shippingRateID *uuid.UUID) string {
-	if shippingRateID != nil {
-		return fmt.Sprintf("tax_rate_%s_%s_%s_%s", addressID, customerID, cartID, shippingRateID.String())
+func getTaxRateCacheKey(addressID, customerID, cartID string, shippingRateIDs string) string {
+	if shippingRateIDs != "" {
+		return fmt.Sprintf("tax_rate_%s_%s_%s_%s", addressID, customerID, cartID, shippingRateIDs)
 	}
 	return fmt.Sprintf("tax_rate_%s_%s_%s", addressID, customerID, cartID)
 }

@@ -1,12 +1,12 @@
 package http
 
 import (
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/endpoints"
 	svcTransport "github.com/nurdsoft/nurd-commerce-core/internal/transport"
 	"github.com/nurdsoft/nurd-commerce-core/internal/transport/http/encode"
 	httpTransport "github.com/nurdsoft/nurd-commerce-core/shared/transport/http"
-	goKitEndpoint "github.com/go-kit/kit/endpoint"
-	goKitHTTPTransport "github.com/go-kit/kit/transport/http"
 )
 
 // RegisterTransport for http.
@@ -21,6 +21,8 @@ func RegisterTransport(
 	registerClearCartItems(server, ep.ClearCartItemsEndpoint, svcTransportClient)
 	registerGetTaxRate(server, ep.GetTaxRateEndpoint, svcTransportClient)
 	registerGetShippingRate(server, ep.GetShippingRateEndpoint, svcTransportClient)
+	registerCreateCartShippingRates(server, ep.CreateCartShippingRatesEndpoint, svcTransportClient)
+	registerSetCartItemShippingRate(server, ep.SetCartItemShippingRateEndpoint, svcTransportClient)
 }
 
 func registerUpdateCartItem(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
@@ -110,6 +112,38 @@ func registerGetTaxRate(server *httpTransport.Server, ep goKitEndpoint.Endpoint,
 	handler := goKitHTTPTransport.NewServer(
 		ep,
 		decodeGetTaxRateRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerCreateCartShippingRates(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "POST"
+	path := "/cart/shipping-rates/create"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeCreateCartShippingRatesRequest,
+		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
+		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
+		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),
+	)
+
+	server.Handle(method, path, handler)
+	atc.RegisterAccessControlOptionsHandler(server, path, []string{method})
+}
+
+func registerSetCartItemShippingRate(server *httpTransport.Server, ep goKitEndpoint.Endpoint, atc svcTransport.Client) {
+	method := "POST"
+	path := "/cart/items/shipping-rate"
+
+	handler := goKitHTTPTransport.NewServer(
+		ep,
+		decodeSetCartItemShippingRateRequest,
 		atc.EncodeAccessControlHeadersWrapper(encode.Response, []string{method}),
 		goKitHTTPTransport.ServerErrorEncoder(atc.EncodeErrorControlHeadersWrapper(encode.Error, []string{method})),
 		goKitHTTPTransport.ServerErrorHandler(atc.LogErrorHandler()),

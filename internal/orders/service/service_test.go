@@ -897,7 +897,7 @@ func TestCreateOrder_NoShippingRates_TotalNoShipping(t *testing.T) {
 		Do(func(_ context.Context, _ uuid.UUID, order *entities.Order, items []*entities.OrderItem) {
 			assert.Equal(t, expectedTotal, order.Total)
 			// Order-level shipping not set when no shipping
-			assert.Nil(t, order.ShippingRate)
+			assert.Equal(t, decimal.Zero, *order.ShippingRate)
 			// Items should have no shipping fields
 			for _, it := range items {
 				assert.Empty(t, it.ShippingRateID)

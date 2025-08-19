@@ -255,6 +255,9 @@ func (s *service) CreateOrder(ctx context.Context, req *entities.CreateOrderRequ
 			order.ShippingServiceType = &shippingRate.ServiceType
 			order.ShippingServiceCode = &shippingRate.ServiceCode
 		}
+	} else {
+		// FREE shipping can have zero cost
+		order.ShippingRate = &decimal.Zero
 	}
 
 	switch s.paymentClient.GetProvider() {

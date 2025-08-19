@@ -20,7 +20,7 @@ func TestCalculateTax(t *testing.T) {
 		client := NewClient(mockSvc)
 
 		req := &entities.CalculateTaxRequest{
-			FromAddress: entities.Address{
+			FromAddress: &entities.Address{
 				Street:     "123 Main St",
 				City:       "Anytown",
 				State:      "CA",

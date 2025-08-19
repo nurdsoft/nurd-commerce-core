@@ -40,12 +40,6 @@ func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateT
 	}
 
 	taxParams := taxjar.TaxForOrderParams{
-		FromCountry: req.FromAddress.Country,
-		FromZip:     req.FromAddress.PostalCode,
-		FromState:   req.FromAddress.State,
-		FromCity:    req.FromAddress.City,
-		FromStreet:  req.FromAddress.Street,
-
 		ToCountry: req.ToAddress.Country,
 		ToZip:     req.ToAddress.PostalCode,
 		ToState:   req.ToAddress.State,
@@ -55,6 +49,14 @@ func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateT
 		Shipping: req.ShippingAmount.InexactFloat64(),
 
 		LineItems: taxItems,
+	}
+
+	if req.FromAddress != nil {
+		taxParams.FromCountry = req.FromAddress.Country
+		taxParams.FromZip = req.FromAddress.PostalCode
+		taxParams.FromState = req.FromAddress.State
+		taxParams.FromCity = req.FromAddress.City
+		taxParams.FromStreet = req.FromAddress.Street
 	}
 
 	tax, err := c.svc.CalculateTax(ctx, taxParams)

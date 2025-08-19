@@ -94,6 +94,21 @@ func (mr *MockRepositoryMockRecorder) GetAddresses(ctx, customerID interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAddresses", reflect.TypeOf((*MockRepository)(nil).GetAddresses), ctx, customerID)
 }
 
+// GetDefaultAddress mocks base method.
+func (m *MockRepository) GetDefaultAddress(ctx context.Context, customerID string) (*entities.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDefaultAddress", ctx, customerID)
+	ret0, _ := ret[0].(*entities.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDefaultAddress indicates an expected call of GetDefaultAddress.
+func (mr *MockRepositoryMockRecorder) GetDefaultAddress(ctx, customerID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultAddress", reflect.TypeOf((*MockRepository)(nil).GetDefaultAddress), ctx, customerID)
+}
+
 // UpdateAddress mocks base method.
 func (m *MockRepository) UpdateAddress(ctx context.Context, address *entities.Address) (*entities.Address, error) {
 	m.ctrl.T.Helper()

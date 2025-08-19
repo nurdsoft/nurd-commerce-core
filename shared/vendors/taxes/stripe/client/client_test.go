@@ -23,13 +23,13 @@ func TestClient_CalculateTax(t *testing.T) {
 	ctx := context.Background()
 	req := &entities.CalculateTaxRequest{
 		ShippingAmount: decimal.NewFromInt(1000),
-		FromAddress:    entities.Address{City: "City", State: "State", PostalCode: "12345", Country: "US"},
+		FromAddress:    &entities.Address{City: "City", State: "State", PostalCode: "12345", Country: "US"},
 		ToAddress:      entities.Address{City: "City", State: "State", PostalCode: "12345", Country: "US"},
 		TaxItems:       []entities.TaxItem{{Price: decimal.NewFromInt(1000), Quantity: 1, TaxCode: "tax_code"}},
 	}
 	stripeReq := &stripeEntities.CalculateTaxRequest{
 		ShippingAmount: req.ShippingAmount,
-		FromAddress: stripeEntities.Address{
+		FromAddress: &stripeEntities.Address{
 			Line1:      req.FromAddress.Line1,
 			City:       req.FromAddress.City,
 			State:      req.FromAddress.State,

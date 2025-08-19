@@ -45,11 +45,27 @@ type OrderItem struct {
 	Quantity         int              `json:"quantity" gorm:"column:quantity"`
 	Price            decimal.Decimal  `json:"price" gorm:"column:price"`
 	Attributes       *json.JSON       `json:"attributes" db:"attributes"`
-	CreatedAt        time.Time        `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt        time.Time        `json:"updated_at" gorm:"column:updated_at"`
-	SalesforceID     string           `json:"-" gorm:"column:salesforce_id"`
-	Status           OrderItemStatus  `json:"status" db:"status"`
-	StripeRefundID   string           `json:"-" gorm:"column:stripe_refund_id"`
+	// Shipping/Fulfillment fields
+	ShippingRateID        *uuid.UUID       `json:"shipping_rate_id" gorm:"column:shipping_rate_id"`
+	ShippingRate          *decimal.Decimal `json:"shipping_rate" gorm:"column:shipping_rate"`
+	ShippingCarrierName   *string          `json:"shipping_carrier_name" gorm:"column:shipping_carrier_name"`
+	ShippingCarrierCode   *string          `json:"shipping_carrier_code" gorm:"column:shipping_carrier_code"`
+	ShippingServiceType   *string          `json:"shipping_service_type" gorm:"column:shipping_service_type"`
+	ShippingServiceCode   *string          `json:"shipping_service_code" gorm:"column:shipping_service_code"`
+	EstimatedDeliveryDate *time.Time       `json:"estimated_delivery_date" gorm:"column:estimated_delivery_date"`
+	BusinessDaysInTransit *string          `json:"business_days_in_transit" gorm:"column:business_days_in_transit"`
+	TrackingNumber        *string          `json:"tracking_number" gorm:"column:tracking_number"`
+	TrackingURL           *string          `json:"tracking_url" gorm:"column:tracking_url"`
+	ShipmentDate          *time.Time       `json:"shipment_date" gorm:"column:shipment_date"`
+	FreightCharge         *decimal.Decimal `json:"freight_charge" gorm:"column:freight_charge"`
+	AmountDue             *decimal.Decimal `json:"amount_due" gorm:"column:amount_due"`
+	FulfillmentMessage    *string          `json:"fulfillment_message" gorm:"column:fulfillment_message"`
+	FulfillmentMetadata   *json.JSON       `json:"fulfillment_metadata" gorm:"column:fulfillment_metadata"`
+	CreatedAt             time.Time        `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt             time.Time        `json:"updated_at" gorm:"column:updated_at"`
+	SalesforceID          string           `json:"-" gorm:"column:salesforce_id"`
+	Status                OrderItemStatus  `json:"status" db:"status"`
+	StripeRefundID        string           `json:"-" gorm:"column:stripe_refund_id"`
 }
 
 func (m *OrderItem) TableName() string {

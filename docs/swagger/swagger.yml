@@ -85,6 +85,10 @@ definitions:
                 format: int64
                 type: integer
                 x-go-name: Quantity
+            shipping_rate_id:
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
             updated_at:
                 format: date-time
                 type: string
@@ -126,6 +130,10 @@ definitions:
                 format: int64
                 type: integer
                 x-go-name: Quantity
+            shipping_rate_id:
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
             sku:
                 type: string
                 x-go-name: SKU
@@ -210,6 +218,12 @@ definitions:
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
     CreateOrderResponse:
         properties:
+            order_items:
+                description: Order items
+                items:
+                    $ref: '#/definitions/OrderItem'
+                type: array
+                x-go-name: OrderItems
             order_reference:
                 description: Order reference
                 example: VZQ9IMMMYQ
@@ -558,6 +572,15 @@ definitions:
                 format: uuid
                 type: string
                 x-go-name: AddressID
+            enable_free_shipping:
+                description: |-
+                    Enable free shipping
+
+                    Adds and returns a FREE shipping option (can be used for digital products)
+                    in:body
+                example: true
+                type: boolean
+                x-go-name: EnableFreeShipping
             warehouse_address:
                 $ref: '#/definitions/WarehouseAddress'
         required:
@@ -584,7 +607,7 @@ definitions:
                 x-go-name: AddressID
             shipping_rate_id:
                 description: Shipping Rate ID selected by the customer
-                example: 123e4567-e89b-12d3-a456-426614174000
+                example: '"123e4567-e89b-12d3-a456-426614174000"'
                 format: uuid
                 type: string
                 x-go-name: ShippingRateID
@@ -810,8 +833,14 @@ definitions:
     OrderItem:
         description: OrderItem represents an item in an order
         properties:
+            amount_due:
+                type: string
+                x-go-name: AmountDue
             attributes:
                 $ref: '#/definitions/JSON'
+            business_days_in_transit:
+                type: string
+                x-go-name: BusinessDaysInTransit
             created_at:
                 format: date-time
                 type: string
@@ -819,6 +848,18 @@ definitions:
             description:
                 type: string
                 x-go-name: Description
+            estimated_delivery_date:
+                format: date-time
+                type: string
+                x-go-name: EstimatedDeliveryDate
+            freight_charge:
+                type: string
+                x-go-name: FreightCharge
+            fulfillment_message:
+                type: string
+                x-go-name: FulfillmentMessage
+            fulfillment_metadata:
+                $ref: '#/definitions/JSON'
             height:
                 type: string
                 x-go-name: Height
@@ -854,11 +895,41 @@ definitions:
                 format: int64
                 type: integer
                 x-go-name: Quantity
+            shipment_date:
+                format: date-time
+                type: string
+                x-go-name: ShipmentDate
+            shipping_carrier_code:
+                type: string
+                x-go-name: ShippingCarrierCode
+            shipping_carrier_name:
+                type: string
+                x-go-name: ShippingCarrierName
+            shipping_rate:
+                type: string
+                x-go-name: ShippingRate
+            shipping_rate_id:
+                description: Shipping/Fulfillment fields
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
+            shipping_service_code:
+                type: string
+                x-go-name: ShippingServiceCode
+            shipping_service_type:
+                type: string
+                x-go-name: ShippingServiceType
             sku:
                 type: string
                 x-go-name: SKU
             status:
                 $ref: '#/definitions/OrderItemStatus'
+            tracking_number:
+                type: string
+                x-go-name: TrackingNumber
+            tracking_url:
+                type: string
+                x-go-name: TrackingURL
             updated_at:
                 format: date-time
                 type: string
@@ -1132,6 +1203,25 @@ definitions:
                 x-go-name: Sku
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/orders/entities
+    SetCartItemShippingRateRequestBody:
+        properties:
+            cart_item_id:
+                description: Cart Item ID
+                example: '"123e4567-e89b-12d3-a456-426614174000"'
+                format: uuid
+                type: string
+                x-go-name: CartItemID
+            shipping_rate_id:
+                description: Shipping Rate ID selected for this cart item
+                example: '"456e7890-e89b-12d3-a456-426614174001"'
+                format: uuid
+                type: string
+                x-go-name: ShippingRateID
+        required:
+            - cart_item_id
+            - shipping_rate_id
+        type: object
+        x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     SetupIntent:
         properties:
             customer:
@@ -1621,6 +1711,34 @@ paths:
             summary: Remove Cart Item
             tags:
                 - carts
+    /cart/items/shipping-rate:
+        post:
+            description: '### Set shipping rate for a specific cart item'
+            operationId: SetCartItemShippingRateRequest
+            parameters:
+                - description: Body of the request
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/SetCartItemShippingRateRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    $ref: '#/responses/Empty'
+                    description: Shipping rate set successfully
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Set Cart Item Shipping Rate
+            tags:
+                - carts
     /cart/shipping-rates:
         post:
             description: '### Get the shipping rates for the cart'
@@ -1648,6 +1766,27 @@ paths:
                     schema:
                         $ref: '#/definitions/DefaultError'
             summary: Get Shipping Rates
+            tags:
+                - carts
+    /cart/shipping-rates/create:
+        post:
+            description: '### Create cart shipping rates for a specific cart'
+            operationId: CreateCartShippingRatesRequest
+            produces:
+                - application/json
+            responses:
+                "200":
+                    $ref: '#/responses/Empty'
+                    description: Shipping rate set successfully
+                "400":
+                    description: Bad Request
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+                "500":
+                    description: Internal Server Error
+                    schema:
+                        $ref: '#/definitions/DefaultError'
+            summary: Create Cart Shipping Rates
             tags:
                 - carts
     /cart/tax-rate:

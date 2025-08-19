@@ -57,14 +57,18 @@ func (s *service) CalculateTax(ctx context.Context, req *entities.CalculateTaxRe
 		ShippingCost: &stripe.TaxCalculationShippingCostParams{
 			Amount: stripe.Int64(req.ShippingAmount.Mul(decimal.NewFromInt(100)).IntPart()), // Convert to minor units
 		},
-		ShipFromDetails: &stripe.TaxCalculationShipFromDetailsParams{
+	}
+
+	// can be empty for digital goods
+	if req.FromAddress != nil {
+		params.ShipFromDetails = &stripe.TaxCalculationShipFromDetailsParams{
 			Address: &stripe.AddressParams{
 				City:       stripe.String(req.FromAddress.City),
 				State:      stripe.String(req.FromAddress.State),
 				PostalCode: stripe.String(req.FromAddress.PostalCode),
 				Country:    stripe.String(req.FromAddress.Country),
 			},
-		},
+		}
 	}
 
 	s.logger.Info("sending tax calculation request to stripe")

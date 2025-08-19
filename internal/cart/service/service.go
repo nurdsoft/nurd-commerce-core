@@ -456,12 +456,24 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	address, err := s.addressClient.GetAddress(ctx, &addressEntities.GetAddressRequest{
-		AddressID: req.Body.AddressID,
-	})
-	if err != nil {
-		s.log.Errorf("Error retrieving address: %v", err)
-		return nil, err
+	var address *addressEntities.Address
+	var err error
+
+	if req.Body.AddressID != uuid.Nil {
+		address, err = s.addressClient.GetAddress(ctx, &addressEntities.GetAddressRequest{
+			AddressID: req.Body.AddressID,
+		})
+		if err != nil {
+			s.log.Errorf("Error retrieving address: %v", err)
+			return nil, err
+		}
+	} else {
+		// rely on default address in case provided address is empty (possible for digital goods)
+		address, err = s.addressClient.GetDefaultAddress(ctx)
+		if err != nil {
+			s.log.Errorf("Error retrieving default address: %v", err)
+			return nil, err
+		}
 	}
 
 	// get items from active cart
@@ -529,6 +541,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 
 	var taxItems []taxesEntities.TaxItem
 	var totalCartPrice decimal.Decimal
+	var toAddress, fromAddress taxesEntities.Address
 
 	for _, item := range getActiveCarItems.Items {
 		taxItem := taxesEntities.TaxItem{
@@ -547,7 +560,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		totalCartPrice = totalCartPrice.Add(item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))))
 	}
 
-	toAddress := taxesEntities.Address{
+	toAddress = taxesEntities.Address{
 		State:      address.StateCode,
 		PostalCode: address.PostalCode,
 		Country:    address.CountryCode,
@@ -557,16 +570,20 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		toAddress.City = *address.City
 	}
 
-	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
-		ShippingAmount: shippingAmount,
-		FromAddress: taxesEntities.Address{
+	if req.Body.WarehouseAddress != nil {
+		fromAddress = taxesEntities.Address{
 			City:       req.Body.WarehouseAddress.City,
 			State:      req.Body.WarehouseAddress.StateCode,
 			PostalCode: req.Body.WarehouseAddress.PostalCode,
 			Country:    req.Body.WarehouseAddress.CountryCode,
-		},
-		ToAddress: toAddress,
-		TaxItems:  taxItems,
+		}
+	}
+
+	res, err := s.taxesClient.CalculateTax(ctx, &taxesEntities.CalculateTaxRequest{
+		ShippingAmount: shippingAmount,
+		FromAddress:    &fromAddress,
+		ToAddress:      toAddress,
+		TaxItems:       taxItems,
 	})
 	if err != nil {
 		s.log.Errorf("Error calculating tax: %v", err)

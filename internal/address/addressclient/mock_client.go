@@ -49,3 +49,18 @@ func (mr *MockClientMockRecorder) GetAddress(ctx, req interface{}) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAddress", reflect.TypeOf((*MockClient)(nil).GetAddress), ctx, req)
 }
+
+// GetDefaultAddress mocks base method.
+func (m *MockClient) GetDefaultAddress(ctx context.Context) (*entities.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDefaultAddress", ctx)
+	ret0, _ := ret[0].(*entities.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDefaultAddress indicates an expected call of GetDefaultAddress.
+func (mr *MockClientMockRecorder) GetDefaultAddress(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultAddress", reflect.TypeOf((*MockClient)(nil).GetDefaultAddress), ctx)
+}

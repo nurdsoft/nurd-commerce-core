@@ -11,15 +11,15 @@ type AddAddressRequest struct {
 }
 
 type AddressRequestBody struct {
-	FullName     string  `json:"full_name"`
-	Address      string  `json:"address"`
-	Apartment    *string `json:"apartment,omitempty"`
-	City         *string `json:"city,omitempty"`
-	PhoneNumber  *string `json:"phone_number,omitempty"`
-	StateCode    string  `json:"state_code"`
-	CountryCode  string  `json:"country_code"`
-	PostalCode   string  `json:"postal_code"`
-	IsDefault    bool    `json:"is_default"`
+	FullName    string  `json:"full_name"`
+	Address     string  `json:"address"`
+	Apartment   *string `json:"apartment,omitempty"`
+	City        *string `json:"city,omitempty"`
+	PhoneNumber *string `json:"phone_number,omitempty"`
+	StateCode   string  `json:"state_code"`
+	CountryCode string  `json:"country_code"`
+	PostalCode  string  `json:"postal_code"`
+	IsDefault   bool    `json:"is_default"`
 }
 
 // swagger:parameters addresses UpdateAddressRequest

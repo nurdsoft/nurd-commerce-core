@@ -8,6 +8,8 @@ type CreateOrderResponse struct {
 	//
 	// example: VZQ9IMMMYQ
 	OrderReference string `json:"order_reference"`
+	// Order items
+	OrderItems []*OrderItem `json:"order_items"`
 }
 
 // swagger:model ListOrdersResponse

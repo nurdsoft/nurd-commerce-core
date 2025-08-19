@@ -59,6 +59,18 @@ func (r *sqlRepository) UpdateCartStatus(ctx context.Context, tx Transaction, ca
 		Update("status", status).Error
 }
 
+func (r *sqlRepository) GetCartItemByID(ctx context.Context, cartItemID uuid.UUID) (*entities.CartItem, error) {
+	var item entities.CartItem
+	err := r.gormDB.WithContext(ctx).
+		Where("id = ?", cartItemID).
+		First(&item).Error
+	if err != nil && dbErrors.IsNotFoundError(err) {
+		return nil, errors.NewAPIError("CART_ITEM_NOT_FOUND")
+	}
+
+	return &item, err
+}
+
 func (r *sqlRepository) GetCartItem(ctx context.Context, cartID, productVariantID string) (*entities.CartItem, error) {
 	var item entities.CartItem
 	err := r.gormDB.WithContext(ctx).
@@ -102,7 +114,7 @@ func (r *sqlRepository) GetCartItems(ctx context.Context, cartID string) ([]enti
 		Joins("JOIN product_variants ON cart_items.product_variant_id = product_variants.id").
 		Where("cart_id = ?", cartID).
 		Select("cart_items.id, cart_items.cart_id, product_variants.sku, product_variants.name, product_variants.product_id, cart_items.product_variant_id, " +
-			" product_variants.price, product_variants.currency, product_variants.attributes, product_variants.length, product_variants.width, " +
+			" cart_items.shipping_rate_id, product_variants.price, product_variants.currency, product_variants.attributes, product_variants.length, product_variants.width, " +
 			" product_variants.height, product_variants.weight, product_variants.stripe_tax_code, cart_items.quantity, product_variants.image_url, " +
 			" product_variants.description, cart_items.created_at, cart_items.updated_at").
 		Find(&items).Error
@@ -138,15 +150,21 @@ func (r *sqlRepository) GetShippingRate(ctx context.Context, shippingRate uuid.U
 	return &rate, err
 }
 
-func (r *sqlRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateID *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
+func (r *sqlRepository) SetCartItemShippingRate(ctx context.Context, cartItemID uuid.UUID, shippingRateID uuid.UUID) error {
+	return r.gormDB.WithContext(ctx).
+		Model(&entities.CartItem{}).
+		Where("id = ?", cartItemID).
+		Update("shipping_rate_id", shippingRateID).Error
+}
+
+func (r *sqlRepository) UpdateCartTaxRate(ctx context.Context, cartID string, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
 	return r.gormDB.WithContext(ctx).
 		Model(&entities.Cart{}).
 		Where("id = ?", cartID).
 		Updates(map[string]interface{}{
-			"shipping_rate_id": shippingRateID,
-			"tax_amount":       taxAmount,
-			"tax_currency":     taxCurrency,
-			"tax_breakdown":    taxBreakdown,
+			"tax_amount":    taxAmount,
+			"tax_currency":  taxCurrency,
+			"tax_breakdown": taxBreakdown,
 		}).Error
 }
 

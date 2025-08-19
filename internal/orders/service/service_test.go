@@ -113,10 +113,9 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 	tc.mockCart.EXPECT().
 		GetCart(gomock.Any()).
 		Return(&cartEntities.Cart{
-			Id:             cartID,
-			TaxAmount:      decimal.NewFromFloat(10.0),
-			TaxCurrency:    "USD",
-			ShippingRateID: &shippingRateID,
+			Id:          cartID,
+			TaxAmount:   decimal.NewFromFloat(10.0),
+			TaxCurrency: "USD",
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -130,6 +129,7 @@ func TestCreateOrder_WithStripe(t *testing.T) {
 					Name:             "Test Product",
 					Quantity:         2,
 					Price:            decimal.NewFromInt(50),
+					ShippingRateID:   &shippingRateID,
 				},
 			},
 		}, nil)
@@ -266,10 +266,9 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	tc.mockCart.EXPECT().
 		GetCart(gomock.Any()).
 		Return(&cartEntities.Cart{
-			Id:             cartID,
-			TaxAmount:      decimal.NewFromInt(10),
-			TaxCurrency:    "USD",
-			ShippingRateID: &shippingRateID,
+			Id:          cartID,
+			TaxAmount:   decimal.NewFromInt(10),
+			TaxCurrency: "USD",
 		}, nil)
 
 	tc.mockCart.EXPECT().
@@ -283,6 +282,7 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 					Name:             "Test Product",
 					Quantity:         2,
 					Price:            decimal.NewFromInt(50),
+					ShippingRateID:   &shippingRateID,
 				},
 			},
 		}, nil)
@@ -361,10 +361,9 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 
 	req := &entities.CreateOrderRequest{
 		Body: &entities.CreateOrderRequestBody{
-			AddressID:      addressID,
-			ShippingRateID: &shippingRateID,
-			PaymentNonce:   paymentNonce,
-			BillingInfo:    expectedBillingInfo,
+			AddressID:    addressID,
+			PaymentNonce: paymentNonce,
+			BillingInfo:  expectedBillingInfo,
 		},
 	}
 
@@ -375,6 +374,561 @@ func TestCreateOrder_WithAuthorizeNet(t *testing.T) {
 	assert.NotEmpty(t, resp.OrderReference)
 	// wait for async notify call to be done
 	<-notifyCallDone
+	<-salesforceCallDone
+}
+
+func TestCreateOrder_PerItemShipping_MultipleRates_Stripe(t *testing.T) {
+	tc := setupTestController(t)
+	s := newServiceUnderTest(tc)
+
+	customerID := uuid.New()
+	addressID := uuid.New()
+	cartID := uuid.New()
+	shippingRateID1 := uuid.New()
+	shippingRateID2 := uuid.New()
+	paymentMethodID := "pm_123"
+	customerStripeID := "cus_456"
+
+	// subtotal: (50*1) + (30*2) = 110
+	// tax: 10
+	// shipping: 5 + 7 = 12
+	expectedTotal := decimal.NewFromInt(132)
+
+	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+	tc.mockAddress.EXPECT().
+		GetAddress(gomock.Any(), &addressEntities.GetAddressRequest{AddressID: addressID}).
+		Return(&addressEntities.Address{
+			FullName:    "John Doe",
+			Address:     "123 Main St",
+			City:        nullable.StringPtr("New York"),
+			StateCode:   "NY",
+			CountryCode: "US",
+			PostalCode:  "10001",
+			PhoneNumber: nullable.StringPtr("1234567890"),
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCart(gomock.Any()).
+		Return(&cartEntities.Cart{Id: cartID, TaxAmount: decimal.NewFromInt(10), TaxCurrency: "USD"}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCartItems(gomock.Any()).
+		Return(&cartEntities.GetCartItemsResponse{Items: []cartEntities.CartItemDetail{
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-A",
+				Name:             "Product A",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(50),
+				ShippingRateID:   &shippingRateID1,
+			},
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-B",
+				Name:             "Product B",
+				Quantity:         2,
+				Price:            decimal.NewFromInt(30),
+				ShippingRateID:   &shippingRateID2,
+			},
+		}}, nil)
+
+	tc.mockCart.EXPECT().
+		GetShippingRateByID(gomock.Any(), shippingRateID1).
+		Return(&cartEntities.CartShippingRate{
+			Id:          shippingRateID1,
+			Amount:      decimal.NewFromInt(5),
+			CarrierName: "Carrier 1",
+			CarrierCode: "C1",
+			ServiceType: "Standard",
+			ServiceCode: "STD",
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetShippingRateByID(gomock.Any(), shippingRateID2).
+		Return(&cartEntities.CartShippingRate{
+			Id:          shippingRateID2,
+			Amount:      decimal.NewFromInt(7),
+			CarrierName: "Carrier 2",
+			CarrierCode: "C2",
+			ServiceType: "Express",
+			ServiceCode: "EXP",
+		}, nil)
+
+	tc.mockCustomer.EXPECT().
+		GetCustomer(gomock.Any()).
+		Return(&customerEntities.Customer{ID: customerID, StripeID: nullable.StringPtr(customerStripeID)}, nil)
+
+	tc.mockPayment.EXPECT().
+		GetProvider().
+		Return(providers.ProviderStripe).Times(2)
+
+	tc.mockPayment.EXPECT().
+		CreatePayment(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, req stripeEntities.CreatePaymentIntentRequest) {
+			assert.Equal(t, expectedTotal, req.Amount)
+			assert.Equal(t, paymentMethodID, req.PaymentMethodId)
+			assert.Equal(t, customerStripeID, *req.CustomerId)
+		}).
+		Return(providers.PaymentProviderResponse{ID: "pi_multi", Status: providers.PaymentStatusPending}, nil)
+
+	tc.mockRepo.EXPECT().
+		OrderReferenceExists(gomock.Any(), gomock.Any()).
+		Return(false, nil)
+
+	tc.mockRepo.EXPECT().
+		CreateOrder(gomock.Any(), cartID, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ uuid.UUID, order *entities.Order, items []*entities.OrderItem) {
+			assert.Equal(t, expectedTotal, order.Total)
+			// Order-level shipping rate is set to total, but carrier fields remain nil when not provided by request
+			assert.Equal(t, decimal.NewFromInt(12), *order.ShippingRate)
+			assert.Empty(t, order.ShippingCarrierName)
+			assert.Empty(t, order.ShippingCarrierCode)
+			assert.Empty(t, order.ShippingEstimatedDeliveryDate)
+			assert.Empty(t, order.ShippingBusinessDaysInTransit)
+			assert.Empty(t, order.ShippingServiceType)
+			assert.Empty(t, order.ShippingServiceCode)
+
+			// items should have shipping rate id and amount set
+			assert.Len(t, items, 2)
+			found1 := false
+			found2 := false
+			for _, it := range items {
+				if it.ShippingRateID != nil && *it.ShippingRateID == shippingRateID1 {
+					found1 = true
+					assert.Equal(t, decimal.NewFromInt(5), *it.ShippingRate)
+				}
+				if it.ShippingRateID != nil && *it.ShippingRateID == shippingRateID2 {
+					found2 = true
+					assert.Equal(t, decimal.NewFromInt(7), *it.ShippingRate)
+				}
+			}
+			assert.True(t, found1)
+			assert.True(t, found2)
+		}).
+		Return(nil)
+
+	notifyDone := make(chan struct{})
+	tc.mockWebhook.EXPECT().
+		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *webhookEntities.NotifyOrderStatusChangeRequest) { close(notifyDone) }).
+		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) { close(salesforceCallDone) }).
+		Return(nil, nil)
+
+	req := &entities.CreateOrderRequest{Body: &entities.CreateOrderRequestBody{AddressID: addressID, StripePaymentMethodID: paymentMethodID}}
+	resp, err := s.CreateOrder(ctx, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	<-notifyDone
+	<-salesforceCallDone
+}
+
+func TestCreateOrder_BackCompat_OrderLevelShipping_SetsOrderFields(t *testing.T) {
+	tc := setupTestController(t)
+	s := newServiceUnderTest(tc)
+
+	customerID := uuid.New()
+	addressID := uuid.New()
+	cartID := uuid.New()
+	shippingRateID := uuid.New()
+	paymentMethodID := "pm_789"
+	customerStripeID := "cus_789"
+
+	// subtotal: 40 + 40 = 80; tax: 10; shipping (single, shared) = 5; total = 95
+	expectedTotal := decimal.NewFromInt(95)
+
+	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+	tc.mockAddress.EXPECT().
+		GetAddress(gomock.Any(), &addressEntities.GetAddressRequest{AddressID: addressID}).
+		Return(&addressEntities.Address{
+			FullName:    "John Doe",
+			Address:     "123 Main St",
+			City:        nullable.StringPtr("New York"),
+			StateCode:   "NY",
+			CountryCode: "US",
+			PostalCode:  "10001",
+			PhoneNumber: nullable.StringPtr("1234567890"),
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCart(gomock.Any()).
+		Return(&cartEntities.Cart{Id: cartID, TaxAmount: decimal.NewFromInt(10), TaxCurrency: "USD"}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCartItems(gomock.Any()).
+		Return(&cartEntities.GetCartItemsResponse{Items: []cartEntities.CartItemDetail{
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-X",
+				Name:             "X",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(40),
+				ShippingRateID:   &shippingRateID,
+			},
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-Y",
+				Name:             "Y",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(40),
+				ShippingRateID:   &shippingRateID,
+			},
+		}}, nil)
+
+	// The rate is looked up per item (twice)
+	tc.mockCart.EXPECT().
+		GetShippingRateByID(gomock.Any(), shippingRateID).
+		Return(&cartEntities.CartShippingRate{
+			Id:          shippingRateID,
+			Amount:      decimal.NewFromInt(5),
+			CarrierName: "Carrier",
+			CarrierCode: "CARR",
+			ServiceType: "Ground",
+			ServiceCode: "GRD",
+		}, nil).Times(2)
+
+	tc.mockCustomer.EXPECT().
+		GetCustomer(gomock.Any()).
+		Return(&customerEntities.Customer{ID: customerID, StripeID: nullable.StringPtr(customerStripeID)}, nil)
+
+	tc.mockPayment.EXPECT().
+		GetProvider().
+		Return(providers.ProviderStripe).Times(2)
+
+	tc.mockPayment.EXPECT().
+		CreatePayment(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, req stripeEntities.CreatePaymentIntentRequest) {
+			assert.Equal(t, expectedTotal, req.Amount)
+			assert.Equal(t, paymentMethodID, req.PaymentMethodId)
+			assert.Equal(t, customerStripeID, *req.CustomerId)
+		}).
+		Return(providers.PaymentProviderResponse{ID: "pi_backcompat", Status: providers.PaymentStatusPending}, nil)
+
+	tc.mockRepo.EXPECT().
+		OrderReferenceExists(gomock.Any(), gomock.Any()).
+		Return(false, nil)
+
+	tc.mockRepo.EXPECT().
+		CreateOrder(gomock.Any(), cartID, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ uuid.UUID, order *entities.Order, items []*entities.OrderItem) {
+			assert.Equal(t, expectedTotal, order.Total)
+			assert.Equal(t, decimal.NewFromInt(5), *order.ShippingRate)
+			// Order-level shipping fields should be set when request includes ShippingRateID
+			assert.Equal(t, "Carrier", *order.ShippingCarrierName)
+			assert.Equal(t, "CARR", *order.ShippingCarrierCode)
+			assert.Equal(t, "Ground", *order.ShippingServiceType)
+			assert.Equal(t, "GRD", *order.ShippingServiceCode)
+			assert.Len(t, items, 2)
+			for _, it := range items {
+				assert.Equal(t, shippingRateID, *it.ShippingRateID)
+				assert.Equal(t, decimal.NewFromInt(5), *it.ShippingRate)
+			}
+		}).
+		Return(nil)
+
+	notifyDone := make(chan struct{})
+	tc.mockWebhook.EXPECT().
+		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *webhookEntities.NotifyOrderStatusChangeRequest) { close(notifyDone) }).
+		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) { close(salesforceCallDone) }).
+		Return(nil, nil)
+
+	req := &entities.CreateOrderRequest{Body: &entities.CreateOrderRequestBody{AddressID: addressID, ShippingRateID: &shippingRateID, StripePaymentMethodID: paymentMethodID}}
+	resp, err := s.CreateOrder(ctx, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	<-notifyDone
+	<-salesforceCallDone
+}
+
+func TestCreateOrder_Error_MismatchedOrderLevelShippingRate(t *testing.T) {
+	tc := setupTestController(t)
+	s := newServiceUnderTest(tc)
+
+	customerID := uuid.New()
+	addressID := uuid.New()
+	cartID := uuid.New()
+	itemRateID := uuid.New()
+	orderRateID := uuid.New() // different
+
+	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+	tc.mockAddress.EXPECT().
+		GetAddress(gomock.Any(), &addressEntities.GetAddressRequest{AddressID: addressID}).
+		Return(&addressEntities.Address{
+			FullName:    "John Doe",
+			Address:     "123 Main St",
+			City:        nullable.StringPtr("New York"),
+			StateCode:   "NY",
+			CountryCode: "US",
+			PostalCode:  "10001",
+			PhoneNumber: nullable.StringPtr("1234567890"),
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCart(gomock.Any()).
+		Return(&cartEntities.Cart{Id: cartID, TaxAmount: decimal.NewFromInt(10), TaxCurrency: "USD"}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCartItems(gomock.Any()).
+		Return(&cartEntities.GetCartItemsResponse{Items: []cartEntities.CartItemDetail{{
+			ProductID:        uuid.New(),
+			ProductVariantID: uuid.New(),
+			SKU:              "SKU-1",
+			Name:             "One",
+			Quantity:         1,
+			Price:            decimal.NewFromInt(10),
+			ShippingRateID:   &itemRateID,
+		},
+		}}, nil)
+
+	tc.mockCart.EXPECT().
+		GetShippingRateByID(gomock.Any(), itemRateID).
+		Return(&cartEntities.CartShippingRate{Id: itemRateID, Amount: decimal.NewFromInt(5)}, nil)
+
+	req := &entities.CreateOrderRequest{Body: &entities.CreateOrderRequestBody{AddressID: addressID, ShippingRateID: &orderRateID}}
+	resp, err := s.CreateOrder(ctx, req)
+	assert.Nil(t, resp)
+	assert.ErrorContains(t, err, moduleErrors.NewAPIError("ORDER_ERROR_CREATING").Error())
+}
+
+func TestCreateOrder_DuplicateShippingRateIDs_SummedOnce(t *testing.T) {
+	tc := setupTestController(t)
+	s := newServiceUnderTest(tc)
+
+	customerID := uuid.New()
+	addressID := uuid.New()
+	cartID := uuid.New()
+	sharedRateID := uuid.New()
+	paymentMethodID := "pm_dup"
+	customerStripeID := "cus_dup"
+
+	// subtotal: 20 + 20 = 40; tax: 10; shipping: 5 (only once) => total 55
+	expectedTotal := decimal.NewFromInt(55)
+
+	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+	tc.mockAddress.EXPECT().
+		GetAddress(gomock.Any(), &addressEntities.GetAddressRequest{AddressID: addressID}).
+		Return(&addressEntities.Address{
+			FullName:    "John Doe",
+			Address:     "123 Main St",
+			City:        nullable.StringPtr("New York"),
+			StateCode:   "NY",
+			CountryCode: "US",
+			PostalCode:  "10001",
+			PhoneNumber: nullable.StringPtr("1234567890"),
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCart(gomock.Any()).
+		Return(&cartEntities.Cart{Id: cartID, TaxAmount: decimal.NewFromInt(10), TaxCurrency: "USD"}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCartItems(gomock.Any()).
+		Return(&cartEntities.GetCartItemsResponse{Items: []cartEntities.CartItemDetail{
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-1",
+				Name:             "One",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(20),
+				ShippingRateID:   &sharedRateID,
+			},
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-2",
+				Name:             "Two",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(20),
+				ShippingRateID:   &sharedRateID,
+			},
+		}}, nil)
+
+	// Called twice (once per item), but same rate id
+	tc.mockCart.EXPECT().
+		GetShippingRateByID(gomock.Any(), sharedRateID).
+		Return(&cartEntities.CartShippingRate{Id: sharedRateID, Amount: decimal.NewFromInt(5), CarrierName: "Carrier", CarrierCode: "CARR"}, nil).Times(2)
+
+	tc.mockCustomer.EXPECT().
+		GetCustomer(gomock.Any()).
+		Return(&customerEntities.Customer{ID: customerID, StripeID: nullable.StringPtr(customerStripeID)}, nil)
+
+	tc.mockPayment.EXPECT().
+		GetProvider().
+		Return(providers.ProviderStripe).Times(2)
+
+	tc.mockPayment.EXPECT().
+		CreatePayment(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, req stripeEntities.CreatePaymentIntentRequest) {
+			assert.Equal(t, expectedTotal, req.Amount)
+		}).
+		Return(providers.PaymentProviderResponse{ID: "pi_dup", Status: providers.PaymentStatusPending}, nil)
+
+	tc.mockRepo.EXPECT().
+		OrderReferenceExists(gomock.Any(), gomock.Any()).
+		Return(false, nil)
+
+	tc.mockRepo.EXPECT().
+		CreateOrder(gomock.Any(), cartID, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ uuid.UUID, order *entities.Order, _ []*entities.OrderItem) {
+			assert.Equal(t, decimal.NewFromInt(5), *order.ShippingRate)
+			assert.Equal(t, expectedTotal, order.Total)
+			// No order-level carrier fields when request ShippingRateID is not provided
+			assert.Empty(t, order.ShippingCarrierName)
+			assert.Empty(t, order.ShippingCarrierCode)
+		}).
+		Return(nil)
+
+	notifyDone := make(chan struct{})
+	tc.mockWebhook.EXPECT().
+		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *webhookEntities.NotifyOrderStatusChangeRequest) { close(notifyDone) }).
+		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) { close(salesforceCallDone) }).
+		Return(nil, nil)
+
+	req := &entities.CreateOrderRequest{Body: &entities.CreateOrderRequestBody{AddressID: addressID, StripePaymentMethodID: paymentMethodID}}
+	resp, err := s.CreateOrder(ctx, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	<-notifyDone
+	<-salesforceCallDone
+}
+
+func TestCreateOrder_NoShippingRates_TotalNoShipping(t *testing.T) {
+	tc := setupTestController(t)
+	s := newServiceUnderTest(tc)
+
+	customerID := uuid.New()
+	addressID := uuid.New()
+	cartID := uuid.New()
+	paymentMethodID := "pm_noship"
+	customerStripeID := "cus_noship"
+
+	// subtotal: (25*2) + (15*1) = 65
+	// tax: 10
+	// shipping: 0 (no shipping rates)
+	expectedTotal := decimal.NewFromInt(75)
+
+	ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+	tc.mockAddress.EXPECT().
+		GetAddress(gomock.Any(), &addressEntities.GetAddressRequest{AddressID: addressID}).
+		Return(&addressEntities.Address{
+			FullName:    "John Doe",
+			Address:     "123 Main St",
+			City:        nullable.StringPtr("New York"),
+			StateCode:   "NY",
+			CountryCode: "US",
+			PostalCode:  "10001",
+			PhoneNumber: nullable.StringPtr("1234567890"),
+		}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCart(gomock.Any()).
+		Return(&cartEntities.Cart{Id: cartID, TaxAmount: decimal.NewFromInt(10), TaxCurrency: "USD"}, nil)
+
+	tc.mockCart.EXPECT().
+		GetCartItems(gomock.Any()).
+		Return(&cartEntities.GetCartItemsResponse{Items: []cartEntities.CartItemDetail{
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-1",
+				Name:             "One",
+				Quantity:         2,
+				Price:            decimal.NewFromInt(25),
+			},
+			{
+				ProductID:        uuid.New(),
+				ProductVariantID: uuid.New(),
+				SKU:              "SKU-2",
+				Name:             "Two",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(15),
+			},
+		}}, nil)
+
+	// No GetShippingRateByID expectations because there are no shipping rates
+
+	tc.mockCustomer.EXPECT().
+		GetCustomer(gomock.Any()).
+		Return(&customerEntities.Customer{ID: customerID, StripeID: nullable.StringPtr(customerStripeID)}, nil)
+
+	tc.mockPayment.EXPECT().
+		GetProvider().
+		Return(providers.ProviderStripe).Times(2)
+
+	tc.mockPayment.EXPECT().
+		CreatePayment(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, req stripeEntities.CreatePaymentIntentRequest) {
+			assert.Equal(t, expectedTotal, req.Amount)
+		}).
+		Return(providers.PaymentProviderResponse{ID: "pi_noship", Status: providers.PaymentStatusPending}, nil)
+
+	tc.mockRepo.EXPECT().
+		OrderReferenceExists(gomock.Any(), gomock.Any()).
+		Return(false, nil)
+
+	tc.mockRepo.EXPECT().
+		CreateOrder(gomock.Any(), cartID, gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ uuid.UUID, order *entities.Order, items []*entities.OrderItem) {
+			assert.Equal(t, expectedTotal, order.Total)
+			// Order-level shipping not set when no shipping
+			assert.Nil(t, order.ShippingRate)
+			// Items should have no shipping fields
+			for _, it := range items {
+				assert.Empty(t, it.ShippingRateID)
+				assert.Empty(t, it.ShippingRate)
+				assert.Empty(t, it.ShippingCarrierName)
+				assert.Empty(t, it.ShippingCarrierCode)
+				assert.Empty(t, it.ShippingServiceType)
+				assert.Empty(t, it.ShippingServiceCode)
+				assert.Empty(t, it.EstimatedDeliveryDate)
+				assert.Empty(t, it.BusinessDaysInTransit)
+			}
+		}).
+		Return(nil)
+
+	notifyDone := make(chan struct{})
+	tc.mockWebhook.EXPECT().
+		NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ *webhookEntities.NotifyOrderStatusChangeRequest) { close(notifyDone) }).
+		Return(nil)
+
+	salesforceCallDone := make(chan struct{})
+	tc.mockInventory.EXPECT().
+		CreateOrder(gomock.Any(), gomock.Any()).
+		Do(func(_ context.Context, _ inventoryEntities.CreateInventoryOrderRequest) { close(salesforceCallDone) }).
+		Return(nil, nil)
+
+	req := &entities.CreateOrderRequest{Body: &entities.CreateOrderRequestBody{AddressID: addressID, StripePaymentMethodID: paymentMethodID}}
+	resp, err := s.CreateOrder(ctx, req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	<-notifyDone
 	<-salesforceCallDone
 }
 

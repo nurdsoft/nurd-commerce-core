@@ -3,28 +3,32 @@ package endpoints
 import (
 	"context"
 
+	"github.com/go-kit/kit/endpoint"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/service"
-	"github.com/go-kit/kit/endpoint"
 )
 
 type Endpoints struct {
-	UpdateCartItemEndpoint  endpoint.Endpoint
-	GetCartItemsEndpoint    endpoint.Endpoint
-	RemoveCartItemEndpoint  endpoint.Endpoint
-	ClearCartItemsEndpoint  endpoint.Endpoint
-	GetShippingRateEndpoint endpoint.Endpoint
-	GetTaxRateEndpoint      endpoint.Endpoint
+	UpdateCartItemEndpoint          endpoint.Endpoint
+	GetCartItemsEndpoint            endpoint.Endpoint
+	RemoveCartItemEndpoint          endpoint.Endpoint
+	ClearCartItemsEndpoint          endpoint.Endpoint
+	GetShippingRateEndpoint         endpoint.Endpoint
+	SetCartItemShippingRateEndpoint endpoint.Endpoint
+	GetTaxRateEndpoint              endpoint.Endpoint
+	CreateCartShippingRatesEndpoint endpoint.Endpoint
 }
 
 func New(svc service.Service) *Endpoints {
 	return &Endpoints{
-		UpdateCartItemEndpoint:  makeAddCartItem(svc),
-		GetCartItemsEndpoint:    makeGetCartItems(svc),
-		RemoveCartItemEndpoint:  makeRemoveCartItem(svc),
-		ClearCartItemsEndpoint:  makeClearCartItems(svc),
-		GetShippingRateEndpoint: makeGetShippingRate(svc),
-		GetTaxRateEndpoint:      makeGetTaxRate(svc),
+		UpdateCartItemEndpoint:          makeAddCartItem(svc),
+		GetCartItemsEndpoint:            makeGetCartItems(svc),
+		RemoveCartItemEndpoint:          makeRemoveCartItem(svc),
+		ClearCartItemsEndpoint:          makeClearCartItems(svc),
+		GetShippingRateEndpoint:         makeGetShippingRate(svc),
+		SetCartItemShippingRateEndpoint: makeSetCartItemShippingRate(svc),
+		GetTaxRateEndpoint:              makeGetTaxRate(svc),
+		CreateCartShippingRatesEndpoint: makeCreateCartShippingRates(svc),
 	}
 }
 
@@ -65,5 +69,19 @@ func makeGetShippingRate(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*entities.GetShippingRateRequest)
 		return svc.GetShippingRate(ctx, req)
+	}
+}
+
+func makeCreateCartShippingRates(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.CreateCartShippingRatesRequest)
+		return svc.CreateCartShippingRates(ctx, req)
+	}
+}
+
+func makeSetCartItemShippingRate(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*entities.SetCartItemShippingRateRequest)
+		return nil, svc.SetCartItemShippingRate(ctx, req)
 	}
 }

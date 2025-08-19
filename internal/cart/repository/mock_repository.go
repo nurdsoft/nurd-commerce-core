@@ -208,6 +208,21 @@ func (mr *MockRepositoryMockRecorder) GetCartItem(ctx, cartID, productVariantID 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCartItem", reflect.TypeOf((*MockRepository)(nil).GetCartItem), ctx, cartID, productVariantID)
 }
 
+// GetCartItemByID mocks base method.
+func (m *MockRepository) GetCartItemByID(ctx context.Context, cartItemID uuid.UUID) (*entities.CartItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCartItemByID", ctx, cartItemID)
+	ret0, _ := ret[0].(*entities.CartItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCartItemByID indicates an expected call of GetCartItemByID.
+func (mr *MockRepositoryMockRecorder) GetCartItemByID(ctx, cartItemID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCartItemByID", reflect.TypeOf((*MockRepository)(nil).GetCartItemByID), ctx, cartItemID)
+}
+
 // GetCartItems mocks base method.
 func (m *MockRepository) GetCartItems(ctx context.Context, cartID string) ([]entities.CartItemDetail, error) {
 	m.ctrl.T.Helper()
@@ -252,6 +267,20 @@ func (mr *MockRepositoryMockRecorder) RemoveCartItem(ctx, cartID, itemID interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveCartItem", reflect.TypeOf((*MockRepository)(nil).RemoveCartItem), ctx, cartID, itemID)
 }
 
+// SetCartItemShippingRate mocks base method.
+func (m *MockRepository) SetCartItemShippingRate(ctx context.Context, cartItemID, shippingRateID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCartItemShippingRate", ctx, cartItemID, shippingRateID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCartItemShippingRate indicates an expected call of SetCartItemShippingRate.
+func (mr *MockRepositoryMockRecorder) SetCartItemShippingRate(ctx, cartItemID, shippingRateID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCartItemShippingRate", reflect.TypeOf((*MockRepository)(nil).SetCartItemShippingRate), ctx, cartItemID, shippingRateID)
+}
+
 // UpdateCartItem mocks base method.
 func (m *MockRepository) UpdateCartItem(ctx context.Context, tx Transaction, itemID string, quantity int) error {
 	m.ctrl.T.Helper()
@@ -266,20 +295,6 @@ func (mr *MockRepositoryMockRecorder) UpdateCartItem(ctx, tx, itemID, quantity i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCartItem", reflect.TypeOf((*MockRepository)(nil).UpdateCartItem), ctx, tx, itemID, quantity)
 }
 
-// UpdateCartShippingAndTaxRate mocks base method.
-func (m *MockRepository) UpdateCartShippingAndTaxRate(ctx context.Context, cartID string, shippingRateId *uuid.UUID, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCartShippingAndTaxRate", ctx, cartID, shippingRateId, taxAmount, taxCurrency, taxBreakdown)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateCartShippingAndTaxRate indicates an expected call of UpdateCartShippingAndTaxRate.
-func (mr *MockRepositoryMockRecorder) UpdateCartShippingAndTaxRate(ctx, cartID, shippingRateId, taxAmount, taxCurrency, taxBreakdown interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCartShippingAndTaxRate", reflect.TypeOf((*MockRepository)(nil).UpdateCartShippingAndTaxRate), ctx, cartID, shippingRateId, taxAmount, taxCurrency, taxBreakdown)
-}
-
 // UpdateCartStatus mocks base method.
 func (m *MockRepository) UpdateCartStatus(ctx context.Context, tx Transaction, cartID, status string) error {
 	m.ctrl.T.Helper()
@@ -292,4 +307,18 @@ func (m *MockRepository) UpdateCartStatus(ctx context.Context, tx Transaction, c
 func (mr *MockRepositoryMockRecorder) UpdateCartStatus(ctx, tx, cartID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCartStatus", reflect.TypeOf((*MockRepository)(nil).UpdateCartStatus), ctx, tx, cartID, status)
+}
+
+// UpdateCartTaxRate mocks base method.
+func (m *MockRepository) UpdateCartTaxRate(ctx context.Context, cartID string, taxAmount decimal.Decimal, taxCurrency string, taxBreakdown json.JSON) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCartTaxRate", ctx, cartID, taxAmount, taxCurrency, taxBreakdown)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCartTaxRate indicates an expected call of UpdateCartTaxRate.
+func (mr *MockRepositoryMockRecorder) UpdateCartTaxRate(ctx, cartID, taxAmount, taxCurrency, taxBreakdown interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCartTaxRate", reflect.TypeOf((*MockRepository)(nil).UpdateCartTaxRate), ctx, cartID, taxAmount, taxCurrency, taxBreakdown)
 }

@@ -350,7 +350,7 @@ func (s *service) GetCartItems(ctx context.Context) (*entities.GetCartItemsRespo
 //
 // Parameters:
 //
-//   - name: item_id
+//   + name: item_id
 //     in: path
 //     description: ID of the item to be removed
 //     required: true

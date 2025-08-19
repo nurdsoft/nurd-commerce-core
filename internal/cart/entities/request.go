@@ -92,6 +92,7 @@ type GetTaxRateRequestBody struct {
 }
 
 type WarehouseAddress struct {
+	Street      string `json:"street"`
 	City        string `json:"city"`
 	StateCode   string `json:"state_code"`
 	PostalCode  string `json:"postal_code"`

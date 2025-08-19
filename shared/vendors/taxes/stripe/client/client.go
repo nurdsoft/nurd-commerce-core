@@ -6,6 +6,7 @@ import (
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
 	stripeEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/entities"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/service"
+	"github.com/shopspring/decimal"
 )
 
 type Client interface {
@@ -24,14 +25,14 @@ func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateT
 	stripeReq := &stripeEntities.CalculateTaxRequest{
 		ShippingAmount: req.ShippingAmount,
 		FromAddress: stripeEntities.Address{
-			Line1:      req.FromAddress.Line1,
+			Line1:      req.FromAddress.Street,
 			City:       req.FromAddress.City,
 			State:      req.FromAddress.State,
 			PostalCode: req.FromAddress.PostalCode,
 			Country:    req.FromAddress.Country,
 		},
 		ToAddress: stripeEntities.Address{
-			Line1:      req.ToAddress.Line1,
+			Line1:      req.ToAddress.Street,
 			City:       req.ToAddress.City,
 			State:      req.ToAddress.State,
 			PostalCode: req.ToAddress.PostalCode,
@@ -45,9 +46,13 @@ func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateT
 		return nil, err
 	}
 
+	// convert the tax rate from minor units back to major units for human readability
+	taxInMajorUnits := res.Tax.Div(decimal.NewFromInt(100))
+	totalAmountInMajorUnits := res.TotalAmount.Div(decimal.NewFromInt(100))
+
 	return &entities.CalculateTaxResponse{
-		Tax:         res.Tax,
-		TotalAmount: res.TotalAmount,
+		Tax:         taxInMajorUnits,
+		TotalAmount: totalAmountInMajorUnits,
 		Currency:    res.Currency,
 		Breakdown:   res.Breakdown,
 	}, nil
@@ -57,7 +62,8 @@ func mapStripeTaxItems(items []entities.TaxItem) []stripeEntities.TaxItem {
 	stripeItems := make([]stripeEntities.TaxItem, len(items))
 	for i, item := range items {
 		stripeItems[i] = stripeEntities.TaxItem{
-			Price:     item.Price,
+			// Stripe requires to provide the amount of the product with the no.of pieces being bought
+			Price:     item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))),
 			Quantity:  item.Quantity,
 			Reference: item.Reference,
 			TaxCode:   item.TaxCode,

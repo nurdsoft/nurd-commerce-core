@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	entities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/entities"
+	providers "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/providers"
 )
 
 // MockClient is a mock of Client interface.
@@ -48,4 +49,18 @@ func (m *MockClient) CalculateTax(ctx context.Context, req *entities.CalculateTa
 func (mr *MockClientMockRecorder) CalculateTax(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateTax", reflect.TypeOf((*MockClient)(nil).CalculateTax), ctx, req)
+}
+
+// GetProvider mocks base method.
+func (m *MockClient) GetProvider() providers.ProviderType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProvider")
+	ret0, _ := ret[0].(providers.ProviderType)
+	return ret0
+}
+
+// GetProvider indicates an expected call of GetProvider.
+func (mr *MockClientMockRecorder) GetProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvider", reflect.TypeOf((*MockClient)(nil).GetProvider))
 }

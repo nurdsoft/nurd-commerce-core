@@ -20,7 +20,7 @@ type TaxItem struct {
 }
 
 type Address struct {
-	Line1      string
+	Street     string
 	City       string
 	State      string
 	PostalCode string

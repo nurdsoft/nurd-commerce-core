@@ -30,14 +30,14 @@ func TestClient_CalculateTax(t *testing.T) {
 	stripeReq := &stripeEntities.CalculateTaxRequest{
 		ShippingAmount: req.ShippingAmount,
 		FromAddress: &stripeEntities.Address{
-			Line1:      req.FromAddress.Line1,
+			Line1:      req.FromAddress.Street,
 			City:       req.FromAddress.City,
 			State:      req.FromAddress.State,
 			PostalCode: req.FromAddress.PostalCode,
 			Country:    req.FromAddress.Country,
 		},
 		ToAddress: stripeEntities.Address{
-			Line1:      req.ToAddress.Line1,
+			Line1:      req.ToAddress.Street,
 			City:       req.ToAddress.City,
 			State:      req.ToAddress.State,
 			PostalCode: req.ToAddress.PostalCode,

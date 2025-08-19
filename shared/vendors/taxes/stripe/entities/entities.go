@@ -9,8 +9,8 @@ type CalculateTaxRequest struct {
 	// Shipping amount, in the smallest currency unit.
 	// https://docs.stripe.com/currencies#minor-units
 	ShippingAmount decimal.Decimal
-	// Address of warehouse.
-	FromAddress Address
+	// Address of warehouse. Can be empty for digital goods.
+	FromAddress *Address
 	// Customer's shipping/billing address.
 	ToAddress Address
 	// List of items in the transaction.

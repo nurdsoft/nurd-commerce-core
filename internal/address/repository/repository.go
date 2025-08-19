@@ -15,6 +15,7 @@ type Repository interface {
 	UpdateAddress(ctx context.Context, address *entities.Address) (*entities.Address, error)
 	DeleteAddress(ctx context.Context, customerID, addressID string) error
 	UpdateAddressField(ctx context.Context, customerID, addressID string, details map[string]interface{}) error
+	GetDefaultAddress(ctx context.Context, customerID string) (*entities.Address, error)
 }
 
 // New repository for customer.

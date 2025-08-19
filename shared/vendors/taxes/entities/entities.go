@@ -7,7 +7,7 @@ import (
 
 type CalculateTaxRequest struct {
 	ShippingAmount decimal.Decimal
-	FromAddress    Address
+	FromAddress    *Address
 	ToAddress      Address
 	TaxItems       []TaxItem
 }

@@ -94,7 +94,7 @@ type GetTaxRateRequestBody struct {
 	// required: true
 	// in:body
 	// example:
-	WarehouseAddress WarehouseAddress `json:"warehouse_address"`
+	WarehouseAddress *WarehouseAddress `json:"warehouse_address"`
 }
 
 type WarehouseAddress struct {

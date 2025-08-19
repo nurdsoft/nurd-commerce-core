@@ -24,13 +24,6 @@ type localClient struct {
 func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateTaxRequest) (*entities.CalculateTaxResponse, error) {
 	stripeReq := &stripeEntities.CalculateTaxRequest{
 		ShippingAmount: req.ShippingAmount,
-		FromAddress: stripeEntities.Address{
-			Line1:      req.FromAddress.Street,
-			City:       req.FromAddress.City,
-			State:      req.FromAddress.State,
-			PostalCode: req.FromAddress.PostalCode,
-			Country:    req.FromAddress.Country,
-		},
 		ToAddress: stripeEntities.Address{
 			Line1:      req.ToAddress.Street,
 			City:       req.ToAddress.City,
@@ -39,6 +32,16 @@ func (c *localClient) CalculateTax(ctx context.Context, req *entities.CalculateT
 			Country:    req.ToAddress.Country,
 		},
 		TaxItems: mapStripeTaxItems(req.TaxItems),
+	}
+
+	if req.FromAddress != nil {
+		stripeReq.FromAddress = &stripeEntities.Address{
+			Line1:      req.FromAddress.Street,
+			City:       req.FromAddress.City,
+			State:      req.FromAddress.State,
+			PostalCode: req.FromAddress.PostalCode,
+			Country:    req.FromAddress.Country,
+		}
 	}
 
 	res, err := c.svc.CalculateTax(ctx, stripeReq)

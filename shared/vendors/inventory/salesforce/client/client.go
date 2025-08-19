@@ -82,24 +82,24 @@ func (l localClient) CreateOrder(ctx context.Context, req inventoryEntities.Crea
 
 	// create order on salesforce
 	res, err := l.svc.CreateOrder(ctx, &entities.CreateSFOrderRequest{
-		OrderReferenceC:         req.Order.OrderReference,
-		AccountID:               *req.Customer.SalesforceID,
-		EffectiveDate:           time.Now().Format("2006-01-02"),
-		Status:                  req.Order.Status.String(),
-		BillingStreet:           req.Address.Address,
-		BillingCity:             city,
-		BillingState:            req.Address.StateCode,
-		BillingPostalCode:       req.Address.PostalCode,
-		BillingCountry:          req.Address.CountryCode,
-		ShippingStreet:          req.Address.Address,
-		ShippingCity:            city,
-		ShippingState:           req.Address.StateCode,
-		ShippingPostalCode:      req.Address.PostalCode,
-		ShippingCountry:         req.Address.CountryCode,
-		TotalC:                  req.Order.Total.String(),
-		SubTotalC:               req.Order.Subtotal.String(),
-		ShippingRateC:           req.Order.ShippingRate.String(),
-		TaxAmountC:              req.Order.TaxAmount.String(),
+		OrderReferenceC:    req.Order.OrderReference,
+		AccountID:          *req.Customer.SalesforceID,
+		EffectiveDate:      time.Now().Format("2006-01-02"),
+		Status:             req.Order.Status.String(),
+		BillingStreet:      req.Address.Address,
+		BillingCity:        city,
+		BillingState:       req.Address.StateCode,
+		BillingPostalCode:  req.Address.PostalCode,
+		BillingCountry:     req.Address.CountryCode,
+		ShippingStreet:     req.Address.Address,
+		ShippingCity:       city,
+		ShippingState:      req.Address.StateCode,
+		ShippingPostalCode: req.Address.PostalCode,
+		ShippingCountry:    req.Address.CountryCode,
+		TotalC:             req.Order.Total.String(),
+		SubTotalC:          req.Order.Subtotal.String(),
+		ShippingRateC:      req.Order.ShippingRate.String(),
+		TaxAmountC:         req.Order.TaxAmount.String(),
 		ShippingCarrierNameC: func() string {
 			if req.Order.ShippingCarrierName != nil {
 				return *req.Order.ShippingCarrierName
@@ -112,10 +112,10 @@ func (l localClient) CreateOrder(ctx context.Context, req inventoryEntities.Crea
 			}
 			return ""
 		}(),
-		CurrencyC:               req.Order.Currency,
-		Pricebook2ID:            entities.StandardPriceBook,
+		CurrencyC:    req.Order.Currency,
+		Pricebook2ID: entities.StandardPriceBook,
 		EstimatedDeliveryDateC: func() string {
-			if req.Order.ShippingEstimatedDeliveryDate.IsZero() {
+			if req.Order.ShippingEstimatedDeliveryDate == nil || req.Order.ShippingEstimatedDeliveryDate.IsZero() {
 				return time.Now().Format("2006-01-02")
 			}
 			return req.Order.ShippingEstimatedDeliveryDate.Format("2006-01-02")

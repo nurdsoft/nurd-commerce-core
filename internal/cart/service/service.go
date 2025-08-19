@@ -749,6 +749,17 @@ func (s *service) GetShippingRate(ctx context.Context, req *entities.GetShipping
 		}
 	}
 
+	if req.Body.EnableFreeShipping {
+		shippingRates = append(shippingRates, entities.CartShippingRate{
+			Id:        uuid.New(),
+			CartID:    cartId,
+			AddressID: req.Body.AddressID,
+			Amount:    decimal.Zero,
+			Currency:  "USD",
+			CreatedAt: time.Now(),
+		})
+	}
+
 	// save the shipping rates to the database
 	err = s.repo.CreateCartShippingRates(ctx, shippingRates)
 	if err != nil {

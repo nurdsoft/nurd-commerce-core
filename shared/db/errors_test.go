@@ -7,9 +7,9 @@ import (
 
 	pkgErrors "github.com/pkg/errors"
 
-	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	// pgError "github.com/jackc/pgconn"
@@ -26,7 +26,6 @@ func TestIsContextCanceledError(t *testing.T) {
 func TestIsAlreadyExistError(t *testing.T) {
 	err := &pgconn.PgError{Code: pgerrcode.UniqueViolation}
 	assert.True(t, IsAlreadyExistError(err))
-
 }
 
 func TestIsForeignKeyViolationError(t *testing.T) {
@@ -37,7 +36,6 @@ func TestIsForeignKeyViolationError(t *testing.T) {
 func TestIsInvalidValueError(t *testing.T) {
 	err := &pgconn.PgError{Code: pgerrcode.InvalidTextRepresentation}
 	assert.True(t, IsInvalidValueError(err))
-
 }
 
 func TestIsNotFoundError(t *testing.T) {
@@ -46,7 +44,6 @@ func TestIsNotFoundError(t *testing.T) {
 
 	err = gorm.ErrRecordNotFound
 	assert.True(t, IsNotFoundError(err))
-
 }
 
 func TestIsInvalidLength(t *testing.T) {
@@ -55,8 +52,8 @@ func TestIsInvalidLength(t *testing.T) {
 
 	wrappedErr := pkgErrors.Wrap(err, "wrapped error")
 	assert.True(t, IsInvalidLength(wrappedErr))
-
 }
+
 func TestIsUniqueViolationError(t *testing.T) {
 	err := &pgconn.PgError{Code: pgerrcode.UniqueViolation}
 	assert.True(t, IsUniqueViolationError(err))

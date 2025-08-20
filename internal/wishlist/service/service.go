@@ -191,9 +191,8 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	var items []*entities.WishlistItem
-
 	var (
+		items            []*entities.WishlistItem
 		wg               sync.WaitGroup
 		cartItems        *cartEntities.GetCartItemsResponse
 		wishlistItems    []*entities.WishlistItem
@@ -248,10 +247,7 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 
 	for _, item := range wishlistItems {
 		if _, ok := cartProductIDs[item.ProductID.String()]; !ok {
-			items = append(items, &entities.WishlistItem{
-				ProductID: item.ProductID,
-				CreatedAt: item.CreatedAt,
-			})
+			items = append(items, item)
 		}
 	}
 

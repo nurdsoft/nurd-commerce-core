@@ -5,26 +5,25 @@ import (
 	"errors"
 	"testing"
 
-	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
-	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
-
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/customer/repository"
 	"github.com/nurdsoft/nurd-commerce-core/shared/cfg"
+	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/nurdsoft/nurd-commerce-core/shared/meta"
+	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/providers"
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestNew(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	// Create mock dependencies
 	mockRepo := repository.NewMockRepository(ctrl)
@@ -46,7 +45,6 @@ func TestNew(t *testing.T) {
 
 func Test_service_CreateCustomer(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, context.Context, *repository.MockRepository, *inventory.MockClient, *salesforce.MockClient) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -87,20 +85,32 @@ func Test_service_CreateCustomer(t *testing.T) {
 			PhoneNumber: &phoneNumber,
 		}
 
-		mockRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
-			// Verify that a UUID was generated
-			assert.NotEqual(t, uuid.Nil, customer.ID)
-			expectedCustomer.ID = customer.ID
-			return expectedCustomer, nil
-		}).Times(1)
+		mockRepo.EXPECT().
+			Create(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
+				// Verify that a UUID was generated
+				assert.NotEqual(t, uuid.Nil, customer.ID)
+				expectedCustomer.ID = customer.ID
+				return expectedCustomer, nil
+			}).
+			Times(1)
 
-		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).Times(1)
+		mockInventoryClient.EXPECT().
+			GetProvider().
+			Return(providers.ProviderSalesforce).
+			Times(1)
 
 		// Mock the Salesforce call that happens in the goroutine
-		mockSfClient.EXPECT().CreateUserAccount(gomock.Any(), gomock.Any()).Return(&salesforceEntities.CreateSFUserResponse{
-			ID: "sf_user_123",
-		}, nil).Times(1)
-		mockRepo.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockSfClient.EXPECT().
+			CreateUserAccount(gomock.Any(), gomock.Any()).
+			Return(&salesforceEntities.CreateSFUserResponse{
+				ID: "sf_user_123",
+			}, nil).
+			Times(1)
+		mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil).
+			Times(1)
 
 		result, err := svc.CreateCustomer(ctx, req)
 		assert.NoError(t, err)
@@ -128,14 +138,26 @@ func Test_service_CreateCustomer(t *testing.T) {
 			Email:     email,
 		}
 
-		mockRepo.EXPECT().Create(ctx, expectedCustomer).Return(expectedCustomer, nil).Times(1)
-		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).Times(1)
+		mockRepo.EXPECT().
+			Create(ctx, expectedCustomer).
+			Return(expectedCustomer, nil).
+			Times(1)
+		mockInventoryClient.EXPECT().
+			GetProvider().
+			Return(providers.ProviderSalesforce).
+			Times(1)
 
 		// Mock the Salesforce call that happens in the goroutine
-		mockSfClient.EXPECT().CreateUserAccount(gomock.Any(), gomock.Any()).Return(&salesforceEntities.CreateSFUserResponse{
-			ID: "sf_user_123",
-		}, nil).Times(1)
-		mockRepo.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockSfClient.EXPECT().
+			CreateUserAccount(gomock.Any(), gomock.Any()).
+			Return(&salesforceEntities.CreateSFUserResponse{
+				ID: "sf_user_123",
+			}, nil).
+			Times(1)
+		mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil).
+			Times(1)
 
 		result, err := svc.CreateCustomer(ctx, req)
 		assert.NoError(t, err)
@@ -176,61 +198,79 @@ func Test_service_CreateCustomer(t *testing.T) {
 			Email:     "john.doe@example.com",
 		}
 
-		mockRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
-			expectedCustomer.ID = customer.ID
-			return expectedCustomer, nil
-		}).Times(1)
+		mockRepo.EXPECT().
+			Create(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
+				expectedCustomer.ID = customer.ID
+				return expectedCustomer, nil
+			}).
+			Times(1)
 
-		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderType("other-provider")).Times(1)
+		mockInventoryClient.EXPECT().
+			GetProvider().
+			Return(providers.ProviderType("other-provider")).
+			Times(1)
 
 		result, err := svc.CreateCustomer(ctx, req)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedCustomer, result)
 	})
 
-	// t.Run("Creates customer with empty last name uses zero-width space", func(t *testing.T) {
-	// 	svc, ctx, mockRepo, mockInventoryClient, mockSfClient := setup()
+	t.Run(
+		"Creates customer with empty last name uses zero-width space",
+		func(t *testing.T) {
+			svc, ctx, mockRepo, mockInventoryClient, mockSfClient := setup()
 
-	// 	firstName := "John"
-	// 	lastName := ""
-	// 	email := "john.doe@example.com"
+			firstName := "John"
+			lastName := ""
+			email := "john.doe@example.com"
 
-	// 	req := &entities.CreateCustomerRequest{
-	// 		Data: &entities.CreateCustomerRequestBody{
-	// 			FirstName: firstName,
-	// 			LastName:  &lastName,
-	// 			Email:     email,
-	// 		},
-	// 	}
+			req := &entities.CreateCustomerRequest{
+				Data: &entities.CreateCustomerRequestBody{
+					FirstName: firstName,
+					LastName:  &lastName,
+					Email:     email,
+				},
+			}
 
-	// 	expectedCustomer := &entities.Customer{
-	// 		FirstName: firstName,
-	// 		LastName:  &lastName,
-	// 		Email:     email,
-	// 	}
+			expectedCustomer := &entities.Customer{
+				FirstName: firstName,
+				LastName:  &lastName,
+				Email:     email,
+			}
 
-	// 	mockRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
-	// 		expectedCustomer.ID = customer.ID
-	// 		return expectedCustomer, nil
-	// 	}).Times(1)
+			mockRepo.EXPECT().
+				Create(ctx, gomock.Any()).
+				DoAndReturn(func(ctx context.Context, customer *entities.Customer) (*entities.Customer, error) {
+					expectedCustomer.ID = customer.ID
+					return expectedCustomer, nil
+				}).
+				Times(1)
 
-	// 	mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).Times(1)
+			mockInventoryClient.EXPECT().
+				GetProvider().
+				Return(providers.ProviderSalesforce).
+				Times(1)
 
-	// 	// Mock the Salesforce call that happens in the goroutine
-	// 	mockSfClient.EXPECT().CreateUserAccount(gomock.Any(), gomock.Any()).Return(&salesforceEntities.CreateSFUserResponse{
-	// 		ID: "sf_user_123",
-	// 	}, nil).Times(1)
-	// 	mockRepo.EXPECT().Update(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+			// Mock the Salesforce call that happens in the goroutine
+			mockSfClient.EXPECT().CreateUserAccount(gomock.Any(),
+				gomock.Any()).Return(&salesforceEntities.CreateSFUserResponse{
+				ID: "sf_user_123",
+			}, nil).AnyTimes()
+			mockRepo.EXPECT().
+				Update(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(nil).
+				AnyTimes()
 
-	// 	result, err := svc.CreateCustomer(ctx, req)
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, expectedCustomer, result)
-	// })
+			result, err := svc.CreateCustomer(ctx, req)
+			assert.NoError(t, err)
+			assert.Equal(t, expectedCustomer, result)
+		},
+	)
 }
 
 func Test_service_GetCustomer(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, context.Context, *repository.MockRepository) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -252,7 +292,10 @@ func Test_service_GetCustomer(t *testing.T) {
 			Email:     "john.doe@example.com",
 		}
 
-		mockRepo.EXPECT().FindByID(ctx, meta.XCustomerID(ctx)).Return(expectedCustomer, nil).Times(1)
+		mockRepo.EXPECT().
+			FindByID(ctx, meta.XCustomerID(ctx)).
+			Return(expectedCustomer, nil).
+			Times(1)
 
 		result, err := svc.GetCustomer(ctx)
 		assert.NoError(t, err)
@@ -272,7 +315,10 @@ func Test_service_GetCustomer(t *testing.T) {
 		svc, ctx, mockRepo := setup()
 
 		expectedErr := errors.New("database error")
-		mockRepo.EXPECT().FindByID(ctx, meta.XCustomerID(ctx)).Return(nil, expectedErr).Times(1)
+		mockRepo.EXPECT().
+			FindByID(ctx, meta.XCustomerID(ctx)).
+			Return(nil, expectedErr).
+			Times(1)
 
 		result, err := svc.GetCustomer(ctx)
 		assert.Error(t, err)
@@ -283,7 +329,6 @@ func Test_service_GetCustomer(t *testing.T) {
 
 func Test_service_GetCustomerByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, *repository.MockRepository) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -305,7 +350,10 @@ func Test_service_GetCustomerByID(t *testing.T) {
 			Email:     "john.doe@example.com",
 		}
 
-		mockRepo.EXPECT().FindByID(ctx, customerID).Return(expectedCustomer, nil).Times(1)
+		mockRepo.EXPECT().
+			FindByID(ctx, customerID).
+			Return(expectedCustomer, nil).
+			Times(1)
 
 		result, err := svc.GetCustomerByID(ctx, customerID)
 		assert.NoError(t, err)
@@ -329,7 +377,6 @@ func Test_service_GetCustomerByID(t *testing.T) {
 
 func Test_service_UpdateCustomer(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, context.Context, *repository.MockRepository, *inventory.MockClient, *salesforce.MockClient) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -380,12 +427,24 @@ func Test_service_UpdateCustomer(t *testing.T) {
 			SalesforceID: &salesforceID,
 		}
 
-		mockRepo.EXPECT().Update(ctx, expectedDataToUpdate, meta.XCustomerID(ctx)).Return(nil).Times(1)
-		mockRepo.EXPECT().FindByID(ctx, meta.XCustomerID(ctx)).Return(updatedCustomer, nil).Times(1)
-		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderSalesforce).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, expectedDataToUpdate, meta.XCustomerID(ctx)).
+			Return(nil).
+			Times(1)
+		mockRepo.EXPECT().
+			FindByID(ctx, meta.XCustomerID(ctx)).
+			Return(updatedCustomer, nil).
+			Times(1)
+		mockInventoryClient.EXPECT().
+			GetProvider().
+			Return(providers.ProviderSalesforce).
+			Times(1)
 
 		// Mock the Salesforce update call that happens in goroutine
-		mockSfClient.EXPECT().UpdateUserAccount(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockSfClient.EXPECT().
+			UpdateUserAccount(gomock.Any(), gomock.Any()).
+			Return(nil).
+			Times(1)
 
 		result, err := svc.UpdateCustomer(ctx, req)
 		assert.NoError(t, err)
@@ -419,7 +478,10 @@ func Test_service_UpdateCustomer(t *testing.T) {
 		}
 
 		expectedErr := errors.New("update failed")
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(expectedErr).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).
+			Return(expectedErr).
+			Times(1)
 
 		result, err := svc.UpdateCustomer(ctx, req)
 		assert.Error(t, err)
@@ -436,10 +498,16 @@ func Test_service_UpdateCustomer(t *testing.T) {
 			},
 		}
 
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).Return(nil).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, gomock.Any(), meta.XCustomerID(ctx)).
+			Return(nil).
+			Times(1)
 
 		expectedErr := errors.New("find failed")
-		mockRepo.EXPECT().FindByID(ctx, meta.XCustomerID(ctx)).Return(nil, expectedErr).Times(1)
+		mockRepo.EXPECT().
+			FindByID(ctx, meta.XCustomerID(ctx)).
+			Return(nil, expectedErr).
+			Times(1)
 
 		result, err := svc.UpdateCustomer(ctx, req)
 		assert.Error(t, err)
@@ -447,40 +515,51 @@ func Test_service_UpdateCustomer(t *testing.T) {
 		assert.Nil(t, result)
 	})
 
-	t.Run("Updates only provided fields with non-Salesforce provider", func(t *testing.T) {
-		svc, ctx, mockRepo, mockInventoryClient, _ := setup()
+	t.Run(
+		"Updates only provided fields with non-Salesforce provider",
+		func(t *testing.T) {
+			svc, ctx, mockRepo, mockInventoryClient, _ := setup()
 
-		newFirstName := "Jane"
+			newFirstName := "Jane"
 
-		req := &entities.UpdateCustomerRequest{
-			Data: &entities.UpdateCustomerRequestBody{
-				FirstName: &newFirstName,
-				// Only first name provided
-			},
-		}
+			req := &entities.UpdateCustomerRequest{
+				Data: &entities.UpdateCustomerRequestBody{
+					FirstName: &newFirstName,
+					// Only first name provided
+				},
+			}
 
-		expectedDataToUpdate := map[string]interface{}{
-			"first_name": newFirstName,
-		}
+			expectedDataToUpdate := map[string]interface{}{
+				"first_name": newFirstName,
+			}
 
-		updatedCustomer := &entities.Customer{
-			ID:        uuid.MustParse(meta.XCustomerID(ctx)),
-			FirstName: newFirstName,
-		}
+			updatedCustomer := &entities.Customer{
+				ID:        uuid.MustParse(meta.XCustomerID(ctx)),
+				FirstName: newFirstName,
+			}
 
-		mockRepo.EXPECT().Update(ctx, expectedDataToUpdate, meta.XCustomerID(ctx)).Return(nil).Times(1)
-		mockRepo.EXPECT().FindByID(ctx, meta.XCustomerID(ctx)).Return(updatedCustomer, nil).Times(1)
-		mockInventoryClient.EXPECT().GetProvider().Return(providers.ProviderType("other-provider")).Times(1)
+			mockRepo.EXPECT().
+				Update(ctx, expectedDataToUpdate, meta.XCustomerID(ctx)).
+				Return(nil).
+				Times(1)
+			mockRepo.EXPECT().
+				FindByID(ctx, meta.XCustomerID(ctx)).
+				Return(updatedCustomer, nil).
+				Times(1)
+			mockInventoryClient.EXPECT().
+				GetProvider().
+				Return(providers.ProviderType("other-provider")).
+				Times(1)
 
-		result, err := svc.UpdateCustomer(ctx, req)
-		assert.NoError(t, err)
-		assert.Equal(t, updatedCustomer, result)
-	})
+			result, err := svc.UpdateCustomer(ctx, req)
+			assert.NoError(t, err)
+			assert.Equal(t, updatedCustomer, result)
+		},
+	)
 }
 
 func Test_service_UpdateCustomerAuthorizeNetID(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, *repository.MockRepository) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -501,7 +580,10 @@ func Test_service_UpdateCustomerAuthorizeNetID(t *testing.T) {
 			"authorizenet_id": externalID,
 		}
 
-		mockRepo.EXPECT().Update(ctx, expectedDataToUpdate, customerID).Return(nil).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, expectedDataToUpdate, customerID).
+			Return(nil).
+			Times(1)
 
 		err := svc.UpdateCustomerAuthorizeNetID(ctx, customerID, externalID)
 		assert.NoError(t, err)
@@ -514,7 +596,10 @@ func Test_service_UpdateCustomerAuthorizeNetID(t *testing.T) {
 		externalID := "auth_net_123"
 
 		expectedErr := errors.New("update failed")
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), customerID).Return(expectedErr).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, gomock.Any(), customerID).
+			Return(expectedErr).
+			Times(1)
 
 		err := svc.UpdateCustomerAuthorizeNetID(ctx, customerID, externalID)
 		assert.Error(t, err)
@@ -524,7 +609,6 @@ func Test_service_UpdateCustomerAuthorizeNetID(t *testing.T) {
 
 func Test_service_UpdateCustomerStripeID(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, *repository.MockRepository) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -545,7 +629,10 @@ func Test_service_UpdateCustomerStripeID(t *testing.T) {
 			"stripe_id": externalID,
 		}
 
-		mockRepo.EXPECT().Update(ctx, expectedDataToUpdate, customerID).Return(nil).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, expectedDataToUpdate, customerID).
+			Return(nil).
+			Times(1)
 
 		err := svc.UpdateCustomerStripeID(ctx, customerID, externalID)
 		assert.NoError(t, err)
@@ -558,7 +645,10 @@ func Test_service_UpdateCustomerStripeID(t *testing.T) {
 		externalID := "stripe_123"
 
 		expectedErr := errors.New("update failed")
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), customerID).Return(expectedErr).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, gomock.Any(), customerID).
+			Return(expectedErr).
+			Times(1)
 
 		err := svc.UpdateCustomerStripeID(ctx, customerID, externalID)
 		assert.Error(t, err)
@@ -568,7 +658,6 @@ func Test_service_UpdateCustomerStripeID(t *testing.T) {
 
 func Test_service_createSalesforceUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	setup := func() (*service, *repository.MockRepository, *salesforce.MockClient) {
 		mockRepo := repository.NewMockRepository(ctrl)
@@ -581,37 +670,52 @@ func Test_service_createSalesforceUser(t *testing.T) {
 		return svc, mockRepo, mockSfClient
 	}
 
-	t.Run("Successfully creates Salesforce user and updates repository", func(t *testing.T) {
-		svc, mockRepo, mockSfClient := setup()
-		ctx := context.Background()
+	t.Run(
+		"Successfully creates Salesforce user and updates repository",
+		func(t *testing.T) {
+			svc, mockRepo, mockSfClient := setup()
+			ctx := context.Background()
 
-		firstName := "John"
-		lastName := "Doe"
-		email := "john.doe@example.com"
-		customerID := uuid.New().String()
-		sfUserID := "sf_user_123"
+			firstName := "John"
+			lastName := "Doe"
+			email := "john.doe@example.com"
+			customerID := uuid.New().String()
+			sfUserID := "sf_user_123"
 
-		expectedSfRequest := &salesforceEntities.CreateSFUserRequest{
-			FirstName:   firstName,
-			LastName:    lastName,
-			PersonEmail: email,
-		}
+			expectedSfRequest := &salesforceEntities.CreateSFUserRequest{
+				FirstName:   firstName,
+				LastName:    lastName,
+				PersonEmail: email,
+			}
 
-		expectedSfResponse := &salesforceEntities.CreateSFUserResponse{
-			ID: sfUserID,
-		}
+			expectedSfResponse := &salesforceEntities.CreateSFUserResponse{
+				ID: sfUserID,
+			}
 
-		expectedRepoUpdate := map[string]interface{}{
-			"salesforce_id": sfUserID,
-		}
+			expectedRepoUpdate := map[string]interface{}{
+				"salesforce_id": sfUserID,
+			}
 
-		mockSfClient.EXPECT().CreateUserAccount(ctx, expectedSfRequest).Return(expectedSfResponse, nil).Times(1)
-		mockRepo.EXPECT().Update(ctx, expectedRepoUpdate, customerID).Return(nil).Times(1)
+			mockSfClient.EXPECT().
+				CreateUserAccount(ctx, expectedSfRequest).
+				Return(expectedSfResponse, nil).
+				Times(1)
+			mockRepo.EXPECT().
+				Update(ctx, expectedRepoUpdate, customerID).
+				Return(nil).
+				Times(1)
 
-		result, err := svc.createSalesforceUser(ctx, firstName, lastName, email, customerID)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedSfResponse, result)
-	})
+			result, err := svc.createSalesforceUser(
+				ctx,
+				firstName,
+				lastName,
+				email,
+				customerID,
+			)
+			assert.NoError(t, err)
+			assert.Equal(t, expectedSfResponse, result)
+		},
+	)
 
 	t.Run("Salesforce API error is propagated", func(t *testing.T) {
 		svc, _, mockSfClient := setup()
@@ -623,9 +727,18 @@ func Test_service_createSalesforceUser(t *testing.T) {
 		customerID := uuid.New().String()
 
 		expectedErr := errors.New("salesforce api error")
-		mockSfClient.EXPECT().CreateUserAccount(ctx, gomock.Any()).Return(nil, expectedErr).Times(1)
+		mockSfClient.EXPECT().
+			CreateUserAccount(ctx, gomock.Any()).
+			Return(nil, expectedErr).
+			Times(1)
 
-		result, err := svc.createSalesforceUser(ctx, firstName, lastName, email, customerID)
+		result, err := svc.createSalesforceUser(
+			ctx,
+			firstName,
+			lastName,
+			email,
+			customerID,
+		)
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, result)
@@ -645,12 +758,24 @@ func Test_service_createSalesforceUser(t *testing.T) {
 			ID: sfUserID,
 		}
 
-		mockSfClient.EXPECT().CreateUserAccount(ctx, gomock.Any()).Return(expectedSfResponse, nil).Times(1)
+		mockSfClient.EXPECT().
+			CreateUserAccount(ctx, gomock.Any()).
+			Return(expectedSfResponse, nil).
+			Times(1)
 
 		expectedErr := errors.New("repository update error")
-		mockRepo.EXPECT().Update(ctx, gomock.Any(), customerID).Return(expectedErr).Times(1)
+		mockRepo.EXPECT().
+			Update(ctx, gomock.Any(), customerID).
+			Return(expectedErr).
+			Times(1)
 
-		result, err := svc.createSalesforceUser(ctx, firstName, lastName, email, customerID)
+		result, err := svc.createSalesforceUser(
+			ctx,
+			firstName,
+			lastName,
+			email,
+			customerID,
+		)
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, result)

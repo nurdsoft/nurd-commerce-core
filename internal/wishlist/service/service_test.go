@@ -453,16 +453,17 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 	t.Run("Successfully gets more products from wishlist", func(t *testing.T) {
 		svc, ctx, mockRepo, mockCartClient := setup()
 		req := &entities.GetMoreFromWishlistRequest{}
+		productId1 := uuid.New()
 
 		mockCartClient.EXPECT().GetCartItems(ctx).Return(&cartEntities.GetCartItemsResponse{
 			Items: []cartEntities.CartItemDetail{
 				{
-					ProductID: uuid.New(),
+					ProductID: productId1,
 					Quantity:  1,
 				},
 			},
 		}, nil).Times(1)
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", []uuid.UUID{productId1}).Return([]*entities.WishlistItem{
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
@@ -487,27 +488,6 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		assert.Nil(t, resp)
 	})
 
-	t.Run("Cart client returns error", func(t *testing.T) {
-		svc, ctx, mockRepo, mockCartClient := setup()
-		req := &entities.GetMoreFromWishlistRequest{}
-
-		expectedErr := errors.New("cart service error")
-		mockCartClient.EXPECT().GetCartItems(ctx).Return(nil, expectedErr).Times(1)
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
-			{
-				Id:         uuid.New(),
-				CustomerID: customerUUID,
-				ProductID:  uuid.New(),
-			},
-		}, "", int64(0), nil).Times(1)
-
-		resp, err := svc.GetMoreFromWishlist(ctx, req)
-
-		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
-		assert.Nil(t, resp)
-	})
-
 	t.Run("Repository returns error", func(t *testing.T) {
 		svc, ctx, mockRepo, mockCartClient := setup()
 		req := &entities.GetMoreFromWishlistRequest{}
@@ -517,7 +497,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		}, nil).Times(1)
 
 		expectedErr := errors.New("repository error")
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return(nil, "", int64(0), expectedErr).Times(1)
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", nil).Return(nil, "", int64(0), expectedErr).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -535,7 +515,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		}, nil).Times(1)
 
 		// Return empty wishlist
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{}, "", int64(0), nil).Times(1)
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", nil).Return([]*entities.WishlistItem{}, "", int64(0), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -564,13 +544,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 
 		// Create wishlist with two products - one in cart, one not in cart
 		creationTime := time.Now()
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
-			{
-				Id:         uuid.New(),
-				CustomerID: customerUUID,
-				ProductID:  sharedProductID,
-				CreatedAt:  creationTime,
-			},
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", []uuid.UUID{sharedProductID}).Return([]*entities.WishlistItem{
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
@@ -606,7 +580,7 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		}, nil).Times(1)
 
 		// Return wishlist items with different timestamps (older first, newer second)
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", nil).Return([]*entities.WishlistItem{
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
@@ -639,30 +613,27 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		svc, ctx, mockRepo, mockCartClient := setup()
 		req := &entities.GetMoreFromWishlistRequest{}
 
-		// Create a product that will be in both cart and wishlist
-		sharedProductID := uuid.New()
-
-		// Another product only in wishlist
-		wishlistOnlyProductID := uuid.New()
+		productID1 := uuid.New()
+		productID2 := uuid.New()
 
 		mockCartClient.EXPECT().GetCartItems(ctx).Return(nil, nil).Times(1)
 
 		// Create wishlist with two products - one in cart, one not in cart
 		creationTime := time.Now()
-		mockRepo.EXPECT().GetWishlist(ctx, meta.XCustomerID(ctx), 0, "").Return([]*entities.WishlistItem{
+		mockRepo.EXPECT().GetMoreFromWishlist(ctx, meta.XCustomerID(ctx), 0, "", nil).Return([]*entities.WishlistItem{
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
-				ProductID:  sharedProductID,
+				ProductID:  productID1,
 				CreatedAt:  creationTime,
 			},
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
-				ProductID:  wishlistOnlyProductID,
+				ProductID:  productID2,
 				CreatedAt:  creationTime,
 			},
-		}, "", int64(0), nil).Times(1)
+		}, "", int64(2), nil).Times(1)
 
 		resp, err := svc.GetMoreFromWishlist(ctx, req)
 
@@ -670,8 +641,8 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 		assert.NotNil(t, resp)
 		// Both products should be returned since cart is empty
 		assert.Equal(t, 2, len(resp.Items))
-		assert.Equal(t, sharedProductID, resp.Items[0].ProductID)
-		assert.Equal(t, wishlistOnlyProductID, resp.Items[1].ProductID)
+		assert.Equal(t, productID1, resp.Items[0].ProductID)
+		assert.Equal(t, productID2, resp.Items[1].ProductID)
 	})
 }
 

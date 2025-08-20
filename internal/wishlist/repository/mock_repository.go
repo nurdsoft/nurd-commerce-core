@@ -65,6 +65,23 @@ func (mr *MockRepositoryMockRecorder) DeleteFromWishlist(ctx, customerID, produc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFromWishlist", reflect.TypeOf((*MockRepository)(nil).DeleteFromWishlist), ctx, customerID, productID)
 }
 
+// GetMoreFromWishlist mocks base method.
+func (m *MockRepository) GetMoreFromWishlist(ctx context.Context, customerID string, limit int, cursor string, ignoreProductIDs []uuid.UUID) ([]*entities.WishlistItem, string, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMoreFromWishlist", ctx, customerID, limit, cursor, ignoreProductIDs)
+	ret0, _ := ret[0].([]*entities.WishlistItem)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(int64)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// GetMoreFromWishlist indicates an expected call of GetMoreFromWishlist.
+func (mr *MockRepositoryMockRecorder) GetMoreFromWishlist(ctx, customerID, limit, cursor, ignoreProductIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMoreFromWishlist", reflect.TypeOf((*MockRepository)(nil).GetMoreFromWishlist), ctx, customerID, limit, cursor, ignoreProductIDs)
+}
+
 // GetWishlist mocks base method.
 func (m *MockRepository) GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, int64, error) {
 	m.ctrl.T.Helper()

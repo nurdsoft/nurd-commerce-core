@@ -2502,7 +2502,7 @@ paths:
                 - wishlist
     /wishlist/more:
         get:
-            description: '### Get more products from a customer''s wishlist that aren''t already in the cart'
+            description: '### Get products from a customer''s wishlist that aren''t already in the cart'
             operationId: GetMoreFromWishlistRequest
             parameters:
                 - description: Limit of orders to return

@@ -191,15 +191,15 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	var items []*entities.WishlistItem
-
 	var (
+		items            []*entities.WishlistItem
 		wg               sync.WaitGroup
 		cartItems        *cartEntities.GetCartItemsResponse
 		wishlistItems    []*entities.WishlistItem
 		cartItemsErr     error
 		wishlistItemsErr error
 		nextCursor       string
+		total            int64
 	)
 
 	wg.Add(2)
@@ -211,7 +211,7 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 
 	go func() {
 		defer wg.Done()
-		wishlistItems, nextCursor, _, wishlistItemsErr = s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
+		wishlistItems, nextCursor, total, wishlistItemsErr = s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
 	}()
 
 	wg.Wait()
@@ -231,17 +231,14 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 	if cartItems == nil || len(cartItems.Items) == 0 {
 		// If there are no items in the cart, return all wishlist items
 		// Ideally, this should not happen if the calling frontend is properly managing the empty cart state
-		// sort items by created_at
-		sort.Slice(wishlistItems, func(i, j int) bool {
-			return wishlistItems[i].CreatedAt.After(wishlistItems[j].CreatedAt)
-		})
 
 		return &entities.GetWishlistResponse{
 			Items:      wishlistItems,
 			NextCursor: nextCursor,
-			Total:      int64(len(wishlistItems)),
+			Total:      total,
 		}, nil
 	}
+
 	// Create a set of product IDs that are in the cart
 	cartProductIDs := make(map[string]struct{}, len(cartItems.Items))
 	for _, item := range cartItems.Items {
@@ -250,10 +247,7 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 
 	for _, item := range wishlistItems {
 		if _, ok := cartProductIDs[item.ProductID.String()]; !ok {
-			items = append(items, &entities.WishlistItem{
-				ProductID: item.ProductID,
-				CreatedAt: item.CreatedAt,
-			})
+			items = append(items, item)
 		}
 	}
 
@@ -265,6 +259,7 @@ func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMore
 	return &entities.GetWishlistResponse{
 		Items:      items,
 		NextCursor: nextCursor,
+		Total:      total,
 	}, nil
 
 }

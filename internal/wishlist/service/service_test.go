@@ -610,14 +610,14 @@ func Test_service_GetMoreFromWishlist(t *testing.T) {
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
-				ProductID:  product1ID,
-				CreatedAt:  olderTime, // Older item
+				ProductID:  product2ID,
+				CreatedAt:  newerTime, // Newer item
 			},
 			{
 				Id:         uuid.New(),
 				CustomerID: customerUUID,
-				ProductID:  product2ID,
-				CreatedAt:  newerTime, // Newer item
+				ProductID:  product1ID,
+				CreatedAt:  olderTime, // Older item
 			},
 		}, "", int64(0), nil).Times(1)
 

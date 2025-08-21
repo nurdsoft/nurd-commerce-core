@@ -17,6 +17,7 @@ type Repository interface {
 	GetWishlist(ctx context.Context, customerID string, limit int, cursor string) ([]*entities.WishlistItem, string, int64, error)
 	BulkRemoveFromWishlist(ctx context.Context, customerID uuid.UUID, productIDs []uuid.UUID) error
 	GetWishlistProductTimestamps(customerID string, productIDs []uuid.UUID) (map[string]time.Time, error)
+	GetMoreFromWishlist(ctx context.Context, customerID string, limit int, cursor string, ignoreProductIDs []uuid.UUID) ([]*entities.WishlistItem, string, int64, error)
 }
 
 // New repository for wishlist.

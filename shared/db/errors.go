@@ -7,9 +7,9 @@ import (
 
 	"gorm.io/gorm"
 
-	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
+	appErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	"github.com/pkg/errors"
 )
 
@@ -20,26 +20,14 @@ func IsContextCanceledError(err error) bool {
 
 // IsAlreadyExistError shows if entity already exist in db
 func IsAlreadyExistError(err error) bool {
-	if err, ok := err.(*pgconn.PgError); ok && err.Code == pgerrcode.UniqueViolation {
-		return true
-	}
-
-	errCause := errors.Cause(err)
-	if errCause, ok := errCause.(*pgconn.PgError); ok && errCause.Code == pgerrcode.UniqueViolation {
-		return true
-	}
-
-	return false
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation
 }
 
 // IsForeignKeyViolationError shows if foreign key violation error
 func IsForeignKeyViolationError(err error) bool {
-	if err, ok := err.(*pgconn.PgError); ok && err.Code == pgerrcode.ForeignKeyViolation {
-		return true
-	}
-
-	errCause := errors.Cause(err)
-	if errCause, ok := errCause.(*pgconn.PgError); ok && errCause.Code == pgerrcode.ForeignKeyViolation {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 		return true
 	}
 
@@ -52,74 +40,48 @@ func IsForeignKeyViolationError(err error) bool {
 
 // IsInvalidValueError shows if foreign key violation error
 func IsInvalidValueError(err error) bool {
-	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.InvalidTextRepresentation {
-		return true
-	}
-
-	errCause := errors.Cause(err)
-	if errC, ok := errCause.(*pgconn.PgError); ok && errC.Code == pgerrcode.InvalidTextRepresentation {
-		return true
-	}
-
-	return false
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.InvalidTextRepresentation
 }
 
 // IsNotFoundError shows if foreign key violation error
 func IsNotFoundError(err error) bool {
-	if err == sql.ErrNoRows || err.Error() == "record not found" {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, gorm.ErrRecordNotFound) {
 		return true
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return true
-	}
-
-	errCause := errors.Cause(err)
-
-	return errCause == sql.ErrNoRows
+	// Optional fallback in case some libraries return plain strings
+	return err != nil && err.Error() == "record not found"
 }
 
 // IsInvalidValueError check if any field has invalid length
 func IsInvalidLength(err error) bool {
-	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.StringDataRightTruncationDataException {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.StringDataRightTruncationDataException {
 		return true
 	}
-
-	errCause := errors.Cause(err)
-	if errC, ok := errCause.(*pgconn.PgError); ok && errC.Code == pgerrcode.StringDataRightTruncationDataException {
-		return true
-	}
-
 	return false
 }
 
 func IsUniqueViolationError(err error) bool {
-	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.UniqueViolation {
-		return true
-	}
-
-	errCause := errors.Cause(err)
-	if errC, ok := errCause.(*pgconn.PgError); ok && errC.Code == pgerrcode.UniqueViolation {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return true
 	}
 
 	if errors.Is(err, gorm.ErrDuplicatedKey) {
 		return true
 	}
+
 	return false
 }
 
 // Useful for invalid enum values
 func IsInvalidTextRepresentationError(err error) bool {
-	if e, ok := err.(*pgconn.PgError); ok && e.Code == pgerrcode.InvalidTextRepresentation {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.InvalidTextRepresentation {
 		return true
 	}
-
-	errCause := errors.Cause(err)
-	if errC, ok := errCause.(*pgconn.PgError); ok && errC.Code == pgerrcode.InvalidTextRepresentation {
-		return true
-	}
-
 	return false
 }
 

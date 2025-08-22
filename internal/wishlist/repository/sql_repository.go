@@ -130,3 +130,48 @@ func (r *sqlRepository) GetWishlistProductTimestamps(customerID string, productI
 
 	return res, nil
 }
+
+func (r *sqlRepository) GetMoreFromWishlist(ctx context.Context, customerID string, limit int, cursor string, ignoreProductIDs []uuid.UUID) ([]*entities.WishlistItem, string, int64, error) {
+	// return all items when product item list is empty
+	if len(ignoreProductIDs) == 0 {
+		return r.GetWishlist(ctx, customerID, limit, cursor)
+	}
+
+	var total int64
+	if err := r.gormDB.WithContext(ctx).Debug().Model(&entities.WishlistItem{}).
+		Where("customer_id = ? AND product_id NOT IN ?", customerID, ignoreProductIDs).Count(&total).Error; err != nil {
+		return nil, "", 0, err
+	}
+
+	var wishlistItems []*entities.WishlistItem
+	query := r.gormDB.WithContext(ctx).Debug().Where("customer_id = ? AND product_id NOT IN ?", customerID, ignoreProductIDs).Order("created_at DESC")
+
+	if limit > 0 {
+		query = query.Limit(limit + 1)
+	}
+
+	if cursor != "" {
+		decodedCursor, err := base64.StdEncoding.DecodeString(cursor)
+		if err != nil {
+			return nil, "", 0, err
+		}
+		query = query.Where("created_at < ?", string(decodedCursor))
+	}
+
+	if err := query.Find(&wishlistItems).Error; err != nil {
+		return nil, "", 0, err
+	}
+
+	var nextCursor string
+	if limit > 0 {
+		if len(wishlistItems) > limit {
+			lastItem := wishlistItems[limit-1]
+			nextCursor = base64.StdEncoding.EncodeToString([]byte(lastItem.CreatedAt.Format(time.RFC3339)))
+			wishlistItems = wishlistItems[:limit] // Return only the number of records requested
+		}
+	} else {
+		nextCursor = ""
+	}
+
+	return wishlistItems, nextCursor, total, nil
+}

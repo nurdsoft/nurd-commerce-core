@@ -4,6 +4,8 @@ import (
 	fakeprovider "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/fakeprovider"
 	stripe "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/client"
 	stripeService "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/stripe/service"
+	taxjar "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/taxjar/client"
+	taxjarService "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/taxjar/service"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -19,15 +21,21 @@ type ModuleParams struct {
 // NewModule
 // nolint:gocritic
 func NewModule(p ModuleParams) (Client, error) {
-	svc, err := stripeService.New(p.Config.Stripe, p.Logger)
+	stripeSvc, err := stripeService.New(p.Config.Stripe, p.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	stripeClient := stripe.NewClient(svc)
+	taxjarSvc, err := taxjarService.New(p.Config.TaxJar)
+	if err != nil {
+		return nil, err
+	}
+
+	stripeClient := stripe.NewClient(stripeSvc)
+	taxjarClient := taxjar.NewClient(taxjarSvc)
 	fakeClient := fakeprovider.NewClient()
 
-	client := NewClient(p.Config.Provider, stripeClient, fakeClient)
+	client := NewClient(p.Config.Provider, stripeClient, fakeClient, taxjarClient)
 
 	return client, nil
 }

@@ -1348,6 +1348,9 @@ definitions:
             state_code:
                 type: string
                 x-go-name: StateCode
+            street:
+                type: string
+                x-go-name: Street
         type: object
         x-go-package: github.com/nurdsoft/nurd-commerce-core/internal/cart/entities
     WebhookRequest:
@@ -2499,7 +2502,7 @@ paths:
                 - wishlist
     /wishlist/more:
         get:
-            description: '### Get more products from a customer''s wishlist that aren''t already in the cart'
+            description: '### Get products from a customer''s wishlist that aren''t already in the cart'
             operationId: GetMoreFromWishlistRequest
             parameters:
                 - description: Limit of orders to return

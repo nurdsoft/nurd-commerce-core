@@ -7,4 +7,5 @@ type (
 const (
 	ProviderNone   ProviderType = "none"
 	ProviderStripe ProviderType = "stripe"
+	ProviderTaxJar ProviderType = "taxjar"
 )

@@ -2,12 +2,9 @@ package service
 
 import (
 	"context"
-	"sort"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/nurdsoft/nurd-commerce-core/internal/cart/cartclient"
-	cartEntities "github.com/nurdsoft/nurd-commerce-core/internal/cart/entities"
 	productEntities "github.com/nurdsoft/nurd-commerce-core/internal/product/entities"
 	"github.com/nurdsoft/nurd-commerce-core/internal/product/productclient"
 	"github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
@@ -174,7 +171,7 @@ func (s *service) BulkRemoveFromWishlist(ctx context.Context, req *entities.Bulk
 // swagger:route GET /wishlist/more wishlist GetMoreFromWishlistRequest
 //
 // # Get More from Wishlist
-// ### Get more products from a customer's wishlist that aren't already in the cart
+// ### Get products from a customer's wishlist that aren't already in the cart
 //
 // Produces:
 //   - application/json
@@ -186,85 +183,32 @@ func (s *service) BulkRemoveFromWishlist(ctx context.Context, req *entities.Bulk
 //	500: DefaultError Internal Server Error
 func (s *service) GetMoreFromWishlist(ctx context.Context, req *entities.GetMoreFromWishlistRequest) (*entities.GetWishlistResponse, error) {
 	customerID := sharedMeta.XCustomerID(ctx)
-
 	if customerID == "" {
 		return nil, moduleErrors.NewAPIError("CUSTOMER_ID_REQUIRED")
 	}
 
-	var items []*entities.WishlistItem
+	cartItems, _ := s.cartClient.GetCartItems(ctx)
 
-	var (
-		wg               sync.WaitGroup
-		cartItems        *cartEntities.GetCartItemsResponse
-		wishlistItems    []*entities.WishlistItem
-		cartItemsErr     error
-		wishlistItemsErr error
-		nextCursor       string
-	)
-
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		cartItems, cartItemsErr = s.cartClient.GetCartItems(ctx)
-	}()
-
-	go func() {
-		defer wg.Done()
-		wishlistItems, nextCursor, _, wishlistItemsErr = s.repo.GetWishlist(ctx, customerID, req.Limit, req.Cursor)
-	}()
-
-	wg.Wait()
-
-	if cartItemsErr != nil {
-		return nil, cartItemsErr
+	var cartProductIDs []uuid.UUID
+	if cartItems != nil {
+		for _, item := range cartItems.Items {
+			cartProductIDs = append(cartProductIDs, item.ProductID)
+		}
 	}
 
-	if wishlistItemsErr != nil {
-		return nil, wishlistItemsErr
+	wishlistItems, nextCursor, total, err := s.repo.GetMoreFromWishlist(ctx, customerID, req.Limit, req.Cursor, cartProductIDs)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(wishlistItems) == 0 {
 		return nil, nil
 	}
 
-	if cartItems == nil || len(cartItems.Items) == 0 {
-		// If there are no items in the cart, return all wishlist items
-		// Ideally, this should not happen if the calling frontend is properly managing the empty cart state
-		// sort items by created_at
-		sort.Slice(wishlistItems, func(i, j int) bool {
-			return wishlistItems[i].CreatedAt.After(wishlistItems[j].CreatedAt)
-		})
-
-		return &entities.GetWishlistResponse{
-			Items:      wishlistItems,
-			NextCursor: nextCursor,
-			Total:      int64(len(wishlistItems)),
-		}, nil
-	}
-	// Create a set of product IDs that are in the cart
-	cartProductIDs := make(map[string]struct{}, len(cartItems.Items))
-	for _, item := range cartItems.Items {
-		cartProductIDs[item.ProductID.String()] = struct{}{}
-	}
-
-	for _, item := range wishlistItems {
-		if _, ok := cartProductIDs[item.ProductID.String()]; !ok {
-			items = append(items, &entities.WishlistItem{
-				ProductID: item.ProductID,
-				CreatedAt: item.CreatedAt,
-			})
-		}
-	}
-
-	// sort items by created_at
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].CreatedAt.After(items[j].CreatedAt)
-	})
-
 	return &entities.GetWishlistResponse{
-		Items:      items,
+		Items:      wishlistItems,
 		NextCursor: nextCursor,
+		Total:      total,
 	}, nil
 
 }

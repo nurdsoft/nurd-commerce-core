@@ -14,6 +14,7 @@ import (
 	salesforce "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/client"
 	salesforceEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory/salesforce/entities"
 	shippingEntities "github.com/nurdsoft/nurd-commerce-core/shared/vendors/shipping/entities"
+	taxesProviders "github.com/nurdsoft/nurd-commerce-core/shared/vendors/taxes/providers"
 
 	"github.com/nurdsoft/nurd-commerce-core/internal/address/addressclient"
 	addressEntities "github.com/nurdsoft/nurd-commerce-core/internal/address/entities"
@@ -545,14 +546,10 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 
 	for _, item := range getActiveCarItems.Items {
 		taxItem := taxesEntities.TaxItem{
-			// Stripe requires to provide the amount of the product with the no.of pieces being bought
-			Price:     item.Price.Mul(decimal.NewFromInt(int64(item.Quantity))),
+			Price:     item.Price,
 			Quantity:  item.Quantity,
 			Reference: item.SKU,
-		}
-
-		if item.StripeTaxCode != nil {
-			taxItem.TaxCode = *item.StripeTaxCode
+			TaxCode:   s.getItemTaxCodeByProvider(&item),
 		}
 
 		taxItems = append(taxItems, taxItem)
@@ -564,6 +561,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		State:      address.StateCode,
 		PostalCode: address.PostalCode,
 		Country:    address.CountryCode,
+		Street:     address.Address,
 	}
 
 	if address.City != nil {
@@ -572,6 +570,7 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 
 	if req.Body.WarehouseAddress != nil {
 		fromAddress = taxesEntities.Address{
+			Street:     req.Body.WarehouseAddress.Street,
 			City:       req.Body.WarehouseAddress.City,
 			State:      req.Body.WarehouseAddress.StateCode,
 			PostalCode: req.Body.WarehouseAddress.PostalCode,
@@ -589,10 +588,6 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 		s.log.Errorf("Error calculating tax: %v", err)
 		return nil, err
 	}
-
-	// convert the tax rate from minor units back to major units for human readability
-	res.Tax = res.Tax.Div(decimal.NewFromInt(100))
-	res.TotalAmount = res.TotalAmount.Div(decimal.NewFromInt(100))
 
 	// update cart with tax rate
 	err = s.repo.UpdateCartTaxRate(
@@ -622,6 +617,25 @@ func (s *service) GetTaxRate(ctx context.Context, req *entities.GetTaxRateReques
 	}
 
 	return &response, nil
+}
+
+func (s *service) getItemTaxCodeByProvider(item *entities.CartItemDetail) string {
+	if s.taxesClient.GetProvider() == taxesProviders.ProviderStripe {
+		if item.StripeTaxCode != nil {
+			return *item.StripeTaxCode
+		}
+	} else if s.taxesClient.GetProvider() == taxesProviders.ProviderTaxJar {
+		if item.Attributes != nil {
+			var attributes map[string]any
+			if err := item.Attributes.Scan(&attributes); err == nil {
+				if taxCode, ok := attributes["tax_code"]; ok {
+					return taxCode.(string)
+				}
+			}
+		}
+	}
+
+	return ""
 }
 
 // swagger:route POST /cart/shipping-rates carts GetShippingRateRequest
@@ -899,8 +913,10 @@ func (s *service) SetCartItemShippingRate(ctx context.Context, req *entities.Set
 
 	// Clear cache for this customer since shipping rates changed
 	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
 		// delete by pattern tax_rate_<any_address_id>_<customer_id>_<any_cart_id>_<any_shipping_rate_id>
-		if err := s.cache.DeleteByPattern(context.Background(), fmt.Sprintf("^tax_rate_[^_]+_%s_", customerID)); err != nil {
+		if err := s.cache.DeleteByPattern(bgCtx, fmt.Sprintf("^tax_rate_[^_]+_%s_", customerID)); err != nil {
 			s.log.Errorf("Error deleting tax rate cache: %v", err)
 		}
 	}()

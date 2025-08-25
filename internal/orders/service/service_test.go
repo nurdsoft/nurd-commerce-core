@@ -2546,6 +2546,188 @@ func TestProcessRefundSucceeded(t *testing.T) {
 	})
 }
 
+func TestCancelOrder(t *testing.T) {
+	t.Run("success - cancel order in payment_success state", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD-123456"
+		total := decimal.NewFromInt(100)
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+			Total:          total,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Do(func(_ context.Context, updates map[string]interface{}, _, _ string) {
+				assert.Equal(t, entities.Cancelled, updates["status"])
+			}).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().GetCustomerByID(gomock.Any(), customerID.String()).Return(&customerEntities.Customer{
+			ID: customerID,
+		}, nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockInventory.EXPECT().UpdateOrderStatus(gomock.Any(), gomock.Any()).Do(func(_ context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) {
+			assert.Equal(t, entities.Cancelled.String(), req.Status)
+			// assert.Equal(t, orderID, req.OrderID)
+			close(notifyCallDone)
+		})
+
+		req := &entities.CancelOrderRequest{
+			OrderID: orderID,
+		}
+
+		err := s.CancelOrder(ctx, req)
+
+		assert.NoError(t, err)
+		<-notifyCallDone
+	})
+
+	t.Run("success - cancel order in pending state", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		customerID := uuid.New()
+		orderRef := "ORD-123456"
+		total := decimal.NewFromInt(100)
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.Pending,
+			Total:          total,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), orderID.String(), customerID.String()).
+			Do(func(_ context.Context, updates map[string]interface{}, _, _ string) {
+				assert.Equal(t, entities.Cancelled, updates["status"])
+			}).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().GetCustomerByID(gomock.Any(), customerID.String()).Return(&customerEntities.Customer{
+			ID: customerID,
+		}, nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockInventory.EXPECT().UpdateOrderStatus(gomock.Any(), gomock.Any()).Do(func(_ context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) {
+			assert.Equal(t, entities.Cancelled.String(), req.Status)
+			close(notifyCallDone)
+		})
+
+		req := &entities.CancelOrderRequest{
+			OrderID: orderID,
+		}
+
+		err := s.CancelOrder(ctx, req)
+
+		assert.NoError(t, err)
+		<-notifyCallDone
+	})
+
+	t.Run("error - order is already cancelled", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		orderID := uuid.New()
+		orderRef := "ORD-123456"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.Cancelled,
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		req := &entities.CancelOrderRequest{
+			OrderID: orderID,
+		}
+
+		err := s.CancelOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_IS_ALREADY_CANCELLED").Error())
+	})
+
+	t.Run("error - order in non-cancellable state", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		orderID := uuid.New()
+		orderRef := "ORD-123456"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		existingOrder := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.Shipped, // Already shipped
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(existingOrder, nil)
+
+		req := &entities.CancelOrderRequest{
+			OrderID: orderID,
+		}
+
+		err := s.CancelOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_CANNOT_BE_CANCELLED").Error())
+	})
+
+	t.Run("error - missing customer ID in context", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		ctx := context.Background() // No customer ID in context
+
+		req := &entities.CancelOrderRequest{
+			OrderID: orderID,
+		}
+
+		err := s.CancelOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), sharedErrors.NewAPIError("CUSTOMER_ID_REQUIRED").Error())
+	})
+}
+
 func TestListOrders(t *testing.T) {
 	t.Run("success returns orders for customer", func(t *testing.T) {
 		tc := setupTestController(t)

@@ -1171,6 +1171,199 @@ func TestProcessPaymentSucceeded_WithAuthorizeNet(t *testing.T) {
 	})
 }
 
+func TestProcessPaymentFailed(t *testing.T) {
+	t.Run("success with stripe payment", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "pi_123"
+		orderID := uuid.New()
+		salesforceID := "123456"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				StripePaymentIntentID: nullable.StringPtr(paymentID),
+				Status:                entities.Pending,
+				SalesforceID:          salesforceID,
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, updates map[string]interface{}, orderID string, customerID string) {
+				assert.Equal(t, orderID, orderID)
+				assert.Equal(t, customerID, customerID)
+				assert.Equal(t, entities.PaymentFailed, updates["status"])
+			}).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().
+			GetCustomerByID(gomock.Any(), customerID.String()).
+			Return(&customerEntities.Customer{
+				ID:           customerID,
+				SalesforceID: nullable.StringPtr(salesforceID),
+			}, nil)
+
+		notifyCallDone := make(chan struct{})
+		tc.mockWebhook.EXPECT().
+			NotifyOrderStatusChange(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req *webhookEntities.NotifyOrderStatusChangeRequest) {
+				assert.Equal(t, customerID.String(), req.CustomerID)
+				assert.Equal(t, entities.PaymentFailed.String(), req.Status)
+				close(notifyCallDone)
+			}).
+			Return(nil)
+
+		salesforceCallDone := make(chan struct{})
+		tc.mockInventory.EXPECT().
+			UpdateOrderStatus(gomock.Any(), gomock.Any()).
+			Do(func(_ context.Context, req inventoryEntities.UpdateInventoryOrderStatusRequest) {
+				assert.Equal(t, salesforceID, req.Order.SalesforceID)
+				assert.Equal(t, salesforceID, *req.Customer.SalesforceID)
+				assert.Equal(t, entities.PaymentFailed.String(), req.Status)
+				close(salesforceCallDone)
+			}).
+			Return(nil)
+
+		err := s.ProcessPaymentFailed(ctx, paymentID)
+
+		assert.NoError(t, err)
+		// wait for async calls to be done
+		<-notifyCallDone
+		<-salesforceCallDone
+	})
+
+	t.Run("error - order not found by payment ID", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		paymentID := "pi_123"
+
+		ctx := context.Background()
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(nil, errors.New("order not found"))
+
+		err := s.ProcessPaymentFailed(ctx, paymentID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_NOT_FOUND_BY_PAYMENT_ID").Error())
+	})
+
+	t.Run("error - order not in pending state", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "pi_123"
+		orderID := uuid.New()
+
+		ctx := context.Background()
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				StripePaymentIntentID: nullable.StringPtr(paymentID),
+				Status:                entities.PaymentSuccess, // Not in pending state
+			}, nil)
+
+		err := s.ProcessPaymentFailed(ctx, paymentID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_IS_NOT_PENDING").Error())
+	})
+
+	t.Run("error - failed to update order status", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "pi_123"
+		orderID := uuid.New()
+
+		ctx := context.Background()
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				StripePaymentIntentID: nullable.StringPtr(paymentID),
+				Status:                entities.Pending,
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(errors.New("database error"))
+
+		err := s.ProcessPaymentFailed(ctx, paymentID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "database error")
+	})
+
+	t.Run("error - failed to get customer", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		paymentID := "pi_123"
+		orderID := uuid.New()
+
+		ctx := context.Background()
+
+		tc.mockPayment.EXPECT().
+			GetProvider().
+			Return(providers.ProviderStripe)
+
+		tc.mockRepo.EXPECT().
+			GetOrderByStripePaymentIntentID(gomock.Any(), paymentID).
+			Return(&entities.Order{
+				ID:                    orderID,
+				CustomerID:            customerID,
+				StripePaymentIntentID: nullable.StringPtr(paymentID),
+				Status:                entities.Pending,
+			}, nil)
+
+		tc.mockRepo.EXPECT().
+			Update(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil)
+
+		tc.mockCustomer.EXPECT().
+			GetCustomerByID(gomock.Any(), customerID.String()).
+			Return(nil, errors.New("customer not found"))
+
+		err := s.ProcessPaymentFailed(ctx, paymentID)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "customer not found")
+	})
+}
+
 func TestUpdateOrder(t *testing.T) {
 	t.Run("success with status change", func(t *testing.T) {
 		tc := setupTestController(t)
@@ -2479,7 +2672,7 @@ func TestProcessRefundSucceeded(t *testing.T) {
 			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
 				// Order should be marked as refunded since all items are now refunded
 				status, hasStatus := orderData["status"]
-				assert.True(t, hasStatus)
+				assert.True(t, hasStatus, "Order status should change for full refund")
 				assert.Equal(t, entities.Refunded, status)
 
 				// Check new refund total

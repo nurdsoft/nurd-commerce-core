@@ -392,6 +392,7 @@ func (s *service) ListOrders(ctx context.Context, req *entities.ListOrdersReques
 //
 //	200: GetOrderResponse Order fetched successfully
 //	400: DefaultError Bad Request
+//	404: DefaultError Order not found
 //	500: DefaultError Internal Server Error
 func (s *service) GetOrder(ctx context.Context, req *entities.GetOrderRequest) (*entities.GetOrderData, error) {
 	customerID, err := uuid.Parse(sharedMeta.XCustomerID(ctx))
@@ -406,7 +407,7 @@ func (s *service) GetOrder(ctx context.Context, req *entities.GetOrderRequest) (
 
 	order, err := s.repo.GetOrderByID(ctx, orderId)
 	if err != nil {
-		return nil, moduleErrors.NewAPIError("ORDER_ERROR_GETTING")
+		return nil, err
 	}
 
 	if order.CustomerID != customerID {

@@ -23,6 +23,7 @@ import (
 	webhookEntities "github.com/nurdsoft/nurd-commerce-core/internal/webhook/entities"
 	wishlistEntities "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/entities"
 	wishlistclient "github.com/nurdsoft/nurd-commerce-core/internal/wishlist/wishlistclient"
+	sharedErrors "github.com/nurdsoft/nurd-commerce-core/shared/errors"
 	sharedMeta "github.com/nurdsoft/nurd-commerce-core/shared/meta"
 	"github.com/nurdsoft/nurd-commerce-core/shared/nullable"
 	"github.com/nurdsoft/nurd-commerce-core/shared/vendors/inventory"
@@ -2125,7 +2126,7 @@ func TestRefundOrder_WithStripe(t *testing.T) {
 			Do(func(_ context.Context, _ uuid.UUID, orderData map[string]interface{}, itemsData map[string]interface{}) {
 				// Order should NOT be marked as fully refunded since we're only refunding 1 out of 3 total items
 				_, hasStatus := orderData["status"]
-				assert.False(t, hasStatus, "Order status should not be changed for partial refund")
+				assert.False(t, hasStatus, "Order status should not change for partial refund")
 
 				// Check item refund data
 				itemData, exists := itemsData[orderItemID1.String()]
@@ -2542,5 +2543,242 @@ func TestProcessRefundSucceeded(t *testing.T) {
 		err := s.ProcessRefundSucceeded(ctx, refundID, refundAmount)
 
 		assert.NoError(t, err) // Should not return error but log the unsupported provider
+	})
+}
+
+func TestListOrders(t *testing.T) {
+	t.Run("success returns orders for customer", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		req := &entities.ListOrdersRequest{
+			Limit: 20,
+		}
+
+		o1 := &entities.Order{
+			ID:             uuid.New(),
+			CustomerID:     customerID,
+			OrderReference: "ORD-001",
+			Status:         entities.Pending,
+		}
+		o2 := &entities.Order{
+			ID:             uuid.New(),
+			CustomerID:     customerID,
+			OrderReference: "ORD-002",
+			Status:         entities.PaymentSuccess,
+		}
+
+		// Expect repository to return two orders for the customer
+		tc.mockRepo.EXPECT().ListOrders(ctx, customerID, req.Limit, req.Cursor, req.IncludeItems).Return([]*entities.Order{o1, o2}, "", nil)
+
+		resp, err := s.ListOrders(ctx, req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		// Minimal assertions to avoid coupling to response shape beyond orders
+		assert.Len(t, resp.Orders, 2)
+		assert.Equal(t, "ORD-001", resp.Orders[0].OrderReference)
+		assert.Equal(t, "ORD-002", resp.Orders[1].OrderReference)
+	})
+
+	t.Run("repository error", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+		req := &entities.ListOrdersRequest{
+			Limit: 20,
+		}
+
+		tc.mockRepo.EXPECT().
+			ListOrders(ctx, customerID, req.Limit, req.Cursor, req.IncludeItems).
+			Return(nil, "", errors.New("database error"))
+
+		resp, err := s.ListOrders(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+
+	t.Run("missing customer ID in context", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		ctx := context.Background()
+		req := &entities.ListOrdersRequest{
+			Limit: 20,
+		}
+
+		resp, err := s.ListOrders(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+}
+
+func TestGetOrder(t *testing.T) {
+	t.Run("success - return order with items", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		orderID := uuid.New()
+		orderRef := "ORD-123456"
+		orderItemID1 := uuid.New()
+		orderItemID2 := uuid.New()
+		productID1 := uuid.New()
+		productID2 := uuid.New()
+		productVariantID1 := uuid.New()
+		productVariantID2 := uuid.New()
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tax := decimal.NewFromInt(10)
+		shipping := decimal.NewFromInt(5)
+
+		order := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+			Total:          decimal.NewFromInt(100),
+			Subtotal:       decimal.NewFromInt(85),
+			ShippingRate:   &shipping,
+			TaxAmount:      tax,
+			CreatedAt:      time.Now(),
+		}
+
+		orderItems := []*entities.OrderItem{
+			{
+				ID:               orderItemID1,
+				OrderID:          orderID,
+				ProductID:        productID1,
+				ProductVariantID: productVariantID1,
+				SKU:              "SKU-001",
+				Name:             "Product 1",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(50),
+				Status:           entities.ItemDelivered,
+			},
+			{
+				ID:               orderItemID2,
+				OrderID:          orderID,
+				ProductID:        productID2,
+				ProductVariantID: productVariantID2,
+				SKU:              "SKU-002",
+				Name:             "Product 2",
+				Quantity:         1,
+				Price:            decimal.NewFromInt(35),
+				Status:           entities.ItemDelivered,
+			},
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(order, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByID(gomock.Any(), orderID).
+			Return(orderItems, nil)
+
+		req := &entities.GetOrderRequest{
+			OrderID: orderID,
+		}
+
+		resp, err := s.GetOrder(ctx, req)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, orderRef, resp.Order.OrderReference)
+		assert.Equal(t, entities.PaymentSuccess, resp.Order.Status)
+		assert.Equal(t, decimal.NewFromInt(100), resp.Order.Total)
+		assert.Equal(t, decimal.NewFromInt(85), resp.Order.Subtotal)
+		assert.Equal(t, decimal.NewFromInt(5), *resp.Order.ShippingRate)
+		assert.Equal(t, decimal.NewFromInt(10), resp.Order.TaxAmount)
+		assert.Len(t, resp.OrderItems, 2)
+	})
+
+	t.Run("error - order not found", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		orderID := uuid.New()
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(nil, moduleErrors.NewAPIError("ORDER_NOT_FOUND"))
+
+		req := &entities.GetOrderRequest{
+			OrderID: orderID,
+		}
+
+		resp, err := s.GetOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_NOT_FOUND").Error())
+	})
+
+	t.Run("error - failed to get order items", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		customerID := uuid.New()
+		orderID := uuid.New()
+		orderRef := "ORD-123456"
+
+		ctx := sharedMeta.WithXCustomerID(context.Background(), customerID.String())
+
+		order := &entities.Order{
+			ID:             orderID,
+			CustomerID:     customerID,
+			OrderReference: orderRef,
+			Status:         entities.PaymentSuccess,
+			Total:          decimal.NewFromInt(100),
+			CreatedAt:      time.Now(),
+		}
+
+		tc.mockRepo.EXPECT().
+			GetOrderByID(gomock.Any(), orderID).
+			Return(order, nil)
+
+		tc.mockRepo.EXPECT().
+			GetOrderItemsByID(gomock.Any(), orderID).
+			Return(nil, errors.New("database error"))
+
+		req := &entities.GetOrderRequest{
+			OrderID: orderID,
+		}
+
+		resp, err := s.GetOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), moduleErrors.NewAPIError("ORDER_ERROR_GETTING_ITEMS").Error())
+	})
+
+	t.Run("error - missing customer ID in context", func(t *testing.T) {
+		tc := setupTestController(t)
+		s := newServiceUnderTest(tc)
+
+		orderID := uuid.New()
+		ctx := context.Background() // No customer ID in context
+
+		req := &entities.GetOrderRequest{
+			OrderID: orderID,
+		}
+
+		resp, err := s.GetOrder(ctx, req)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), sharedErrors.NewAPIError("CUSTOMER_ID_REQUIRED").Error())
 	})
 }
